@@ -3,6 +3,7 @@ package javabot.datastructure;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javabot.BWAPIEventListener;
 import javabot.JNIBWAPI;
@@ -55,5 +56,9 @@ public class GameHandler extends JNIBWAPI {
 		double distance = 1;
 		return new Point((int) ((dest.x - start.x) / distance * 1000),
 				(int) ((dest.y - start.y) / distance * 1000));
+	}
+
+	public double distance(Worker w, Resource r) {
+		return Point.distance(w.getX(), w.getY(), r.getX(), r.getY());
 	}
 }

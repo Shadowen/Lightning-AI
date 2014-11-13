@@ -11,6 +11,7 @@ import javabot.botstate.BotState;
 import javabot.botstate.FirstFrameState;
 import javabot.datastructure.Base;
 import javabot.datastructure.GameHandler;
+import javabot.datastructure.Resource;
 import javabot.model.*;
 import javabot.types.*;
 import javabot.types.OrderType.OrderTypeTypes;
@@ -19,18 +20,17 @@ import javabot.util.BWColor;
 
 public class JavaBot implements BWAPIEventListener {
 
-	private JNIBWAPI game;
+	private GameHandler game;
 
 	// Some miscellaneous variables. Feel free to add yours.
 	private BotState botState;
-	private List<Base> bases;
 
 	public static void main(String[] args) {
 		new JavaBot();
 	}
 
 	public JavaBot() {
-		game = new JNIBWAPI(this);
+		game = new GameHandler(this);
 		game.start();
 	}
 
@@ -66,7 +66,7 @@ public class JavaBot implements BWAPIEventListener {
 
 		// ==========================================================
 		// Initialize
-		//botState = new FirstFrameState(game);
+		botState = new FirstFrameState(game);
 
 		mapWidth = game.getMap().getWidth();
 		mapHeight = game.getMap().getHeight();
@@ -166,70 +166,44 @@ public class JavaBot implements BWAPIEventListener {
 
 	// Method called on every frame (approximately 30x every second).
 	public void gameUpdate() {
-		botState = botState.act();
-
-		// Draw debug information on screen
-		drawDebugInfo();
-
-		// Make sure all workers at bases are mining
-		for (Base b : bases) {
-			for (Unit u : b.workers) {
-				if (u.isIdle()) {
-					/*game.rightClick(
-							u.getID(),
-							game.getClosestUnitOfType(u.getX(), u.getY(),
-									UnitTypes.Resource_Mineral_Field).getID());
-				*/}
-			}
+		try {
+			botState = botState.act();
+			// Draw debug information on screen
+			drawDebugInfo();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
-		for (Unit u : game.getMyUnits()) {
-			if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
-				// SCVs
-			} else if (u.getTypeID() == UnitTypes.Terran_Wraith.ordinal()) {
-				// Wraith micro
-				//int closestEnemyID = game.getClosestEnemy(u);
-				int closestEnemyID = 0;
-				Unit enemyUnit = game.getUnit(closestEnemyID);
-				if (closestEnemyID != -1) {
-					if (u.getGroundWeaponCooldown() > 0
-							|| u.getAirWeaponCooldown() > 0) {
-						// Attack is on cooldown - retreat
-						Point destPoint = retreat(u.getX(), u.getY(), 64);
-						game.drawText(u.getX(), u.getY(), "Retreating", false);
-						game.drawLine(u.getX(), u.getY(), destPoint.x,
-								destPoint.y, BWColor.GREEN, false);
-						game.move(u.getID(), destPoint.x, destPoint.y);
-					} else if (Point.distance(u.getX(), u.getY(),
-							enemyUnit.getX(), enemyUnit.getY()) <= game
-							.getWeaponType(
-									game.getUnitType(u.getTypeID())
-											.getAirWeaponID()).getMaxRange() + 32) {
-						// Attack
-						game.drawText(u.getX(), u.getY(), "Attacking", false);
-						game.drawLine(u.getX(), u.getY(), enemyUnit.getX(),
-								enemyUnit.getY(), BWColor.RED, false);
-						game.attack(u.getID(), enemyUnit.getID());
-
-						// Retreat immediately after attack?
-						Point destPoint = retreat(u.getX(), u.getY(), 64);
-						game.drawText(u.getX(), u.getY(), "Retreating", false);
-						game.drawLine(u.getX(), u.getY(), destPoint.x,
-								destPoint.y, BWColor.GREEN, false);
-						game.move(u.getID(), destPoint.x, destPoint.y);
-					} else {
-						// Move in on an attack run
-						game.drawText(u.getX(), u.getY(), "Attack Run", false);
-						game.drawLine(u.getX(), u.getY(), enemyUnit.getX(),
-								enemyUnit.getY(), BWColor.YELLOW, false);
-						game.move(u.getID(), enemyUnit.getX(), enemyUnit.getY());
-					}
-				} else {
-					// Idle
-					game.drawText(u.getX(), u.getY(), "No target", false);
-				}
-			}
-		}
+		/*
+		 * for (Unit u : game.getMyUnits()) { if (u.getTypeID() ==
+		 * UnitTypes.Terran_SCV.ordinal()) { // SCVs } else if (u.getTypeID() ==
+		 * UnitTypes.Terran_Wraith.ordinal()) { // Wraith micro int
+		 * closestEnemyID = game.getClosestEnemy(u); Unit enemyUnit =
+		 * game.getUnit(closestEnemyID); if (closestEnemyID != -1) { if
+		 * (u.getGroundWeaponCooldown() > 0 || u.getAirWeaponCooldown() > 0) {
+		 * // Attack is on cooldown - retreat Point destPoint =
+		 * retreat(u.getX(), u.getY(), 64); game.drawText(u.getX(), u.getY(),
+		 * "Retreating", false); game.drawLine(u.getX(), u.getY(), destPoint.x,
+		 * destPoint.y, BWColor.GREEN, false); game.move(u.getID(), destPoint.x,
+		 * destPoint.y); } else if (Point.distance(u.getX(), u.getY(),
+		 * enemyUnit.getX(), enemyUnit.getY()) <= game .getWeaponType(
+		 * game.getUnitType(u.getTypeID()) .getAirWeaponID()).getMaxRange() +
+		 * 32) { // Attack game.drawText(u.getX(), u.getY(), "Attacking",
+		 * false); game.drawLine(u.getX(), u.getY(), enemyUnit.getX(),
+		 * enemyUnit.getY(), BWColor.RED, false); game.attack(u.getID(),
+		 * enemyUnit.getID());
+		 * 
+		 * // Retreat immediately after attack? Point destPoint =
+		 * retreat(u.getX(), u.getY(), 64); game.drawText(u.getX(), u.getY(),
+		 * "Retreating", false); game.drawLine(u.getX(), u.getY(), destPoint.x,
+		 * destPoint.y, BWColor.GREEN, false); game.move(u.getID(), destPoint.x,
+		 * destPoint.y); } else { // Move in on an attack run
+		 * game.drawText(u.getX(), u.getY(), "Attack Run", false);
+		 * game.drawLine(u.getX(), u.getY(), enemyUnit.getX(), enemyUnit.getY(),
+		 * BWColor.YELLOW, false); game.move(u.getID(), enemyUnit.getX(),
+		 * enemyUnit.getY()); } } else { // Idle game.drawText(u.getX(),
+		 * u.getY(), "No target", false); } } }
+		 */
 	}
 
 	// Some additional event-related methods.
@@ -248,41 +222,28 @@ public class JavaBot implements BWAPIEventListener {
 	public void playerLeft(int id) {
 	}
 
-	private Base getClosestBase(int x, int y) {
-		Base closest = null;
-		double closestDistance = Double.MAX_VALUE;
-		for (Base b : bases) {
-			double distance = Point.distance(x, y, b.location.getX(),
-					b.location.getY());
-			if (distance < closestDistance) {
-				closestDistance = distance;
-				closest = b;
-			}
-		}
-		return closest;
-	}
-
 	public void unitCreate(int unitID) {
-		Unit u = game.getUnit(unitID);
-		if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
-			// Add new workers to nearest base
-			Base base = getClosestBase(u.getX(), u.getY());
-			base.workers.add(u);
+		try {
+			botState = botState.unitCreate(unitID);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
 	public void unitDestroy(int unitID) {
-		Unit u = game.getUnit(unitID);
-		if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
-			for (Base b : bases) {
-				if (b.workers.remove(u)) {
-					break;
-				}
-			}
+		try {
+			botState = botState.unitDestroy(unitID);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
 	public void unitDiscover(int unitID) {
+		try {
+			botState = botState.unitDiscover(unitID);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void unitEvade(int unitID) {
@@ -384,42 +345,33 @@ public class JavaBot implements BWAPIEventListener {
 	// Draws debug information on the screen.
 	// Reimplement this function however you want.
 	public void drawDebugInfo() {
-		drawThreatMap();
+		game.drawText(5, 5, botState.getClass().toString(), true);
 
-		for (Base b : bases) {
-			int x = b.commandCenter.getX() - 32 * 2;
-			int y = b.commandCenter.getY() - 32 * 2;
-			game.drawBox(x, y, x + 32 * 4, y + 32 * 4, BWColor.TEAL, false,
-					false);
-			// Count workers, excluding ones that are still training.
-			int workerCount = 0;
-			for (Unit u : b.workers) {
-				if (!u.isTraining()) {
-					workerCount++;
-				} else {
-					game.sendText("Someone is training");
-				}
-			}
-			game.drawText(x + 5, y + 5, "Workers: " + workerCount, false);
-		}
-		for (Unit u : game.getMyUnits()) {
-			if (u.getTypeID() == UnitTypes.Terran_Wraith.ordinal()) {
-				game.drawCircle(u.getX(), u.getY(), 12, BWColor.GREEN, true,
+		for (Base b : botState.baseManager) {
+			if (b.commandCenter != null) {
+				int x = b.commandCenter.getX() - 32 * 2;
+				int y = b.commandCenter.getY() - 32 * 2;
+				game.drawBox(x, y, x + 32 * 4, y + 32 * 4, BWColor.TEAL, false,
 						false);
-				game.drawLine(u.getX(), u.getY() + 10,
-						u.getX() + u.getGroundWeaponCooldown(), u.getY() + 10,
-						BWColor.RED, false);
-				game.drawCircle(
-						u.getX(),
-						u.getY(),
-						game.getWeaponType(
-								game.getUnitType(u.getTypeID())
-										.getAirWeaponID()).getMaxRange(),
-						BWColor.RED, false, false);
+				game.drawText(x + 5, y + 5, "Workers: " + b.workers.size(),
+						false);
+				game.drawText(x + 5, y + 15,
+						"Mineral Fields: " + b.minerals.size(), false);
+			}
+			for (Resource r : b.minerals.values()) {
+				game.drawText(r.getX() - 8, r.getY() - 8,
+						String.valueOf(r.getNumGatherers()), false);
 			}
 		}
-
-		game.drawText(5, 5, "State: " + botState.getClass().toString(), true);
+		/*
+		 * for (Unit u : game.getMyUnits()) { if (u.getTypeID() ==
+		 * UnitTypes.Terran_Wraith.ordinal()) { game.drawCircle(u.getX(),
+		 * u.getY(), 12, BWColor.GREEN, true, false); game.drawLine(u.getX(),
+		 * u.getY() + 10, u.getX() + u.getGroundWeaponCooldown(), u.getY() + 10,
+		 * BWColor.RED, false); game.drawCircle( u.getX(), u.getY(),
+		 * game.getWeaponType( game.getUnitType(u.getTypeID())
+		 * .getAirWeaponID()).getMaxRange(), BWColor.RED, false, false); } }
+		 */
 	}
 
 	private double[][] threatMap;

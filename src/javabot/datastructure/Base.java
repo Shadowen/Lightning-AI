@@ -2,7 +2,11 @@ package javabot.datastructure;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import javabot.model.*;
 import javabot.types.*;
@@ -10,54 +14,75 @@ import javabot.types.OrderType.OrderTypeTypes;
 import javabot.types.UnitType.UnitTypes;
 
 public class Base {
-
-	private static final int MAX_MINERAL_DISTANCE = 10;
-	private static final int MAX_GAS_DISTANCE = 10;
-
-	private List<Unit> minerals;
-	private List<Unit> gas;
-	public List<Unit> workers;
+	public java.util.Map<Integer, Resource> minerals;
+	public java.util.Map<Integer, Resource> gas;
+	public java.util.Map<Integer, Worker> workers;
 	public Unit commandCenter;
 	public BaseLocation location;
 
 	public Base(GameHandler game, BaseLocation l) {
-
-		workers = new ArrayList<Unit>();
+		workers = new HashMap<Integer, Worker>();
 		location = l;
 
-		minerals = new ArrayList<Unit>();
-		for (Unit u : game.getAllUnits()) {
-			if (u.getTypeID() == UnitTypes.Resource_Mineral_Field.ordinal()) {
-				if (Point.distance(l.getX(), l.getY(), u.getX(), u.getY()) < MAX_MINERAL_DISTANCE) {
-					minerals.add(u);
-				}
-			}
-		}
-		gas = new ArrayList<Unit>();
-		for (Unit u : game.getAllUnits()) {
-			if (u.getTypeID() == UnitTypes.Resource_Mineral_Field.ordinal()
-					|| u.getTypeID() == UnitTypes.Terran_Refinery.ordinal()
-					|| u.getTypeID() == UnitTypes.Protoss_Assimilator.ordinal()
-					|| u.getTypeID() == UnitTypes.Zerg_Extractor.ordinal()) {
-				if (Point.distance(l.getX(), l.getY(), u.getX(), u.getY()) < MAX_GAS_DISTANCE) {
-					gas.add(u);
-				}
-			}
-		}
+		minerals = new HashMap<Integer, Resource>();
+		gas = new HashMap<Integer, Resource>();
+
 	}
 
-	public Unit getBuilder() {
-		for (Unit u : workers) {
-			if (!u.isConstructing() && !u.isCarryingMinerals()
-					&& !u.isCarryingGas()) {
-				return u;
-			}
+	public int getOwner() {
+		if (commandCenter == null) {
+			return -1;
 		}
-		return null;
+		return commandCenter.getPlayerID();
 	}
 
 	public int getMineralCount() {
 		return minerals.size();
 	}
 
+	public void gatherResources(GameHandler game) {
+		// Idle workers
+		for (Entry<Integer, Worker> worker : workers.entrySet()) {
+			if (worker.getValue().isIdle()) {
+				boolean workerAssigned = worker.getValue().isGathering();
+				if (workerAssigned) {
+					worker.getValue().mine();
+					break;
+				}
+
+				// Try to assign one worker to each mineral first
+				Resource mineral = null;
+				double distance = 0;
+
+				// This variable is the loop counter
+				// It only allows maxMiners to gather each resource patch each
+				// loop.
+				int maxMiners = 1;
+				while (!workerAssigned) {
+					if (maxMiners > 3) {
+						// supersaturated - can't find a suitable resource patch
+						throw new StackOverflowError();
+					}
+
+					for (Entry<Integer, Resource> m : minerals.entrySet()) {
+						if (m.getValue().getNumGatherers() < maxMiners) {
+							// Find closest mineral patch
+							double newDistance = game.distance(
+									worker.getValue(), m.getValue());
+							if (mineral == null || newDistance < distance) {
+								mineral = m.getValue();
+								distance = newDistance;
+								workerAssigned = true;
+							}
+						}
+					}
+
+					maxMiners++;
+				}
+
+				// Actually issue the order
+				worker.getValue().mine(mineral);
+			}
+		}
+	}
 }
