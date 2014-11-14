@@ -63,16 +63,19 @@ public class OpeningBuildState extends BotState {
 
 	public BotState unitCreate(int unitID) {
 		Unit u = game.getUnit(unitID);
-		if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
+		int typeID = u.getTypeID();
+		if (typeID == UnitTypes.Terran_SCV.ordinal()) {
 			// Add new workers to nearest base
 			Base base = baseManager.getClosestBase(u.getX(), u.getY());
-			base.workers.put(u.getID(), new Worker(game, u, base));
+			base.workers.put(unitID, new Worker(game, u, base));
 			game.sendText("Added worker to base!");
 			game.sendText("Worker found at (" + u.getX() + "," + u.getY() + ")");
-		} else if (u.getTypeID() == UnitTypes.Terran_Command_Center.ordinal()) {
-			Base base = baseManager.getClosestBase(u.getX(), u.getY());
-			base.commandCenter = u;
+		} else if (typeID == UnitTypes.Terran_Command_Center.ordinal()) {
+			baseManager.getClosestBase(u.getX(), u.getY()).commandCenter = u;
 			game.sendText("Found new Command Center!");
+		} else if (typeID == UnitTypes.Terran_Supply_Depot.ordinal()) {
+			game.sendText("Found new Supply Depot!");
+			buildManager.doneBuilding(u);
 		}
 		return this;
 	}

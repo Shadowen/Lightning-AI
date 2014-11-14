@@ -117,7 +117,7 @@ public class GameHandler extends JNIBWAPI {
 
 		for (int i = left; i < left + width; i++) {
 			for (int j = top; j < top + height; j++) {
-				if (!(getMap().isBuildable(i, j))) {
+				if (!(isBuildable(i, j, true))) {
 					return false;
 				}
 			}

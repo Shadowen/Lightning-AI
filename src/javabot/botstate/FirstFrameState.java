@@ -43,7 +43,7 @@ public class FirstFrameState extends BotState {
 			if (b.location.getX() == commandCenter.getX()
 					&& location.getY() == commandCenter.getY()) {
 				b.commandCenter = commandCenter;
-				game.sendText("Main base location found.");
+				baseManager.setMain(b);
 			}
 			baseManager.addBase(b);
 		}
