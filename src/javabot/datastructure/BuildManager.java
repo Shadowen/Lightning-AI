@@ -65,16 +65,20 @@ public class BuildManager {
 		return buildingQueue.peek();
 	}
 
-	// Call this whenever a building completes contruction
+	// Call this whenever a unit completes contruction
 	public void doneBuilding(Unit u) {
-		// Go through all the planned buildings
-		for (BuildingPlan p : buildingQueue) {
-			// If it's the right building according to the plan
-			if (u.getTypeID() == p.getTypeID() && u.getTileX() == p.getTx()
-					&& u.getTileY() == p.getTy()) {
-				// It has been completed
-				buildingQueue.remove(p);
+		if (game.getUnitType(u.getTypeID()).isBuilding()) {
+			// Go through planned buildings
+			for (BuildingPlan p : buildingQueue) {
+				// If it's the right building according to the plan
+				if (u.getTypeID() == p.getTypeID() && u.getTileX() == p.getTx()
+						&& u.getTileY() == p.getTy()) {
+					// It has been completed
+					buildingQueue.remove(p);
+				}
 			}
+		} else {
+			// Go through planned units
 		}
 	}
 

@@ -40,6 +40,7 @@ public class Worker {
 	public void build(BuildingPlan toBuild) {
 		base.workers.remove(this);
 		game.build(unit.getID(), toBuild);
+		toBuild.setBuilder(this);
 	}
 
 	public int getX() {

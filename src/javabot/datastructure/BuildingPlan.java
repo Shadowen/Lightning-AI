@@ -7,6 +7,7 @@ public class BuildingPlan {
 	private UnitTypes type;
 	private int tx;
 	private int ty;
+	private Worker builder;
 
 	public BuildingPlan(int itx, int ity, UnitTypes itype) {
 		type = itype;
@@ -28,5 +29,13 @@ public class BuildingPlan {
 
 	public String toString() {
 		return "[" + type.toString() + "] @ (" + tx * 16 + ", " + ty * 16 + ")";
+	}
+
+	public boolean hasBuilder() {
+		return builder != null;
+	}
+
+	public void setBuilder(Worker ibuilder) {
+		builder = ibuilder;
 	}
 }

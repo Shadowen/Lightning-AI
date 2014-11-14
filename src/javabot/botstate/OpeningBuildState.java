@@ -38,7 +38,6 @@ public class OpeningBuildState extends BotState {
 		BuildingPlan toBuild = buildManager.getToBuild();
 		// Add supply depots if necessary
 		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 3) {
-			game.sendText("Require additional Supply Depots.");
 			// Check that it's not already in the queue
 			if (buildManager.getToBuild() == null
 					|| buildManager.getToBuild().getTypeID() != UnitTypes.Terran_Supply_Depot
@@ -52,10 +51,17 @@ public class OpeningBuildState extends BotState {
 			}
 		}
 		// Attempt to build the next building
-		if (toBuild != null
-				&& game.getSelf().getMinerals() > game.getUnitType(
-						toBuild.getTypeID()).getMineralPrice()) {
-			baseManager.getBuilder().build(toBuild);
+		if (toBuild != null) {
+			// If we have the minerals and gas
+			if (game.getSelf().getMinerals() > game.getUnitType(
+					toBuild.getTypeID()).getMineralPrice()
+					&& game.getSelf().getGas() >= game.getUnitType(
+							toBuild.getTypeID()).getGasPrice()) {
+				// If it isn't being built yet
+				if (!toBuild.hasBuilder()) {
+					baseManager.getBuilder().build(toBuild);
+				}
+			}
 		}
 
 		return this;
@@ -64,6 +70,10 @@ public class OpeningBuildState extends BotState {
 	public BotState unitCreate(int unitID) {
 		Unit u = game.getUnit(unitID);
 		int typeID = u.getTypeID();
+		UnitType type = game.getUnitType(typeID);
+
+		buildManager.doneBuilding(u);
+
 		if (typeID == UnitTypes.Terran_SCV.ordinal()) {
 			// Add new workers to nearest base
 			Base base = baseManager.getClosestBase(u.getX(), u.getY());
@@ -75,8 +85,8 @@ public class OpeningBuildState extends BotState {
 			game.sendText("Found new Command Center!");
 		} else if (typeID == UnitTypes.Terran_Supply_Depot.ordinal()) {
 			game.sendText("Found new Supply Depot!");
-			buildManager.doneBuilding(u);
 		}
+
 		return this;
 	}
 

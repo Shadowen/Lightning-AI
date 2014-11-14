@@ -44,6 +44,7 @@ public class FirstFrameState extends BotState {
 					&& location.getY() == commandCenter.getY()) {
 				b.commandCenter = commandCenter;
 				baseManager.setMain(b);
+				game.sendText("Main set");
 			}
 			baseManager.addBase(b);
 		}
