@@ -3,11 +3,13 @@ package javabot.botstate;
 import java.awt.Point;
 import java.util.Iterator;
 
-import javabot.JavaBot;
 import javabot.datastructure.Base;
-import javabot.datastructure.GameHandler;
+import javabot.datastructure.BuildingPlan;
 import javabot.datastructure.Resource;
 import javabot.datastructure.Worker;
+import javabot.gamestructure.DebugEngine;
+import javabot.gamestructure.GameHandler;
+import javabot.gamestructure.JavaBot;
 import javabot.model.Unit;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
@@ -33,18 +35,27 @@ public class OpeningBuildState extends BotState {
 			}
 		}
 
-		UnitTypes toBuild = buildManager.getToBuild();
+		BuildingPlan toBuild = buildManager.getToBuild();
 		// Add supply depots if necessary
 		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 3) {
 			game.sendText("Require additional Supply Depots.");
 			// Check that it's not already in the queue
-			if (buildManager.getToBuild() != UnitTypes.Terran_Supply_Depot) {
-				buildManager.addBuilding(UnitTypes.Terran_Supply_Depot);
+			if (buildManager.getToBuild() == null
+					|| buildManager.getToBuild().getTypeID() != UnitTypes.Terran_Supply_Depot
+							.ordinal()) {
+				Point location = game.getBuildLocation(
+						baseManager.getMain().location.getX(),
+						baseManager.getMain().location.getY(),
+						UnitTypes.Terran_Supply_Depot);
+				buildManager.addBuilding(location,
+						UnitTypes.Terran_Supply_Depot);
 			}
 		}
 		// Attempt to build the next building
-		if (game.getSelf().getMinerals() > 100) {
-			baseManager.getBuilder().build();// game.build
+		if (toBuild != null
+				&& game.getSelf().getMinerals() > game.getUnitType(
+						toBuild.getTypeID()).getMineralPrice()) {
+			baseManager.getBuilder().build(toBuild);
 		}
 
 		return this;

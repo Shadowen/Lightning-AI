@@ -259,7 +259,7 @@ public class JNIBWAPI {
     // Extended Commands (Fobbah)
     public native boolean hasCreep(int tx, int ty);
 
-    public native boolean canBuildHere(int unitID, int tx, int ty, int utypeID, boolean checkExplored);
+	public native boolean canBuildHere(int unitID, int tx, int ty, int utypeID, boolean checkExplored);
 
     public native void printText(String message);
 

@@ -1,4 +1,4 @@
-package javabot;
+package javabot.gamestructure;
 
 import java.awt.Color;
 import java.awt.Point;
@@ -7,10 +7,11 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javabot.BWAPIEventListener;
 import javabot.botstate.BotState;
 import javabot.botstate.FirstFrameState;
 import javabot.datastructure.Base;
-import javabot.datastructure.GameHandler;
+import javabot.datastructure.BuildingPlan;
 import javabot.datastructure.Resource;
 import javabot.model.*;
 import javabot.types.*;
@@ -345,24 +346,7 @@ public class JavaBot implements BWAPIEventListener {
 	// Draws debug information on the screen.
 	// Reimplement this function however you want.
 	public void drawDebugInfo() {
-		game.drawText(5, 5, botState.getClass().toString(), true);
-
-		for (Base b : botState.baseManager) {
-			if (b.commandCenter != null) {
-				int x = b.commandCenter.getX() - 32 * 2;
-				int y = b.commandCenter.getY() - 32 * 2;
-				game.drawBox(x, y, x + 32 * 4, y + 32 * 4, BWColor.TEAL, false,
-						false);
-				game.drawText(x + 5, y + 5, "Workers: " + b.workers.size(),
-						false);
-				game.drawText(x + 5, y + 15,
-						"Mineral Fields: " + b.minerals.size(), false);
-			}
-			for (Resource r : b.minerals.values()) {
-				game.drawText(r.getX() - 8, r.getY() - 8,
-						String.valueOf(r.getNumGatherers()), false);
-			}
-		}
+		game.drawDebug();
 		/*
 		 * for (Unit u : game.getMyUnits()) { if (u.getTypeID() ==
 		 * UnitTypes.Terran_Wraith.ordinal()) { game.drawCircle(u.getX(),

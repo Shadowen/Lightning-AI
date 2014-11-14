@@ -2,12 +2,14 @@ package javabot.botstate;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import javabot.datastructure.Base;
 import javabot.datastructure.BaseManager;
 import javabot.datastructure.BuildManager;
-import javabot.datastructure.GameHandler;
 import javabot.datastructure.Resource;
 import javabot.datastructure.Worker;
+import javabot.gamestructure.DebugEngine;
+import javabot.gamestructure.GameHandler;
 import javabot.model.BaseLocation;
 import javabot.model.Unit;
 import javabot.types.UnitType.UnitTypes;
@@ -15,10 +17,7 @@ import javabot.types.UnitType.UnitTypes;
 public class FirstFrameState extends BotState {
 
 	public FirstFrameState(GameHandler igame) {
-		super();
-		game = igame;
-		baseManager = new BaseManager(game.getSelf().getID());
-		buildManager = new BuildManager();
+		super(igame);
 	}
 
 	@Override

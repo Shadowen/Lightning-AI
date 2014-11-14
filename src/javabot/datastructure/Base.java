@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javabot.gamestructure.GameHandler;
 import javabot.model.*;
 import javabot.types.*;
 import javabot.types.OrderType.OrderTypeTypes;

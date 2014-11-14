@@ -8,7 +8,9 @@ import java.util.Set;
 import javabot.datastructure.Base;
 import javabot.datastructure.BaseManager;
 import javabot.datastructure.BuildManager;
-import javabot.datastructure.GameHandler;
+import javabot.gamestructure.DebugEngine;
+import javabot.gamestructure.DebugModule;
+import javabot.gamestructure.GameHandler;
 
 public abstract class BotState {
 	public GameHandler game;
@@ -16,7 +18,17 @@ public abstract class BotState {
 	public BuildManager buildManager;
 
 	// Constructor used for creating a new BotState
-	protected BotState() {
+	protected BotState(GameHandler igame) {
+		game = igame;
+		baseManager = new BaseManager(game.getSelf().getID(), game);
+		buildManager = new BuildManager(game);
+
+		game.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				game.drawText(5, 5, BotState.this.getClass().toString(), true);
+			}
+		});
 	}
 
 	// Constructor for moving from one state to another
