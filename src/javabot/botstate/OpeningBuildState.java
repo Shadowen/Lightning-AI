@@ -28,7 +28,7 @@ public class OpeningBuildState extends BotState {
 			// Train SCVS if necessary
 			if (b.workers.size() < b.getMineralCount() * 2) {
 				if (game.getSelf().getMinerals() >= 50
-						&& b.commandCenter.getTrainingQueueSize() < 1) {
+						&& b.commandCenter.getTrainingQueueSize() == 0) {
 					game.train(b.commandCenter.getID(),
 							UnitTypes.Terran_SCV.ordinal());
 				}
@@ -50,6 +50,7 @@ public class OpeningBuildState extends BotState {
 						UnitTypes.Terran_Supply_Depot);
 			}
 		}
+
 		// Attempt to build the next building
 		if (toBuild != null) {
 			// If we have the minerals and gas
@@ -92,16 +93,7 @@ public class OpeningBuildState extends BotState {
 
 	public BotState unitDiscover(int unitID) {
 		Unit u = game.getUnit(unitID);
-		if (u.getTypeID() == UnitTypes.Resource_Mineral_Field.ordinal()) {
-			Base base = baseManager.getClosestBase(u.getX(), u.getY());
-			base.minerals.put(u.getID(), new Resource(u));
-			game.sendText("Minerals found at (" + u.getX() + "," + u.getY()
-					+ ")");
-		} else if (u.getTypeID() == UnitTypes.Resource_Vespene_Geyser.ordinal()) {
-			Base base = baseManager.getClosestBase(u.getX(), u.getY());
-			base.gas.put(u.getID(), new Resource(u));
-			game.sendText("Gas found at (" + u.getX() + "," + u.getY() + ")");
-		}
+
 		return this;
 	}
 
