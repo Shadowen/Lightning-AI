@@ -3,6 +3,8 @@ package javabot.gamestructure;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JFrame;
+
 import javabot.util.BWColor;
 
 public class DebugEngine {

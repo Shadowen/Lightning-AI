@@ -1,5 +1,6 @@
 package javabot.botstate;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -8,10 +9,14 @@ import java.util.Set;
 import javabot.datastructure.Base;
 import javabot.datastructure.BaseManager;
 import javabot.datastructure.BuildManager;
+import javabot.datastructure.BuildingPlan;
 import javabot.gamestructure.DebugEngine;
 import javabot.gamestructure.DebugModule;
 import javabot.gamestructure.Debuggable;
 import javabot.gamestructure.GameHandler;
+import javabot.model.Unit;
+import javabot.types.UnitType;
+import javabot.types.UnitType.UnitTypes;
 
 public abstract class BotState implements Debuggable {
 	public GameHandler game;
@@ -48,6 +53,76 @@ public abstract class BotState implements Debuggable {
 
 	public BotState unitDiscover(int unitID) {
 		return this;
+	}
+
+	protected void autoEconomy() {
+		for (Base b : baseManager.getMyBases()) {
+			b.gatherResources();
+
+			// Train SCVS if necessary
+			// This can't go in the build queue since it is specific to a
+			// command center!
+			if (b.getWorkerCount() < b.getMineralCount() * 2) {
+				if (game.getSelf().getMinerals() >= 50
+						&& b.commandCenter.getTrainingQueueSize() == 0) {
+					game.train(b.commandCenter.getID(),
+							UnitTypes.Terran_SCV.ordinal());
+				}
+			}
+		}
+	}
+
+	protected void autoSupplies() {
+		// Add supply depots if necessary
+		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 4) {
+			// Check that it's not already in the queue
+			if (buildManager.getToBuild() == null
+					|| !buildManager
+							.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
+				Point location = game.getBuildLocation(
+						baseManager.getMain().location.getX(),
+						baseManager.getMain().location.getY(),
+						UnitTypes.Terran_Supply_Depot);
+				buildManager.addBuilding(location,
+						UnitTypes.Terran_Supply_Depot);
+			}
+		}
+	}
+
+	protected void autoBuild() {
+		BuildingPlan toBuild = buildManager.getToBuild();
+		// Attempt to build the next building
+		if (toBuild != null) {
+			// If we have the minerals and gas
+			if (game.getSelf().getMinerals() > game.getUnitType(
+					toBuild.getTypeID()).getMineralPrice()
+					&& game.getSelf().getGas() >= game.getUnitType(
+							toBuild.getTypeID()).getGasPrice()) {
+				// If it has a builder, tell them to hurry up!
+				if (toBuild.hasBuilder()) {
+					toBuild.builder.build(toBuild);
+				} else {
+					// If it isn't being built yet
+					baseManager.getBuilder().build(toBuild);
+				}
+			}
+		}
+	}
+
+	protected void autoTrain() {
+		UnitTypes toTrain = buildManager.getToTrain();
+		if (toTrain != null) {
+			int trainFrom = game.getUnitType(toTrain.ordinal())
+					.getWhatBuildID();
+
+			for (Unit u : game.getMyUnits()) {
+				if (u.getTypeID() == trainFrom && u.getTrainingQueueSize() == 0) {
+					game.train(u.getID(), toTrain.ordinal());
+					buildManager.removeUnitFromQueue(toTrain);
+					break;
+				}
+			}
+		}
 	}
 
 	@Override

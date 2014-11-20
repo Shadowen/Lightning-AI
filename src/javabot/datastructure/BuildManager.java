@@ -16,10 +16,12 @@ import javabot.util.BWColor;
 public class BuildManager implements Debuggable {
 	private GameHandler game;
 	private Queue<BuildingPlan> buildingQueue;
+	private Queue<UnitTypes> unitQueue;
 
 	public BuildManager(GameHandler igame) {
 		game = igame;
 		buildingQueue = new ArrayDeque<BuildingPlan>();
+		unitQueue = new ArrayDeque<UnitTypes>();
 	}
 
 	public void addBuilding(BuildingPlan buildingType) {
@@ -38,8 +40,8 @@ public class BuildManager implements Debuggable {
 
 	}
 
-	public void addUnit() {
-
+	public void addUnit(UnitTypes terranMarine) {
+		unitQueue.add(terranMarine);
 	}
 
 	public BuildingPlan getToBuild() {
@@ -60,6 +62,7 @@ public class BuildManager implements Debuggable {
 			}
 		} else {
 			// Go through planned units
+
 		}
 	}
 
@@ -67,8 +70,17 @@ public class BuildManager implements Debuggable {
 
 	}
 
-	public void getToTrain() {
+	public UnitTypes getToTrain() {
+		return unitQueue.peek();
+	}
 
+	public boolean buildQueueContains(UnitTypes unitType) {
+		for (BuildingPlan plan : buildingQueue) {
+			if (plan.getTypeID() == unitType.ordinal()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -91,16 +103,18 @@ public class BuildManager implements Debuggable {
 				}
 				game.drawText(5, 20, "Building Queue: " + buildQueueString,
 						true);
+				String trainingQueueString = "";
+				for (Unit u : unitQueue.toArray(new Unit[0])) {
+					trainingQueueString += game.getUnitType(u.getTypeID())
+							.toString();
+				}
+				game.drawText(5, 40, "Training Queue: " + trainingQueueString,
+						true);
 			}
 		});
 	}
 
-	public boolean buildQueueContains(UnitTypes unitType) {
-		for (BuildingPlan plan : buildingQueue) {
-			if (plan.getTypeID() == unitType.ordinal()) {
-				return true;
-			}
-		}
-		return false;
+	public void removeUnitFromQueue(UnitTypes toTrain) {
+		unitQueue.remove(toTrain);
 	}
 }

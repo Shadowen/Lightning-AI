@@ -22,34 +22,12 @@ public class OpeningBuildState extends BotState {
 
 	@Override
 	public BotState act() {
-		for (Base b : baseManager.getMyBases()) {
-			b.gatherResources();
+		autoEconomy();
+		autoSupplies();
+		autoBuild();
+		autoTrain();
 
-			// Train SCVS if necessary
-			if (b.getWorkerCount() < b.getMineralCount() * 2) {
-				if (game.getSelf().getMinerals() >= 50
-						&& b.commandCenter.getTrainingQueueSize() == 0) {
-					game.train(b.commandCenter.getID(),
-							UnitTypes.Terran_SCV.ordinal());
-				}
-			}
-		}
-
-		BuildingPlan toBuild = buildManager.getToBuild();
-		// Add supply depots if necessary
-		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 4) {
-			// Check that it's not already in the queue
-			if (buildManager.getToBuild() == null
-					|| !buildManager
-							.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
-				Point location = game.getBuildLocation(
-						baseManager.getMain().location.getX(),
-						baseManager.getMain().location.getY(),
-						UnitTypes.Terran_Supply_Depot);
-				buildManager.addBuilding(location,
-						UnitTypes.Terran_Supply_Depot);
-			}
-		}
+		
 
 		// Add barracks at 11 supply
 		if (game.getSelf().getSupplyUsed() / 2 == 11) {
@@ -62,24 +40,6 @@ public class OpeningBuildState extends BotState {
 						baseManager.getMain().location.getY(),
 						UnitTypes.Terran_Barracks);
 				buildManager.addBuilding(location, UnitTypes.Terran_Barracks);
-			}
-		} else if (game.getSelf().getSupplyUsed() == 13) {
-		}
-
-		// Attempt to build the next building
-		if (toBuild != null) {
-			// If we have the minerals and gas
-			if (game.getSelf().getMinerals() > game.getUnitType(
-					toBuild.getTypeID()).getMineralPrice()
-					&& game.getSelf().getGas() >= game.getUnitType(
-							toBuild.getTypeID()).getGasPrice()) {
-				// If it has a builder, tell them to hurry up!
-				if (toBuild.hasBuilder()) {
-					toBuild.builder.build(toBuild);
-				} else {
-					// If it isn't being built yet
-					baseManager.getBuilder().build(toBuild);
-				}
 			}
 		}
 
@@ -110,6 +70,8 @@ public class OpeningBuildState extends BotState {
 			base.addWorker(unitID, u);
 			game.sendText("Added worker to base!");
 			game.sendText("Worker found at (" + u.getX() + "," + u.getY() + ")");
+		} else if (typeID == UnitTypes.Terran_Barracks.ordinal()) {
+			return new MassMarineState(this);
 		}
 
 		return this;

@@ -185,7 +185,7 @@ public class JavaBot implements BWAPIEventListener {
 				unitComplete(u.getKey());
 			}
 		}
-		game.drawText(5, 40, "unitsUnderConstruction: " + uucString, true);
+		game.drawText(5, 60, "unitsUnderConstruction: " + uucString, true);
 		game.drawText(1000, 5, "Supply: " + game.getSelf().getSupplyUsed()
 				+ "/" + game.getSelf().getSupplyTotal(), true);
 
