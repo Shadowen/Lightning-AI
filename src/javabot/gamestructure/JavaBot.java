@@ -3,7 +3,10 @@ package javabot.gamestructure;
 import java.awt.Color;
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -22,8 +25,8 @@ import javabot.util.BWColor;
 public class JavaBot implements BWAPIEventListener {
 
 	private GameHandler game;
+	private Hashtable<Integer, Unit> unitsUnderConstruction;
 
-	// Some miscellaneous variables. Feel free to add yours.
 	private BotState botState;
 
 	public static void main(String[] args) {
@@ -67,113 +70,132 @@ public class JavaBot implements BWAPIEventListener {
 
 		// ==========================================================
 		// Initialize
+		unitsUnderConstruction = new Hashtable<Integer, Unit>();
+
 		botState = new FirstFrameState(game);
+		botState.registerDebugFunctions(game);
 
 		mapWidth = game.getMap().getWidth();
 		mapHeight = game.getMap().getHeight();
 		threatMap = new double[mapHeight][mapWidth];
 
-		Timer t = new Timer();
-
-		t.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				// Reset threat counter
-				for (int x = 0; x < 128; x++) {
-					for (int y = 0; y < 128; y++) {
-						threatMap[x][y] = 0;
-					}
-				}
-
-				// Count the threats
-				for (Unit u : game.getEnemyUnits()) {
-					// Get the x and y grid point coordinates
-					int x = u.getX() / 32;
-					int y = u.getY() / 32;
-					// Get the ground weapon's range
-					double radius = game
-							.getWeaponType(
-									game.getUnitType(u.getTypeID())
-											.getGroundWeaponID()).getMaxRange() / 32 + 2;
-					double threat = 1;
-					ArrayList<Point> threatPoints = generateCircleCoordinates(
-							x, y, radius);
-					for (Point p : threatPoints) {
-						threatMap[p.x][p.y] += threat
-								* (radius - p.distance(x, y)) / radius;
-					}
-				}
-			}
-
-			private ArrayList<Point> generateCircleCoordinates(int cx, int cy,
-					double r) {
-				ArrayList<Point> points = new ArrayList<Point>();
-				for (int x = (int) Math.floor(-r); x < r; x++) {
-					int y1 = (int) Math.round(Math.sqrt(Math.pow(r, 2)
-							- Math.pow(x, 2)));
-					int y2 = -y1;
-					for (int y = y2; y < y1; y++) {
-						if (x + cx > 0 && x + cx < mapWidth && y + cy > 0
-								&& y + cy < mapHeight) {
-							points.add(new Point(x + cx, y + cy));
-						}
-					}
-				}
-				return points;
-			}
-
-		}, 1000, 1000);
+		// Timer t = new Timer();
+		//
+		// t.scheduleAtFixedRate(new TimerTask() {
+		// @Override
+		// public void run() {
+		// // Reset threat counter
+		// for (int x = 0; x < 128; x++) {
+		// for (int y = 0; y < 128; y++) {
+		// threatMap[x][y] = 0;
+		// }
+		// }
+		//
+		// // Count the threats
+		// for (Unit u : game.getEnemyUnits()) {
+		// // Get the x and y grid point coordinates
+		// int x = u.getX() / 32;
+		// int y = u.getY() / 32;
+		// // Get the ground weapon's range
+		// double radius = game
+		// .getWeaponType(
+		// game.getUnitType(u.getTypeID())
+		// .getGroundWeaponID()).getMaxRange() / 32 + 2;
+		// double threat = 1;
+		// ArrayList<Point> threatPoints = generateCircleCoordinates(
+		// x, y, radius);
+		// for (Point p : threatPoints) {
+		// threatMap[p.x][p.y] += threat
+		// * (radius - p.distance(x, y)) / radius;
+		// }
+		// }
+		// }
+		//
+		// private ArrayList<Point> generateCircleCoordinates(int cx, int cy,
+		// double r) {
+		// ArrayList<Point> points = new ArrayList<Point>();
+		// for (int x = (int) Math.floor(-r); x < r; x++) {
+		// int y1 = (int) Math.round(Math.sqrt(Math.pow(r, 2)
+		// - Math.pow(x, 2)));
+		// int y2 = -y1;
+		// for (int y = y2; y < y1; y++) {
+		// if (x + cx > 0 && x + cx < mapWidth && y + cy > 0
+		// && y + cy < mapHeight) {
+		// points.add(new Point(x + cx, y + cy));
+		// }
+		// }
+		// }
+		// return points;
+		// }
+		//
+		// }, 1000, 1000);
 	}
 
-	private Point retreat(int x, int y, int distance) {
-		if (distance <= 0) {
-			return new Point(x, y);
-		}
-
-		Point bestRetreat = new Point();
-
-		// Grid coordinates of x and y
-		int gx = (int) Math.round(x / 32);
-		int gy = (int) Math.round(y / 32);
-
-		double minValue = Double.MAX_VALUE;
-		double threatMapValue = threatMap[gx + 1][gy + 1];
-		if (threatMapValue < minValue) {
-			bestRetreat.x = x + 32;
-			bestRetreat.y = y + 32;
-			minValue = threatMapValue;
-		}
-		threatMapValue = threatMap[gx + 1][gy - 1];
-		if (threatMapValue < minValue) {
-			bestRetreat.x = x + 32;
-			bestRetreat.y = y - 32;
-			minValue = threatMapValue;
-		}
-		threatMapValue = threatMap[gx - 1][gy + 1];
-		if (threatMapValue < minValue) {
-			bestRetreat.x = x - 32;
-			bestRetreat.y = y + 32;
-			minValue = threatMapValue;
-		}
-		threatMapValue = threatMap[gx - 1][gy - 1];
-		if (threatMapValue < minValue) {
-			bestRetreat.x = x - 32;
-			bestRetreat.y = y - 32;
-			minValue = threatMapValue;
-		}
-
-		return retreat(bestRetreat.x, bestRetreat.y, distance - 32);
-	}
+	// private Point retreat(int x, int y, int distance) {
+	// if (distance <= 0) {
+	// return new Point(x, y);
+	// }
+	//
+	// Point bestRetreat = new Point();
+	//
+	// // Grid coordinates of x and y
+	// int gx = (int) Math.round(x / 32);
+	// int gy = (int) Math.round(y / 32);
+	//
+	// double minValue = Double.MAX_VALUE;
+	// double threatMapValue = threatMap[gx + 1][gy + 1];
+	// if (threatMapValue < minValue) {
+	// bestRetreat.x = x + 32;
+	// bestRetreat.y = y + 32;
+	// minValue = threatMapValue;
+	// }
+	// threatMapValue = threatMap[gx + 1][gy - 1];
+	// if (threatMapValue < minValue) {
+	// bestRetreat.x = x + 32;
+	// bestRetreat.y = y - 32;
+	// minValue = threatMapValue;
+	// }
+	// threatMapValue = threatMap[gx - 1][gy + 1];
+	// if (threatMapValue < minValue) {
+	// bestRetreat.x = x - 32;
+	// bestRetreat.y = y + 32;
+	// minValue = threatMapValue;
+	// }
+	// threatMapValue = threatMap[gx - 1][gy - 1];
+	// if (threatMapValue < minValue) {
+	// bestRetreat.x = x - 32;
+	// bestRetreat.y = y - 32;
+	// minValue = threatMapValue;
+	// }
+	//
+	// return retreat(bestRetreat.x, bestRetreat.y, distance - 32);
+	// }
 
 	// Method called on every frame (approximately 30x every second).
 	public void gameUpdate() {
+		// Check if any units have completed
+		String uucString = "";
+		for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
+			uucString += game.getUnitType(u.getValue().getTypeID()).getName()
+					+ ", ";
+			if (u.getValue().isCompleted()) {
+				unitsUnderConstruction.remove(u.getKey());
+				game.sendText("Unit completed: "
+						+ game.getUnitType(u.getValue().getTypeID()).getName());
+			}
+		}
+		game.drawText(5, 40, "unitsUnderConstruction: " + uucString, true);
+		game.drawText(1000, 5, "Supply: " + game.getSelf().getSupplyUsed() + "/"
+				+ game.getSelf().getSupplyTotal(), true);
+
+		// Allow the bot to act
 		try {
 			botState = botState.act();
-			// Draw debug information on screen
-			drawDebugInfo();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		// Draw debug information on screen
+		game.drawDebug();
 
 		/*
 		 * for (Unit u : game.getMyUnits()) { if (u.getTypeID() ==
@@ -225,6 +247,7 @@ public class JavaBot implements BWAPIEventListener {
 
 	public void unitCreate(int unitID) {
 		try {
+			unitsUnderConstruction.put(unitID, game.getUnit(unitID));
 			botState = botState.unitCreate(unitID);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -233,6 +256,10 @@ public class JavaBot implements BWAPIEventListener {
 
 	public void unitDestroy(int unitID) {
 		try {
+			if (unitsUnderConstruction.containsKey(unitID)) {
+				unitsUnderConstruction.remove(unitID);
+				game.sendText("Unit under construction destroyed!");
+			}
 			botState = botState.unitDestroy(unitID);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -260,102 +287,6 @@ public class JavaBot implements BWAPIEventListener {
 	}
 
 	public void keyPressed(int keyCode) {
-	}
-
-	// Returns the Point object representing the suitable build tile position
-	// for a given building type near specified pixel position (or Point(-1,-1)
-	// if not found)
-	// (builderID should be our worker)
-	public static Point getBuildTile(GameHandler game, int builderID,
-			int buildingTypeID, int x, int y) {
-		Point ret = new Point(-1, -1);
-		int maxDist = 3;
-		int stopDist = 40;
-		int tileX = x / 32;
-		int tileY = y / 32;
-
-		// Refinery, Assimilator, Extractor
-		if (game.getUnitType(buildingTypeID).isRefinery()) {
-			for (Unit n : game.getNeutralUnits()) {
-				if ((n.getTypeID() == UnitTypes.Resource_Vespene_Geyser
-						.ordinal())
-						&& (Math.abs(n.getTileX() - tileX) < stopDist)
-						&& (Math.abs(n.getTileY() - tileY) < stopDist)) {
-					return new Point(n.getTileX(), n.getTileY());
-				}
-			}
-		}
-
-		while ((maxDist < stopDist) && (ret.x == -1)) {
-			for (int i = tileX - maxDist; i <= tileX + maxDist; i++) {
-				for (int j = tileY - maxDist; j <= tileY + maxDist; j++) {
-					if (game.canBuildHere(builderID, i, j, buildingTypeID,
-							false)) {
-						// units that are blocking the tile
-						boolean unitsInWay = false;
-						for (Unit u : game.getAllUnits()) {
-							if (u.getID() == builderID) {
-								continue;
-							}
-							if ((Math.abs(u.getTileX() - i) < 4)
-									&& (Math.abs(u.getTileY() - j) < 4)) {
-								unitsInWay = true;
-							}
-						}
-						if (!unitsInWay) {
-							ret.x = i;
-							ret.y = j;
-							return ret;
-						}
-						// creep for Zerg (this may not be needed - not tested
-						// yet)
-						if (game.getUnitType(buildingTypeID).isRequiresCreep()) {
-							boolean creepMissing = false;
-							for (int k = i; k <= i
-									+ game.getUnitType(buildingTypeID)
-											.getTileWidth(); k++) {
-								for (int l = j; l <= j
-										+ game.getUnitType(buildingTypeID)
-												.getTileHeight(); l++) {
-									if (!game.hasCreep(k, l)) {
-										creepMissing = true;
-									}
-									break;
-								}
-							}
-							if (creepMissing)
-								continue;
-						}
-						// psi power for Protoss (this seems to work out of the
-						// box)
-						if (game.getUnitType(buildingTypeID).isRequiresPsi()) {
-						}
-					}
-				}
-			}
-			maxDist += 2;
-		}
-
-		if (ret.x == -1) {
-			game.printText("Unable to find suitable build position for "
-					+ game.getUnitType(buildingTypeID).getName());
-		}
-		return ret;
-	}
-
-	// Draws debug information on the screen.
-	// Reimplement this function however you want.
-	public void drawDebugInfo() {
-		game.drawDebug();
-		/*
-		 * for (Unit u : game.getMyUnits()) { if (u.getTypeID() ==
-		 * UnitTypes.Terran_Wraith.ordinal()) { game.drawCircle(u.getX(),
-		 * u.getY(), 12, BWColor.GREEN, true, false); game.drawLine(u.getX(),
-		 * u.getY() + 10, u.getX() + u.getGroundWeaponCooldown(), u.getY() + 10,
-		 * BWColor.RED, false); game.drawCircle( u.getX(), u.getY(),
-		 * game.getWeaponType( game.getUnitType(u.getTypeID())
-		 * .getAirWeaponID()).getMaxRange(), BWColor.RED, false, false); } }
-		 */
 	}
 
 	private double[][] threatMap;

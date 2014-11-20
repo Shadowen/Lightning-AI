@@ -9,6 +9,7 @@ import javabot.datastructure.BuildManager;
 import javabot.datastructure.Resource;
 import javabot.datastructure.Worker;
 import javabot.gamestructure.DebugEngine;
+import javabot.gamestructure.Debuggable;
 import javabot.gamestructure.GameHandler;
 import javabot.model.BaseLocation;
 import javabot.model.Unit;
@@ -62,8 +63,7 @@ public class FirstFrameState extends BotState {
 						+ ")");
 				closestBase.gas.put(u.getID(), new Resource(u));
 			} else if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
-				closestBase.workers.put(u.getID(), new Worker(game, u,
-						closestBase));
+				closestBase.addWorker(u.getID(), u);
 				game.sendText("SCV found");
 			}
 		}

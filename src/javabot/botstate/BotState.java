@@ -10,9 +10,10 @@ import javabot.datastructure.BaseManager;
 import javabot.datastructure.BuildManager;
 import javabot.gamestructure.DebugEngine;
 import javabot.gamestructure.DebugModule;
+import javabot.gamestructure.Debuggable;
 import javabot.gamestructure.GameHandler;
 
-public abstract class BotState {
+public abstract class BotState implements Debuggable {
 	public GameHandler game;
 	public BaseManager baseManager;
 	public BuildManager buildManager;
@@ -22,13 +23,6 @@ public abstract class BotState {
 		game = igame;
 		baseManager = new BaseManager(game.getSelf().getID(), game);
 		buildManager = new BuildManager(game);
-
-		game.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				game.drawText(5, 5, BotState.this.getClass().toString(), true);
-			}
-		});
 	}
 
 	// Constructor for moving from one state to another
@@ -50,5 +44,19 @@ public abstract class BotState {
 
 	public BotState unitDiscover(int unitID) {
 		return this;
+	}
+
+	@Override
+	public void registerDebugFunctions(GameHandler g) {
+		// Which botstate am I in?
+		g.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				game.drawText(5, 5, this.getClass().toString(), true);
+			}
+		});
+
+		buildManager.registerDebugFunctions(g);
+		baseManager.registerDebugFunctions(g);
 	}
 }

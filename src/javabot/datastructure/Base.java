@@ -1,27 +1,25 @@
 package javabot.datastructure;
 
-import java.awt.Point;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
-
+import javabot.gamestructure.DebugEngine;
+import javabot.gamestructure.DebugModule;
 import javabot.gamestructure.GameHandler;
 import javabot.model.*;
-import javabot.types.*;
-import javabot.types.OrderType.OrderTypeTypes;
-import javabot.types.UnitType.UnitTypes;
+import javabot.util.BWColor;
 
 public class Base {
+	private GameHandler game;
+
 	public java.util.Map<Integer, Resource> minerals;
 	public java.util.Map<Integer, Resource> gas;
-	public java.util.Map<Integer, Worker> workers;
+	private java.util.Map<Integer, Worker> workers;
 	public Unit commandCenter;
 	public BaseLocation location;
 
-	public Base(GameHandler game, BaseLocation l) {
+	public Base(GameHandler g, BaseLocation l) {
+		game = g;
+
 		workers = new HashMap<Integer, Worker>();
 		location = l;
 
@@ -41,7 +39,7 @@ public class Base {
 		return minerals.size();
 	}
 
-	public void gatherResources(GameHandler game) {
+	public void gatherResources() {
 		// Idle workers
 		for (Entry<Integer, Worker> worker : workers.entrySet()) {
 			if (worker.getValue().isIdle()) {
@@ -85,5 +83,34 @@ public class Base {
 				worker.getValue().mine(mineral);
 			}
 		}
+	}
+
+	public Worker getBuilder() {
+		Worker u = null;
+		for (Entry<Integer, Worker> w : workers.entrySet()) {
+			if (!w.getValue().isBuilding()) {
+				u = w.getValue();
+			}
+		}
+		return u;
+	}
+
+	public int getWorkerCount() {
+		return workers.size();
+	}
+
+	public void addWorker(int unitID, Unit unit) {
+		workers.put(unitID, new Worker(game, unit));
+	}
+
+	public boolean removeWorker(int unitID) {
+		// That worker actually does belong to this base!
+		if (workers.containsKey(unitID)) {
+			workers.get(unitID).stopMining();
+			workers.remove(unitID);
+			return true;
+		}
+		// That worker does not belong to this base
+		return false;
 	}
 }

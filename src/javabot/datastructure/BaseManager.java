@@ -8,11 +8,12 @@ import java.util.Set;
 
 import javabot.gamestructure.DebugEngine;
 import javabot.gamestructure.DebugModule;
+import javabot.gamestructure.Debuggable;
 import javabot.gamestructure.GameHandler;
 import javabot.model.Unit;
 import javabot.util.BWColor;
 
-public class BaseManager implements Iterable<Base> {
+public class BaseManager implements Iterable<Base>, Debuggable {
 	private Set<Base> bases;
 	private Base main;
 
@@ -22,31 +23,6 @@ public class BaseManager implements Iterable<Base> {
 		bases = new HashSet<Base>();
 
 		selfPlayerID = myPlayerID;
-
-		game.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				engine.drawText(main.location.getX(), main.location.getY(),
-						"Main", false);
-
-				for (Base b : bases) {
-					if (b.commandCenter != null) {
-						int x = b.commandCenter.getX() - 32 * 2;
-						int y = b.commandCenter.getY() - 32 * 2;
-						engine.drawBox(x, y, x + 32 * 4, y + 32 * 4,
-								BWColor.TEAL, false, false);
-						engine.drawText(x + 5, y + 5,
-								"Workers: " + b.workers.size(), false);
-						engine.drawText(x + 5, y + 15, "Mineral Fields: "
-								+ b.minerals.size(), false);
-					}
-					for (Resource r : b.minerals.values()) {
-						engine.drawText(r.getX() - 8, r.getY() - 8,
-								String.valueOf(r.getNumGatherers()), false);
-					}
-				}
-			}
-		});
 	}
 
 	public void addBase(Base b) {
@@ -91,10 +67,9 @@ public class BaseManager implements Iterable<Base> {
 
 	public Worker getBuilder() {
 		for (Base b : bases) {
-			for (Entry<Integer, Worker> u : b.workers.entrySet()) {
-				if (!u.getValue().isBuilding()) {
-					return u.getValue();
-				}
+			Worker u = b.getBuilder();
+			if (u != null) {
+				return u;
 			}
 		}
 		return null;
@@ -112,5 +87,33 @@ public class BaseManager implements Iterable<Base> {
 
 	public Base getMain() {
 		return main;
+	}
+
+	@Override
+	public void registerDebugFunctions(GameHandler g) {
+		g.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				engine.drawText(main.location.getX(), main.location.getY(),
+						"Main", false);
+
+				for (Base b : bases) {
+					if (b.commandCenter != null) {
+						int x = b.commandCenter.getX() - 32 * 2;
+						int y = b.commandCenter.getY() - 32 * 2;
+						engine.drawBox(x, y, x + 32 * 4, y + 32 * 4,
+								BWColor.TEAL, false, false);
+						engine.drawText(x + 5, y + 5,
+								"Workers: " + b.getWorkerCount(), false);
+						engine.drawText(x + 5, y + 15, "Mineral Fields: "
+								+ b.minerals.size(), false);
+					}
+					for (Resource r : b.minerals.values()) {
+						engine.drawText(r.getX() - 8, r.getY() - 8,
+								String.valueOf(r.getNumGatherers()), false);
+					}
+				}
+			}
+		});
 	}
 }

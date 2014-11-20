@@ -6,7 +6,6 @@ import java.util.List;
 import javabot.util.BWColor;
 
 public class DebugEngine {
-
 	private GameHandler game;
 	private List<DebugModule> debugModules;
 

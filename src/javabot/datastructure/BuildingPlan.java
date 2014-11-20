@@ -7,12 +7,16 @@ public class BuildingPlan {
 	private UnitTypes type;
 	private int tx;
 	private int ty;
-	private Worker builder;
+	public Worker builder;
 
 	public BuildingPlan(int itx, int ity, UnitTypes itype) {
 		type = itype;
 		tx = itx;
 		ty = ity;
+	}
+
+	public String getTypeName() {
+		return type.toString();
 	}
 
 	public int getTypeID() {

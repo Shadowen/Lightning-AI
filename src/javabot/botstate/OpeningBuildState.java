@@ -23,10 +23,10 @@ public class OpeningBuildState extends BotState {
 	@Override
 	public BotState act() {
 		for (Base b : baseManager.getMyBases()) {
-			b.gatherResources(game);
+			b.gatherResources();
 
 			// Train SCVS if necessary
-			if (b.workers.size() < b.getMineralCount() * 2) {
+			if (b.getWorkerCount() < b.getMineralCount() * 2) {
 				if (game.getSelf().getMinerals() >= 50
 						&& b.commandCenter.getTrainingQueueSize() == 0) {
 					game.train(b.commandCenter.getID(),
@@ -37,11 +37,11 @@ public class OpeningBuildState extends BotState {
 
 		BuildingPlan toBuild = buildManager.getToBuild();
 		// Add supply depots if necessary
-		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 3) {
+		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 4) {
 			// Check that it's not already in the queue
 			if (buildManager.getToBuild() == null
-					|| buildManager.getToBuild().getTypeID() != UnitTypes.Terran_Supply_Depot
-							.ordinal()) {
+					|| !buildManager
+							.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
 				Point location = game.getBuildLocation(
 						baseManager.getMain().location.getX(),
 						baseManager.getMain().location.getY(),
@@ -51,6 +51,21 @@ public class OpeningBuildState extends BotState {
 			}
 		}
 
+		// Add barracks at 11 supply
+		if (game.getSelf().getSupplyUsed() / 2 == 11) {
+			// Check that it's not already in the queue
+			if (buildManager.getToBuild() == null
+					|| !buildManager
+							.buildQueueContains(UnitTypes.Terran_Barracks)) {
+				Point location = game.getBuildLocation(
+						baseManager.getMain().location.getX(),
+						baseManager.getMain().location.getY(),
+						UnitTypes.Terran_Barracks);
+				buildManager.addBuilding(location, UnitTypes.Terran_Barracks);
+			}
+		} else if (game.getSelf().getSupplyUsed() == 13) {
+		}
+
 		// Attempt to build the next building
 		if (toBuild != null) {
 			// If we have the minerals and gas
@@ -58,8 +73,11 @@ public class OpeningBuildState extends BotState {
 					toBuild.getTypeID()).getMineralPrice()
 					&& game.getSelf().getGas() >= game.getUnitType(
 							toBuild.getTypeID()).getGasPrice()) {
-				// If it isn't being built yet
-				if (!toBuild.hasBuilder()) {
+				// If it has a builder, tell them to hurry up!
+				if (toBuild.hasBuilder()) {
+					toBuild.builder.build(toBuild);
+				} else {
+					// If it isn't being built yet
 					baseManager.getBuilder().build(toBuild);
 				}
 			}
@@ -78,7 +96,7 @@ public class OpeningBuildState extends BotState {
 		if (typeID == UnitTypes.Terran_SCV.ordinal()) {
 			// Add new workers to nearest base
 			Base base = baseManager.getClosestBase(u.getX(), u.getY());
-			base.workers.put(unitID, new Worker(game, u, base));
+			base.addWorker(unitID, u);
 			game.sendText("Added worker to base!");
 			game.sendText("Worker found at (" + u.getX() + "," + u.getY() + ")");
 		} else if (typeID == UnitTypes.Terran_Command_Center.ordinal()) {
@@ -99,7 +117,7 @@ public class OpeningBuildState extends BotState {
 
 	public BotState unitDestroy(int unitID) {
 		for (Base b : baseManager) {
-			if (b.workers.remove(unitID) != null) {
+			if (b.removeWorker(unitID)) {
 				break;
 			}
 		}
