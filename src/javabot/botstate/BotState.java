@@ -38,6 +38,10 @@ public abstract class BotState implements Debuggable {
 		return this;
 	}
 
+	public BotState unitComplete(int unitID) {
+		return this;
+	}
+
 	public BotState unitDestroy(int unitID) {
 		return this;
 	}

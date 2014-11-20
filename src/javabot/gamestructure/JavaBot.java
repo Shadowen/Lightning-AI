@@ -179,14 +179,15 @@ public class JavaBot implements BWAPIEventListener {
 			uucString += game.getUnitType(u.getValue().getTypeID()).getName()
 					+ ", ";
 			if (u.getValue().isCompleted()) {
-				unitsUnderConstruction.remove(u.getKey());
 				game.sendText("Unit completed: "
 						+ game.getUnitType(u.getValue().getTypeID()).getName());
+				unitsUnderConstruction.remove(u.getKey());
+				unitComplete(u.getKey());
 			}
 		}
 		game.drawText(5, 40, "unitsUnderConstruction: " + uucString, true);
-		game.drawText(1000, 5, "Supply: " + game.getSelf().getSupplyUsed() + "/"
-				+ game.getSelf().getSupplyTotal(), true);
+		game.drawText(1000, 5, "Supply: " + game.getSelf().getSupplyUsed()
+				+ "/" + game.getSelf().getSupplyTotal(), true);
 
 		// Allow the bot to act
 		try {
@@ -249,6 +250,15 @@ public class JavaBot implements BWAPIEventListener {
 		try {
 			unitsUnderConstruction.put(unitID, game.getUnit(unitID));
 			botState = botState.unitCreate(unitID);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	// This event is triggered when a unit is finished building.
+	public void unitComplete(int unitID) {
+		try {
+			botState = botState.unitComplete(unitID);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
