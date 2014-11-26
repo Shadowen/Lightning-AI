@@ -17,6 +17,7 @@ import javabot.gamestructure.GameHandler;
 import javabot.model.Unit;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
+import javabot.util.BWColor;
 
 public abstract class BotState implements Debuggable {
 	public GameHandler game;
@@ -27,7 +28,7 @@ public abstract class BotState implements Debuggable {
 	protected BotState(GameHandler igame) {
 		game = igame;
 		baseManager = new BaseManager(game.getSelf().getID(), game);
-		buildManager = new BuildManager(game);
+		buildManager = new BuildManager(game, baseManager);
 	}
 
 	// Constructor for moving from one state to another
@@ -44,6 +45,8 @@ public abstract class BotState implements Debuggable {
 	}
 
 	public BotState unitComplete(int unitID) {
+		Unit u = game.getUnit(unitID);
+		buildManager.doneBuilding(u);
 		return this;
 	}
 
@@ -76,15 +79,8 @@ public abstract class BotState implements Debuggable {
 		// Add supply depots if necessary
 		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 4) {
 			// Check that it's not already in the queue
-			if (buildManager.getToBuild() == null
-					|| !buildManager
-							.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
-				Point location = game.getBuildLocation(
-						baseManager.getMain().location.getX(),
-						baseManager.getMain().location.getY(),
-						UnitTypes.Terran_Supply_Depot);
-				buildManager.addBuilding(location,
-						UnitTypes.Terran_Supply_Depot);
+			if (!buildManager.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
+				buildManager.addBuilding(UnitTypes.Terran_Supply_Depot);
 			}
 		}
 	}
@@ -132,6 +128,20 @@ public abstract class BotState implements Debuggable {
 			@Override
 			public void draw(DebugEngine engine) {
 				game.drawText(5, 5, this.getClass().toString(), true);
+
+				// for (int i = 0; i < game.getMap().getWidth(); i++) {
+				// for (int e = 0; e < game.getMap().getHeight(); e++) {
+				// if (game.isBuildable(i, e, true)) {
+				// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
+				// i * 32 + 16 + 5, e * 32 + 16 + 5,
+				// BWColor.GREEN, true, false);
+				// } else {
+				// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
+				// i * 32 + 16 + 5, e * 32 + 16 + 5,
+				// BWColor.RED, true, false);
+				// }
+				// }
+				// }
 			}
 		});
 

@@ -1,5 +1,6 @@
 package javabot.datastructure;
 
+import javabot.gamestructure.GameHandler;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
 
@@ -7,12 +8,16 @@ public class BuildingPlan {
 	private UnitTypes type;
 	private int tx;
 	private int ty;
+	private int theight;
+	private int twidth;
 	public Worker builder;
 
-	public BuildingPlan(int itx, int ity, UnitTypes itype) {
+	public BuildingPlan(GameHandler game, int itx, int ity, UnitTypes itype) {
 		type = itype;
 		tx = itx;
 		ty = ity;
+		theight = game.getUnitType(type.ordinal()).getTileHeight();
+		twidth = game.getUnitType(type.ordinal()).getTileWidth();
 	}
 
 	public String getTypeName() {
@@ -41,5 +46,13 @@ public class BuildingPlan {
 
 	public void setBuilder(Worker ibuilder) {
 		builder = ibuilder;
+	}
+
+	public int getWidth() {
+		return twidth;
+	}
+
+	public int getHeight() {
+		return theight;
 	}
 }

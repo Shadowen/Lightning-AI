@@ -26,6 +26,11 @@ public class DebugEngine {
 		debugModules.add(m);
 	}
 
+	public void drawLine(int x1, int y1, int x2, int y2, int color,
+			boolean screenCoords) {
+		game.drawLine(x1, y1, x2, y2, color, screenCoords);
+	}
+
 	public void drawBox(int left, int top, int right, int bottom, int color,
 			boolean fill, boolean screenCoords) {
 		game.drawBox(left, top, right, bottom, color, fill, screenCoords);

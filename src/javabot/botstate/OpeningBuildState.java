@@ -27,19 +27,11 @@ public class OpeningBuildState extends BotState {
 		autoBuild();
 		autoTrain();
 
-		
-
 		// Add barracks at 11 supply
 		if (game.getSelf().getSupplyUsed() / 2 == 11) {
 			// Check that it's not already in the queue
-			if (buildManager.getToBuild() == null
-					|| !buildManager
-							.buildQueueContains(UnitTypes.Terran_Barracks)) {
-				Point location = game.getBuildLocation(
-						baseManager.getMain().location.getX(),
-						baseManager.getMain().location.getY(),
-						UnitTypes.Terran_Barracks);
-				buildManager.addBuilding(location, UnitTypes.Terran_Barracks);
+			if (!buildManager.buildQueueContains(UnitTypes.Terran_Barracks)) {
+				buildManager.addBuilding(UnitTypes.Terran_Barracks);
 			}
 		}
 
@@ -59,8 +51,8 @@ public class OpeningBuildState extends BotState {
 	}
 
 	public BotState unitComplete(int unitID) {
+		super.unitComplete(unitID);
 		Unit u = game.getUnit(unitID);
-		buildManager.doneBuilding(u);
 
 		int typeID = u.getTypeID();
 
@@ -68,8 +60,6 @@ public class OpeningBuildState extends BotState {
 			// Add new workers to nearest base
 			Base base = baseManager.getClosestBase(u.getX(), u.getY());
 			base.addWorker(unitID, u);
-			game.sendText("Added worker to base!");
-			game.sendText("Worker found at (" + u.getX() + "," + u.getY() + ")");
 		} else if (typeID == UnitTypes.Terran_Barracks.ordinal()) {
 			return new MassMarineState(this);
 		}

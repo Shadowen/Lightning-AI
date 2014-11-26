@@ -68,63 +68,6 @@ public class GameHandler extends JNIBWAPI {
 		return Point.distance(w.getX(), w.getY(), r.getX(), r.getY());
 	}
 
-	// Finds a nearby valid build location
-	public Point getBuildLocation(int x, int y, UnitTypes toBuild) {
-		// Returns the Point object representing the suitable build tile
-		// position
-		// for a given building type near specified pixel position (or
-		// Point(-1,-1) if not found)
-		Point ret = new Point(-1, -1);
-		int maxDist = 3;
-		int stopDist = 40;
-		int tileX = x / 32;
-		int tileY = y / 32;
-
-		while ((maxDist < stopDist) && (ret.x == -1)) {
-			for (int i = tileX - maxDist; i <= tileX + maxDist; i++) {
-				for (int j = tileY - maxDist; j <= tileY + maxDist; j++) {
-					if (canBuildHere(i, j, toBuild)) {
-						// units that are blocking the tile
-						boolean unitsInWay = false;
-						for (Unit u : getAllUnits()) {
-							if ((Math.abs(u.getTileX() - i) < 4)
-									&& (Math.abs(u.getTileY() - j) < 4)) {
-								unitsInWay = true;
-							}
-						}
-						if (!unitsInWay) {
-							ret.x = i;
-							ret.y = j;
-							return ret;
-						}
-					}
-				}
-			}
-			maxDist += 2;
-		}
-
-		if (ret.x == -1) {
-			throw new NullPointerException();
-		}
-
-		return ret;
-	}
-
-	private boolean canBuildHere(int left, int top, UnitTypes typeEnum) {
-		UnitType type = getUnitType(typeEnum.ordinal());
-		int width = type.getTileWidth();
-		int height = type.getTileHeight();
-
-		for (int i = left; i < left + width; i++) {
-			for (int j = top; j < top + height; j++) {
-				if (!(isBuildable(i, j, true))) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
 	// Provides a public method for build
 	public void build(int id, BuildingPlan toBuild) {
 		build(id, toBuild.getTx(), toBuild.getTy(), toBuild.getTypeID());
