@@ -23,7 +23,7 @@ public class OpeningBuildState extends BotState {
 	@Override
 	public BotState act() {
 		autoEconomy();
-		autoSupplies();
+		autoSupplies(2);
 		autoBuild();
 		autoTrain();
 
@@ -31,7 +31,7 @@ public class OpeningBuildState extends BotState {
 		if (game.getSelf().getSupplyUsed() / 2 == 11) {
 			// Check that it's not already in the queue
 			if (!buildManager.buildQueueContains(UnitTypes.Terran_Barracks)) {
-				buildManager.addBuilding(UnitTypes.Terran_Barracks);
+				buildManager.addToQueue(UnitTypes.Terran_Barracks);
 			}
 		}
 

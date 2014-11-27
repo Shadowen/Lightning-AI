@@ -73,6 +73,16 @@ public class GameHandler extends JNIBWAPI {
 		build(id, toBuild.getTx(), toBuild.getTy(), toBuild.getTypeID());
 	}
 
+	public int countMyUnit(UnitTypes type) {
+		int count = 0;
+		for (Unit u : getMyUnits()) {
+			if (u.getTypeID() == type.ordinal()) {
+				count++;
+			}
+		}
+		return count;
+	}
+
 	public void registerDebugFunction(DebugModule m) {
 		debugEngine.registerDebugFunction(m);
 	}

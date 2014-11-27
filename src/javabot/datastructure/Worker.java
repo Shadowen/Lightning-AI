@@ -53,12 +53,12 @@ public class Worker {
 		return unit.getID();
 	}
 
-	public boolean isBuilding() {
-		return unit.isConstructing();
-	}
-
 	public void stopMining() {
 		currentResource.removeGatherer();
+	}
+
+	public boolean isConstructing() {
+		return unit.isConstructing();
 	}
 
 }

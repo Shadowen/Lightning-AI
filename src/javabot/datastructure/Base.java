@@ -88,7 +88,7 @@ public class Base {
 	public Worker getBuilder() {
 		Worker u = null;
 		for (Entry<Integer, Worker> w : workers.entrySet()) {
-			if (!w.getValue().isBuilding()) {
+			if (!w.getValue().isConstructing()) {
 				u = w.getValue();
 			}
 		}

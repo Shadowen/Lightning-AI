@@ -27,11 +27,15 @@ public class BuildManager implements Debuggable {
 		unitQueue = new ArrayDeque<UnitTypes>();
 	}
 
-	public void addBuilding(UnitTypes unitType) {
-		Point location = getBuildLocation(
-				baseManager.getMain().location.getX(),
-				baseManager.getMain().location.getY(), unitType);
-		addBuilding(location.x, location.y, unitType);
+	public void addToQueue(UnitTypes unitType) {
+		if (game.getUnitType(unitType.ordinal()).isBuilding()) {
+			Point location = getBuildLocation(
+					baseManager.getMain().location.getX(),
+					baseManager.getMain().location.getY(), unitType);
+			addBuilding(location.x, location.y, unitType);
+		} else {
+			unitQueue.add(unitType);
+		}
 	}
 
 	public void addBuilding(Point buildLocation, UnitTypes type) {
@@ -43,7 +47,7 @@ public class BuildManager implements Debuggable {
 	}
 
 	// Finds a nearby valid build location
-	public Point getBuildLocation(int x, int y, UnitTypes toBuild) {
+	private Point getBuildLocation(int x, int y, UnitTypes toBuild) {
 		// Returns the Point object representing the suitable build tile
 		// position
 		// for a given building type near specified pixel position (or
@@ -113,10 +117,6 @@ public class BuildManager implements Debuggable {
 	public void addResearch() {
 	}
 
-	public void addUnit(UnitTypes terranMarine) {
-		unitQueue.add(terranMarine);
-	}
-
 	public BuildingPlan getToBuild() {
 		return buildingQueue.peek();
 	}
@@ -157,6 +157,10 @@ public class BuildManager implements Debuggable {
 		return false;
 	}
 
+	public void removeUnitFromQueue(UnitTypes toTrain) {
+		unitQueue.remove(toTrain);
+	}
+
 	@Override
 	public void registerDebugFunctions(GameHandler g) {
 		g.registerDebugFunction(new DebugModule() {
@@ -192,9 +196,5 @@ public class BuildManager implements Debuggable {
 						"Training Queue: " + trainingQueueString, true);
 			}
 		});
-	}
-
-	public void removeUnitFromQueue(UnitTypes toTrain) {
-		unitQueue.remove(toTrain);
 	}
 }

@@ -75,12 +75,12 @@ public abstract class BotState implements Debuggable {
 		}
 	}
 
-	protected void autoSupplies() {
+	protected void autoSupplies(int spareSpace) {
 		// Add supply depots if necessary
-		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 4) {
+		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 2*spareSpace) {
 			// Check that it's not already in the queue
 			if (!buildManager.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
-				buildManager.addBuilding(UnitTypes.Terran_Supply_Depot);
+				buildManager.addToQueue(UnitTypes.Terran_Supply_Depot);
 			}
 		}
 	}
