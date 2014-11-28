@@ -17,7 +17,7 @@ public class BuildManager implements Debuggable {
 	private GameHandler game;
 	private BaseManager baseManager;
 
-	private Queue<BuildingPlan> buildingQueue;
+	public Queue<BuildingPlan> buildingQueue;
 	private Queue<UnitTypes> unitQueue;
 
 	public BuildManager(GameHandler igame, BaseManager ibm) {
@@ -114,13 +114,6 @@ public class BuildManager implements Debuggable {
 		return true;
 	}
 
-	public void addResearch() {
-	}
-
-	public BuildingPlan getToBuild() {
-		return buildingQueue.peek();
-	}
-
 	// Call this whenever a unit completes contruction
 	public void doneBuilding(Unit u) {
 		if (game.getUnitType(u.getTypeID()).isBuilding()) {
@@ -138,10 +131,6 @@ public class BuildManager implements Debuggable {
 			// Go through planned units
 
 		}
-	}
-
-	public void getToResearch() {
-
 	}
 
 	public UnitTypes getToTrain() {

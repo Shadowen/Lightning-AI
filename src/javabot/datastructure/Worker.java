@@ -10,6 +10,8 @@ public class Worker {
 	private Resource currentResource;
 	private GameHandler game;
 
+	private WorkerTask currentTask;
+
 	public Worker(GameHandler g, Unit u) {
 		game = g;
 		unit = u;
@@ -30,11 +32,13 @@ public class Worker {
 		game.rightClick(unit.getID(), r.getID());
 		currentResource = r;
 		r.addGatherer();
+		currentTask = WorkerTask.Mining_Minerals;
 	}
 
 	public void build(BuildingPlan toBuild) {
 		game.build(unit.getID(), toBuild);
 		toBuild.setBuilder(this);
+		currentTask = WorkerTask.Constructing_Building;
 	}
 
 	public int getX() {
@@ -45,20 +49,18 @@ public class Worker {
 		return unit.getY();
 	}
 
-	public boolean isGathering() {
-		return currentResource != null;
+	public WorkerTask getCurrentTask() {
+		return currentTask;
 	}
 
 	public int getID() {
 		return unit.getID();
 	}
 
-	public void stopMining() {
-		currentResource.removeGatherer();
-	}
-
-	public boolean isConstructing() {
-		return unit.isConstructing();
+	public void unitDestroyed() {
+		if (currentResource != null) {
+			currentResource.removeGatherer();
+		}
 	}
 
 }

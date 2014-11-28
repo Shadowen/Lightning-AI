@@ -77,7 +77,8 @@ public abstract class BotState implements Debuggable {
 
 	protected void autoSupplies(int spareSpace) {
 		// Add supply depots if necessary
-		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal() - 2*spareSpace) {
+		if (game.getSelf().getSupplyUsed() > game.getSelf().getSupplyTotal()
+				- 2 * spareSpace) {
 			// Check that it's not already in the queue
 			if (!buildManager.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
 				buildManager.addToQueue(UnitTypes.Terran_Supply_Depot);
@@ -86,9 +87,8 @@ public abstract class BotState implements Debuggable {
 	}
 
 	protected void autoBuild() {
-		BuildingPlan toBuild = buildManager.getToBuild();
 		// Attempt to build the next building
-		if (toBuild != null) {
+		for (BuildingPlan toBuild : buildManager.buildingQueue) {
 			// If we have the minerals and gas
 			if (game.getSelf().getMinerals() > game.getUnitType(
 					toBuild.getTypeID()).getMineralPrice()

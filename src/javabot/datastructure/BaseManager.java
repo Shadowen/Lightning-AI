@@ -108,9 +108,23 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 						engine.drawText(x + 5, y + 15, "Mineral Fields: "
 								+ b.minerals.size(), false);
 					}
+					// Minerals
 					for (Resource r : b.minerals.values()) {
 						engine.drawText(r.getX() - 8, r.getY() - 8,
 								String.valueOf(r.getNumGatherers()), false);
+					}
+					// Worker
+					for (Worker w : b.workers.values()) {
+						if (w.getCurrentTask() == WorkerTask.Mining_Minerals) {
+							engine.drawCircle(w.getX(), w.getY(), 3,
+									BWColor.BLUE, true, false);
+						} else if (w.getCurrentTask() == WorkerTask.Mining_Gas) {
+							engine.drawCircle(w.getX(), w.getY(), 3,
+									BWColor.GREEN, true, false);
+						} else if (w.getCurrentTask() == WorkerTask.Constructing_Building) {
+							engine.drawCircle(w.getX(), w.getY(), 3,
+									BWColor.ORANGE, true, false);
+						}
 					}
 				}
 			}

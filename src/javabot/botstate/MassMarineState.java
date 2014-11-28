@@ -69,7 +69,7 @@ public class MassMarineState extends BotState {
 
 		// Attack
 		frameCount++;
-		if (frameCount % 10 == 0) {
+		if (frameCount % 100 == 0) {
 			for (Unit u : game.getMyUnits()) {
 				if (u.getTypeID() == UnitTypes.Terran_Marine.ordinal()) {
 					int closestEnemyID = game.getClosestEnemy(u);

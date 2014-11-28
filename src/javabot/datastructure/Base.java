@@ -13,7 +13,7 @@ public class Base {
 
 	public java.util.Map<Integer, Resource> minerals;
 	public java.util.Map<Integer, Resource> gas;
-	private java.util.Map<Integer, Worker> workers;
+	public java.util.Map<Integer, Worker> workers;
 	public Unit commandCenter;
 	public BaseLocation location;
 
@@ -43,10 +43,13 @@ public class Base {
 		// Idle workers
 		for (Entry<Integer, Worker> worker : workers.entrySet()) {
 			if (worker.getValue().isIdle()) {
-				boolean workerAssigned = worker.getValue().isGathering();
-				if (workerAssigned) {
+				// Get back to work
+				if (worker.getValue().getCurrentTask() == WorkerTask.Mining_Minerals) {
 					worker.getValue().mine();
-					break;
+					continue;
+				} else if (worker.getValue().getCurrentTask() == WorkerTask.Mining_Gas) {
+					// TODO mine gas!
+					continue;
 				}
 
 				// Try to assign one worker to each mineral first
@@ -57,6 +60,7 @@ public class Base {
 				// It only allows maxMiners to gather each resource patch each
 				// loop.
 				int maxMiners = 1;
+				boolean workerAssigned = false;
 				while (!workerAssigned) {
 					if (maxMiners > 3) {
 						// supersaturated - can't find a suitable resource patch
@@ -88,7 +92,7 @@ public class Base {
 	public Worker getBuilder() {
 		Worker u = null;
 		for (Entry<Integer, Worker> w : workers.entrySet()) {
-			if (!w.getValue().isConstructing()) {
+			if (w.getValue().getCurrentTask() == WorkerTask.Mining_Minerals) {
 				u = w.getValue();
 			}
 		}
@@ -106,7 +110,7 @@ public class Base {
 	public boolean removeWorker(int unitID) {
 		// That worker actually does belong to this base!
 		if (workers.containsKey(unitID)) {
-			workers.get(unitID).stopMining();
+			workers.get(unitID).unitDestroyed();
 			workers.remove(unitID);
 			return true;
 		}
