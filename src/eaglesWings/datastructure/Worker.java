@@ -1,6 +1,6 @@
-package javabot.datastructure;
+package eaglesWings.datastructure;
 
-import javabot.gamestructure.GameHandler;
+import eaglesWings.gamestructure.GameHandler;
 import javabot.model.Unit;
 
 public class Worker {

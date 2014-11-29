@@ -1,10 +1,11 @@
-package javabot.datastructure;
+package eaglesWings.datastructure;
 
 import java.util.HashMap;
 import java.util.Map.Entry;
-import javabot.gamestructure.DebugEngine;
-import javabot.gamestructure.DebugModule;
-import javabot.gamestructure.GameHandler;
+
+import eaglesWings.gamestructure.DebugEngine;
+import eaglesWings.gamestructure.DebugModule;
+import eaglesWings.gamestructure.GameHandler;
 import javabot.model.*;
 import javabot.util.BWColor;
 

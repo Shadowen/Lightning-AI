@@ -1,4 +1,4 @@
-package javabot.gamestructure;
+package eaglesWings.gamestructure;
 
 import java.util.ArrayList;
 import java.util.List;

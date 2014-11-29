@@ -1,8 +1,8 @@
-package javabot.botstate;
+package eaglesWings.botstate;
 
-import javabot.datastructure.BaseManager;
-import javabot.datastructure.BuildManager;
-import javabot.gamestructure.GameHandler;
+import eaglesWings.datastructure.BaseManager;
+import eaglesWings.datastructure.BuildManager;
+import eaglesWings.gamestructure.GameHandler;
 
 public abstract class BotState {
 	public GameHandler game;

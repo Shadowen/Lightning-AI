@@ -1,10 +1,10 @@
-package javabot.botstate;
+package eaglesWings.botstate;
 
 import java.awt.Point;
 import java.util.ArrayList;
 
-import javabot.datastructure.Base;
-import javabot.datastructure.BuildingPlan;
+import eaglesWings.datastructure.Base;
+import eaglesWings.datastructure.BuildingPlan;
 import javabot.model.BaseLocation;
 import javabot.model.Unit;
 import javabot.types.UnitType.UnitTypes;

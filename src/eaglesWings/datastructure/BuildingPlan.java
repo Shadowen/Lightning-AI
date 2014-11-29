@@ -1,6 +1,6 @@
-package javabot.datastructure;
+package eaglesWings.datastructure;
 
-import javabot.gamestructure.GameHandler;
+import eaglesWings.gamestructure.GameHandler;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
 

@@ -1,15 +1,15 @@
-package javabot.gamestructure;
+package eaglesWings.gamestructure;
 
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import eaglesWings.datastructure.BuildingPlan;
+import eaglesWings.datastructure.Resource;
+import eaglesWings.datastructure.Worker;
 import javabot.BWAPIEventListener;
 import javabot.JNIBWAPI;
-import javabot.datastructure.BuildingPlan;
-import javabot.datastructure.Resource;
-import javabot.datastructure.Worker;
 import javabot.model.Unit;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;

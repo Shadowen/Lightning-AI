@@ -1,4 +1,4 @@
-package javabot.datastructure;
+package eaglesWings.datastructure;
 
 import javabot.model.Unit;
 

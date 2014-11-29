@@ -1,4 +1,4 @@
-package javabot.botstate;
+package eaglesWings.botstate;
 
 import javabot.model.Unit;
 import javabot.types.UnitType.UnitTypes;

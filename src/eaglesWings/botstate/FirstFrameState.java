@@ -1,17 +1,17 @@
-package javabot.botstate;
+package eaglesWings.botstate;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import javabot.datastructure.Base;
-import javabot.datastructure.BaseManager;
-import javabot.datastructure.BuildManager;
-import javabot.datastructure.GasResource;
-import javabot.datastructure.Resource;
-import javabot.datastructure.Worker;
-import javabot.gamestructure.DebugEngine;
-import javabot.gamestructure.Debuggable;
-import javabot.gamestructure.GameHandler;
+import eaglesWings.datastructure.Base;
+import eaglesWings.datastructure.BaseManager;
+import eaglesWings.datastructure.BuildManager;
+import eaglesWings.datastructure.GasResource;
+import eaglesWings.datastructure.Resource;
+import eaglesWings.datastructure.Worker;
+import eaglesWings.gamestructure.DebugEngine;
+import eaglesWings.gamestructure.Debuggable;
+import eaglesWings.gamestructure.GameHandler;
 import javabot.model.BaseLocation;
 import javabot.model.Unit;
 import javabot.types.UnitType.UnitTypes;

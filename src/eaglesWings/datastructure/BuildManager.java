@@ -1,14 +1,14 @@
-package javabot.datastructure;
+package eaglesWings.datastructure;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.Map.Entry;
 import java.util.Queue;
 
-import javabot.gamestructure.DebugEngine;
-import javabot.gamestructure.DebugModule;
-import javabot.gamestructure.Debuggable;
-import javabot.gamestructure.GameHandler;
+import eaglesWings.gamestructure.DebugEngine;
+import eaglesWings.gamestructure.DebugModule;
+import eaglesWings.gamestructure.Debuggable;
+import eaglesWings.gamestructure.GameHandler;
 import javabot.model.Unit;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;

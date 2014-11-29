@@ -1,4 +1,4 @@
-package javabot.gamestructure;
+package eaglesWings.gamestructure;
 
 import java.awt.Color;
 import java.awt.Point;
@@ -10,14 +10,14 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import eaglesWings.botstate.BotState;
+import eaglesWings.botstate.FirstFrameState;
+import eaglesWings.datastructure.Base;
+import eaglesWings.datastructure.BaseManager;
+import eaglesWings.datastructure.BuildManager;
+import eaglesWings.datastructure.BuildingPlan;
+import eaglesWings.datastructure.Resource;
 import javabot.BWAPIEventListener;
-import javabot.botstate.BotState;
-import javabot.botstate.FirstFrameState;
-import javabot.datastructure.Base;
-import javabot.datastructure.BaseManager;
-import javabot.datastructure.BuildManager;
-import javabot.datastructure.BuildingPlan;
-import javabot.datastructure.Resource;
 import javabot.model.*;
 import javabot.types.*;
 import javabot.types.OrderType.OrderTypeTypes;

@@ -1,4 +1,4 @@
-package javabot.datastructure;
+package eaglesWings.datastructure;
 
 import java.awt.Point;
 import java.util.HashSet;
@@ -6,10 +6,10 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javabot.gamestructure.DebugEngine;
-import javabot.gamestructure.DebugModule;
-import javabot.gamestructure.Debuggable;
-import javabot.gamestructure.GameHandler;
+import eaglesWings.gamestructure.DebugEngine;
+import eaglesWings.gamestructure.DebugModule;
+import eaglesWings.gamestructure.Debuggable;
+import eaglesWings.gamestructure.GameHandler;
 import javabot.model.Unit;
 import javabot.util.BWColor;
 
