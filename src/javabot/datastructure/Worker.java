@@ -35,6 +35,17 @@ public class Worker {
 		currentTask = WorkerTask.Mining_Minerals;
 	}
 
+	public void gatherGas(GasResource g) {
+		if (currentResource != null) {
+			currentResource.removeGatherer();
+		}
+
+		game.rightClick(unit.getID(), g.getID());
+		currentResource = g;
+		g.addGatherer();
+		currentTask = WorkerTask.Mining_Gas;
+	}
+
 	public void build(BuildingPlan toBuild) {
 		game.build(unit.getID(), toBuild);
 		toBuild.setBuilder(this);

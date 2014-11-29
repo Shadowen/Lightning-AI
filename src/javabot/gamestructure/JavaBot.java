@@ -14,6 +14,8 @@ import javabot.BWAPIEventListener;
 import javabot.botstate.BotState;
 import javabot.botstate.FirstFrameState;
 import javabot.datastructure.Base;
+import javabot.datastructure.BaseManager;
+import javabot.datastructure.BuildManager;
 import javabot.datastructure.BuildingPlan;
 import javabot.datastructure.Resource;
 import javabot.model.*;
@@ -28,6 +30,8 @@ public class JavaBot implements BWAPIEventListener {
 	private Hashtable<Integer, Unit> unitsUnderConstruction;
 
 	private BotState botState;
+	private BaseManager baseManager;
+	private BuildManager buildManager;
 
 	public static void main(String[] args) {
 		new JavaBot();
@@ -72,12 +76,50 @@ public class JavaBot implements BWAPIEventListener {
 		// Initialize
 		unitsUnderConstruction = new Hashtable<Integer, Unit>();
 
-		botState = new FirstFrameState(game);
-		botState.registerDebugFunctions(game);
+		baseManager = new BaseManager(game);
+		buildManager = new BuildManager(game, baseManager);
+		botState = new FirstFrameState(game, baseManager, buildManager);
 
-		mapWidth = game.getMap().getWidth();
-		mapHeight = game.getMap().getHeight();
-		threatMap = new double[mapHeight][mapWidth];
+		baseManager.registerDebugFunctions(game);
+		buildManager.registerDebugFunctions(game);
+		game.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				engine.drawText(5, 5, "Bot state: "
+						+ botState.getClass().toString(), true);
+				// for (int i = 0; i < game.getMap().getWidth(); i++) {
+				// for (int e = 0; e < game.getMap().getHeight(); e++) {
+				// if (game.isBuildable(i, e, true)) {
+				// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
+				// i * 32 + 16 + 5, e * 32 + 16 + 5,
+				// BWColor.GREEN, true, false);
+				// } else {
+				// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
+				// i * 32 + 16 + 5, e * 32 + 16 + 5,
+				// BWColor.RED, true, false);
+				// }
+				// }
+				// }
+			}
+		});
+		game.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				String uucString = "";
+				for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
+					uucString += game.getUnitType(u.getValue().getTypeID())
+							.getName() + ", ";
+				}
+				engine.drawText(5, 60, "unitsUnderConstruction: " + uucString,
+						true);
+				engine.drawText(500, 15, "Supply: "
+						+ game.getSelf().getSupplyUsed() + "/"
+						+ game.getSelf().getSupplyTotal(), true);
+			}
+		});
+		// mapWidth = game.getMap().getWidth();
+		// mapHeight = game.getMap().getHeight();
+		// threatMap = new double[mapHeight][mapWidth];
 
 		// Timer t = new Timer();
 		//
@@ -174,10 +216,7 @@ public class JavaBot implements BWAPIEventListener {
 	// Method called on every frame (approximately 30x every second).
 	public void gameUpdate() {
 		// Check if any units have completed
-		String uucString = "";
 		for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
-			uucString += game.getUnitType(u.getValue().getTypeID()).getName()
-					+ ", ";
 			if (u.getValue().isCompleted()) {
 				game.sendText("Unit completed: "
 						+ game.getUnitType(u.getValue().getTypeID()).getName());
@@ -185,13 +224,69 @@ public class JavaBot implements BWAPIEventListener {
 				unitComplete(u.getKey());
 			}
 		}
-		game.drawText(5, 60, "unitsUnderConstruction: " + uucString, true);
-		game.drawText(1000, 5, "Supply: " + game.getSelf().getSupplyUsed()
-				+ "/" + game.getSelf().getSupplyTotal(), true);
 
 		// Allow the bot to act
 		try {
 			botState = botState.act();
+
+			// Auto economy
+			for (Base b : baseManager.getMyBases()) {
+				b.gatherResources();
+
+				// Train SCVS if necessary
+				// This can't go in the build queue since it is specific to a
+				// command center!
+				if (b.getWorkerCount() < b.getMineralCount() * 2) {
+					if (game.getSelf().getMinerals() >= 50
+							&& b.commandCenter.getTrainingQueueSize() == 0) {
+						game.train(b.commandCenter.getID(),
+								UnitTypes.Terran_SCV.ordinal());
+					}
+				}
+			}
+
+			// Auto supplies
+			// Add supply depots if necessary
+			if (game.getSelf().getSupplyUsed() > game.getSelf()
+					.getSupplyTotal() - 2 * 2) {
+				// Check that it's not already in the queue
+				if (!buildManager
+						.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
+					buildManager.addToQueue(UnitTypes.Terran_Supply_Depot);
+				}
+			}
+
+			// Auto build
+			for (BuildingPlan toBuild : buildManager.buildingQueue) {
+				// If we have the minerals and gas
+				if (game.getSelf().getMinerals() > game.getUnitType(
+						toBuild.getTypeID()).getMineralPrice()
+						&& game.getSelf().getGas() >= game.getUnitType(
+								toBuild.getTypeID()).getGasPrice()) {
+					// If it has a builder, tell them to hurry up!
+					if (toBuild.hasBuilder()) {
+						toBuild.builder.build(toBuild);
+					} else {
+						// If it isn't being built yet
+						baseManager.getBuilder().build(toBuild);
+					}
+				}
+			}
+			// Auto train
+			for (UnitTypes toTrain : buildManager.unitQueue)
+				if (toTrain != null) {
+					int trainFrom = game.getUnitType(toTrain.ordinal())
+							.getWhatBuildID();
+
+					for (Unit u : game.getMyUnits()) {
+						if (u.getTypeID() == trainFrom
+								&& u.getTrainingQueueSize() == 0) {
+							game.train(u.getID(), toTrain.ordinal());
+							break;
+						}
+					}
+				}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -258,7 +353,23 @@ public class JavaBot implements BWAPIEventListener {
 	// This event is triggered when a unit is finished building.
 	public void unitComplete(int unitID) {
 		try {
+			Unit u = game.getUnit(unitID);
+			int typeID = u.getTypeID();
+
+			buildManager.doneBuilding(u);
+
+			if (typeID == UnitTypes.Terran_SCV.ordinal()) {
+				// Add new workers to nearest base
+				Base base = baseManager.getClosestBase(u.getX(), u.getY());
+				base.addWorker(unitID, u);
+			} else if (typeID == UnitTypes.Terran_Command_Center.ordinal()) {
+				// Add command centers to nearest base
+				Base base = baseManager.getClosestBase(u.getX(), u.getY());
+				base.commandCenter = u;
+			}
+
 			botState = botState.unitComplete(unitID);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -266,10 +377,17 @@ public class JavaBot implements BWAPIEventListener {
 
 	public void unitDestroy(int unitID) {
 		try {
+			// If a unit is canceled from a build queue or building is cancelled
+			// under construction
 			if (unitsUnderConstruction.containsKey(unitID)) {
 				unitsUnderConstruction.remove(unitID);
 				game.sendText("Unit under construction destroyed!");
 			}
+
+			// Remove workers from the baseManager
+			baseManager.removeWorker(unitID);
+
+			// Allow the bot state to act
 			botState = botState.unitDestroy(unitID);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -291,6 +409,8 @@ public class JavaBot implements BWAPIEventListener {
 	}
 
 	public void unitMorph(int unitID) {
+		Unit unit = game.getUnit(unitID);
+		unitsUnderConstruction.put(unitID, unit);
 	}
 
 	public void unitShow(int unitID) {

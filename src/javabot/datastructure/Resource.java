@@ -3,7 +3,7 @@ package javabot.datastructure;
 import javabot.model.Unit;
 
 public class Resource {
-	private Unit unit;
+	protected Unit unit;
 	private int gatherers;
 
 	public Resource(Unit u) {

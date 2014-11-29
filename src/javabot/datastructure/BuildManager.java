@@ -2,6 +2,7 @@ package javabot.datastructure;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
+import java.util.Map.Entry;
 import java.util.Queue;
 
 import javabot.gamestructure.DebugEngine;
@@ -18,7 +19,7 @@ public class BuildManager implements Debuggable {
 	private BaseManager baseManager;
 
 	public Queue<BuildingPlan> buildingQueue;
-	private Queue<UnitTypes> unitQueue;
+	public Queue<UnitTypes> unitQueue;
 
 	public BuildManager(GameHandler igame, BaseManager ibm) {
 		game = igame;
@@ -28,12 +29,25 @@ public class BuildManager implements Debuggable {
 	}
 
 	public void addToQueue(UnitTypes unitType) {
-		if (game.getUnitType(unitType.ordinal()).isBuilding()) {
-			Point location = getBuildLocation(
-					baseManager.getMain().location.getX(),
-					baseManager.getMain().location.getY(), unitType);
+		if (unitType == UnitTypes.Terran_Refinery) {
+			// Refineries get special treatment!
+			for (Base b : baseManager.getMyBases()) {
+				for (Entry<Integer, GasResource> r : b.gas.entrySet()) {
+					if (!r.getValue().gasTaken()) {
+						game.sendText("Trying to take gas!");
+						addBuilding(r.getValue().getX() / 32 - 2, r.getValue()
+								.getY() / 32 - 1, UnitTypes.Terran_Refinery);
+						break;
+					}
+				}
+			}
+		} else if (game.getUnitType(unitType.ordinal()).isBuilding()) {
+			// Otherwise, buildings
+			Point location = getBuildLocation(baseManager.main.location.getX(),
+					baseManager.main.location.getY(), unitType);
 			addBuilding(location.x, location.y, unitType);
 		} else {
+			// Finally, units
 			unitQueue.add(unitType);
 		}
 	}
@@ -124,17 +138,22 @@ public class BuildManager implements Debuggable {
 						&& u.getTileY() == p.getTy()) {
 					// It has been completed
 					buildingQueue.remove(p);
+
+					// If it's a refinery, the worker will automatically become
+					// a gas miner!
+					if (u.getTypeID() == UnitTypes.Terran_Refinery.ordinal()) {
+						p.builder.gatherGas((GasResource) baseManager
+								.getResource(u));
+					}
+
 					break;
 				}
 			}
 		} else {
 			// Go through planned units
-
+			unitQueue.remove(u);
 		}
-	}
 
-	public UnitTypes getToTrain() {
-		return unitQueue.peek();
 	}
 
 	public boolean buildQueueContains(UnitTypes unitType) {
@@ -146,8 +165,14 @@ public class BuildManager implements Debuggable {
 		return false;
 	}
 
-	public void removeUnitFromQueue(UnitTypes toTrain) {
-		unitQueue.remove(toTrain);
+	public int countInQueue(UnitTypes unitType) {
+		int count = 0;
+		for (BuildingPlan plan : buildingQueue) {
+			if (plan.getTypeID() == unitType.ordinal()) {
+				count++;
+			}
+		}
+		return count;
 	}
 
 	@Override
@@ -185,5 +210,15 @@ public class BuildManager implements Debuggable {
 						"Training Queue: " + trainingQueueString, true);
 			}
 		});
+	}
+
+	public int countMyUnit(UnitTypes type) {
+		int count = 0;
+		for (Unit u : game.getMyUnits()) {
+			if (!u.isBeingConstructed() && u.getTypeID() == type.ordinal()) {
+				count++;
+			}
+		}
+		return count;
 	}
 }

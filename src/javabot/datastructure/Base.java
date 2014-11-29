@@ -12,7 +12,7 @@ public class Base {
 	private GameHandler game;
 
 	public java.util.Map<Integer, Resource> minerals;
-	public java.util.Map<Integer, Resource> gas;
+	public java.util.Map<Integer, GasResource> gas;
 	public java.util.Map<Integer, Worker> workers;
 	public Unit commandCenter;
 	public BaseLocation location;
@@ -24,7 +24,7 @@ public class Base {
 		location = l;
 
 		minerals = new HashMap<Integer, Resource>();
-		gas = new HashMap<Integer, Resource>();
+		gas = new HashMap<Integer, GasResource>();
 
 	}
 

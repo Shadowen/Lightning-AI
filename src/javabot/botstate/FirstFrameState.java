@@ -6,6 +6,7 @@ import java.util.Map;
 import javabot.datastructure.Base;
 import javabot.datastructure.BaseManager;
 import javabot.datastructure.BuildManager;
+import javabot.datastructure.GasResource;
 import javabot.datastructure.Resource;
 import javabot.datastructure.Worker;
 import javabot.gamestructure.DebugEngine;
@@ -17,14 +18,14 @@ import javabot.types.UnitType.UnitTypes;
 
 public class FirstFrameState extends BotState {
 
-	public FirstFrameState(GameHandler igame) {
-		super(igame);
+	public FirstFrameState(GameHandler igame, BaseManager baseManager,
+			BuildManager buildManager) {
+		super(igame, baseManager, buildManager);
 	}
 
 	@Override
 	public BotState act() {
 		// Sort through the units and find my CC
-		Map<Integer, Unit> workers = new HashMap<Integer, Unit>();
 		Unit commandCenter = null;
 		for (Unit u : game.getMyUnits()) {
 			if (u.getTypeID() == UnitTypes.Terran_Command_Center.ordinal()) {
@@ -44,7 +45,7 @@ public class FirstFrameState extends BotState {
 			if (b.location.getX() == commandCenter.getX()
 					&& location.getY() == commandCenter.getY()) {
 				b.commandCenter = commandCenter;
-				baseManager.setMain(b);
+				baseManager.main = b;
 				game.sendText("Main set");
 			}
 			baseManager.addBase(b);
@@ -61,12 +62,15 @@ public class FirstFrameState extends BotState {
 					.ordinal()) {
 				game.sendText("Gas found at (" + u.getX() + "," + u.getY()
 						+ ")");
-				closestBase.gas.put(u.getID(), new Resource(u));
+				closestBase.gas.put(u.getID(), new GasResource(u));
 			} else if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
 				closestBase.addWorker(u.getID(), u);
 				game.sendText("SCV found");
 			}
 		}
+
+		// TODO Debugging
+		buildManager.addToQueue(UnitTypes.Terran_Refinery);
 
 		// Notify we're complete
 		game.sendText("First frame initialization complete!");

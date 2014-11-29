@@ -37,26 +37,6 @@ public class GameHandler extends JNIBWAPI {
 		return closest;
 	}
 
-	public int getClosestEnemy(Unit toWho) {
-		double closestDistance = Double.MAX_VALUE;
-		Unit closestUnit = null;
-		for (Unit u : getEnemyUnits()) {
-			double distanceX = toWho.getX() - u.getX();
-			double distanceY = toWho.getY() - u.getY();
-			double distance = Math.sqrt(Math.pow(distanceX, 2)
-					+ Math.pow(distanceY, 2));
-
-			if (distance < closestDistance) {
-				closestUnit = u;
-				closestDistance = distance;
-			}
-		}
-		if (closestUnit != null) {
-			return closestUnit.getID();
-		}
-		return -1;
-	}
-
 	// TODO this doesn't need to be here.
 	public Point getUnitVector(Point start, Point dest) {
 		double distance = 1;
@@ -73,21 +53,35 @@ public class GameHandler extends JNIBWAPI {
 		build(id, toBuild.getTx(), toBuild.getTy(), toBuild.getTypeID());
 	}
 
-	public int countMyUnit(UnitTypes type) {
-		int count = 0;
-		for (Unit u : getMyUnits()) {
-			if (u.getTypeID() == type.ordinal()) {
-				count++;
-			}
-		}
-		return count;
-	}
-
 	public void registerDebugFunction(DebugModule m) {
 		debugEngine.registerDebugFunction(m);
 	}
 
 	public void drawDebug() {
 		debugEngine.draw();
+	}
+
+	public Unit getClosestEnemy(int x, int y) {
+		double closestDistance = Double.MAX_VALUE;
+		Unit closestUnit = null;
+		for (Unit u : getEnemyUnits()) {
+			double distanceX = x - u.getX();
+			double distanceY = y - u.getY();
+			double distance = Math.sqrt(Math.pow(distanceX, 2)
+					+ Math.pow(distanceY, 2));
+
+			if (distance < closestDistance) {
+				closestUnit = u;
+				closestDistance = distance;
+			}
+		}
+		if (closestUnit != null) {
+			return closestUnit;
+		}
+		return null;
+	}
+
+	public Unit getClosestEnemy(Unit toWho) {
+		return getClosestEnemy(toWho.getX(), toWho.getY());
 	}
 }

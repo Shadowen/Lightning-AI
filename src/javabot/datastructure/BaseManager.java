@@ -15,14 +15,14 @@ import javabot.util.BWColor;
 
 public class BaseManager implements Iterable<Base>, Debuggable {
 	private Set<Base> bases;
-	private Base main;
+	public Base main;
 
 	private int selfPlayerID;
 
-	public BaseManager(int myPlayerID, GameHandler game) {
+	public BaseManager(GameHandler game) {
 		bases = new HashSet<Base>();
 
-		selfPlayerID = myPlayerID;
+		selfPlayerID = game.getSelf().getID();
 	}
 
 	public void addBase(Base b) {
@@ -33,17 +33,6 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		Set<Base> myBases = new HashSet<Base>();
 		for (Base b : bases) {
 			if (b.getOwner() == selfPlayerID) {
-				myBases.add(b);
-			}
-		}
-		return myBases;
-	}
-
-	public Set<Base> getEnemyBases() {
-		Set<Base> myBases = new HashSet<Base>();
-		for (Base b : bases) {
-			// TODO make this work with allies?
-			if (b.getOwner() != selfPlayerID) {
 				myBases.add(b);
 			}
 		}
@@ -75,18 +64,18 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		return null;
 	}
 
+	public void removeWorker(int unitID) {
+		for (Base b : bases) {
+			if (b.removeWorker(unitID)) {
+				break;
+			}
+		}
+	}
+
 	// Returns an iterator over all the bases
 	@Override
 	public Iterator<Base> iterator() {
 		return bases.iterator();
-	}
-
-	public void setMain(Base b) {
-		main = b;
-	}
-
-	public Base getMain() {
-		return main;
 	}
 
 	@Override
@@ -129,5 +118,32 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 				}
 			}
 		});
+	}
+
+	public Worker getWorker(Unit u) {
+		for (Base b : bases) {
+			for (Entry<Integer, Worker> w : b.workers.entrySet()) {
+				if (w.getValue().getID() == u.getID()) {
+					return w.getValue();
+				}
+			}
+		}
+		return null;
+	}
+
+	public Resource getResource(Unit u) {
+		for (Base b : bases) {
+			for (Entry<Integer, Resource> mineral : b.minerals.entrySet()) {
+				if (mineral.getValue().getID() == u.getID()) {
+					return mineral.getValue();
+				}
+			}
+			for (Entry<Integer, GasResource> gas : b.gas.entrySet()) {
+				if (gas.getValue().getID() == u.getID()) {
+					return gas.getValue();
+				}
+			}
+		}
+		return null;
 	}
 }
