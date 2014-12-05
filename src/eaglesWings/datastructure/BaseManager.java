@@ -78,19 +78,48 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		return bases.iterator();
 	}
 
+	public Worker getWorker(Unit u) {
+		for (Base b : bases) {
+			for (Entry<Integer, Worker> w : b.workers.entrySet()) {
+				if (w.getValue().getID() == u.getID()) {
+					return w.getValue();
+				}
+			}
+		}
+		return null;
+	}
+
+	public Resource getResource(Unit u) {
+		for (Base b : bases) {
+			for (Entry<Integer, Resource> mineral : b.minerals.entrySet()) {
+				if (mineral.getValue().getID() == u.getID()) {
+					return mineral.getValue();
+				}
+			}
+			for (Entry<Integer, GasResource> gas : b.gas.entrySet()) {
+				if (gas.getValue().getID() == u.getID()) {
+					return gas.getValue();
+				}
+			}
+		}
+		return null;
+	}
+
 	@Override
 	public void registerDebugFunctions(GameHandler g) {
 		g.registerDebugFunction(new DebugModule() {
 			@Override
 			public void draw(DebugEngine engine) {
-				engine.drawText(main.location.getX(), main.location.getY(),
-						"Main", false);
+				if (main != null) {
+					engine.drawText(main.location.getX(), main.location.getY(),
+							"Main", false);
+				}
 
 				for (Base b : bases) {
 					if (b.commandCenter != null) {
-						int x = b.commandCenter.getX() - 32 * 2;
-						int y = b.commandCenter.getY() - 32 * 2;
-						engine.drawBox(x, y, x + 32 * 4, y + 32 * 4,
+						int x = b.commandCenter.getTileX() * 32;
+						int y = b.commandCenter.getTileY() * 32;
+						engine.drawBox(x, y, x + 32 * 4, y + 32 * 3,
 								BWColor.TEAL, false, false);
 						engine.drawText(x + 5, y + 5,
 								"Workers: " + b.getWorkerCount(), false);
@@ -120,30 +149,4 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		});
 	}
 
-	public Worker getWorker(Unit u) {
-		for (Base b : bases) {
-			for (Entry<Integer, Worker> w : b.workers.entrySet()) {
-				if (w.getValue().getID() == u.getID()) {
-					return w.getValue();
-				}
-			}
-		}
-		return null;
-	}
-
-	public Resource getResource(Unit u) {
-		for (Base b : bases) {
-			for (Entry<Integer, Resource> mineral : b.minerals.entrySet()) {
-				if (mineral.getValue().getID() == u.getID()) {
-					return mineral.getValue();
-				}
-			}
-			for (Entry<Integer, GasResource> gas : b.gas.entrySet()) {
-				if (gas.getValue().getID() == u.getID()) {
-					return gas.getValue();
-				}
-			}
-		}
-		return null;
-	}
 }

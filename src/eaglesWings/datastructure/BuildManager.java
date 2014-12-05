@@ -43,9 +43,12 @@ public class BuildManager implements Debuggable {
 			}
 		} else if (game.getUnitType(unitType.ordinal()).isBuilding()) {
 			// Otherwise, buildings
-			Point location = getBuildLocation(baseManager.main.location.getX(),
-					baseManager.main.location.getY(), unitType);
-			addBuilding(location.x, location.y, unitType);
+			if (baseManager.main != null) {
+				Point location = getBuildLocation(
+						baseManager.main.location.getX(),
+						baseManager.main.location.getY(), unitType);
+				addBuilding(location.x, location.y, unitType);
+			}
 		} else {
 			// Finally, units
 			unitQueue.add(unitType);
@@ -156,19 +159,29 @@ public class BuildManager implements Debuggable {
 
 	}
 
-	public boolean buildQueueContains(UnitTypes unitType) {
+	public boolean isInQueue(UnitTypes unitType) {
 		for (BuildingPlan plan : buildingQueue) {
 			if (plan.getTypeID() == unitType.ordinal()) {
+				return true;
+			}
+		}
+		for (UnitTypes unitInQueue : unitQueue) {
+			if (unitInQueue.ordinal() == unitType.ordinal()) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public int countInQueue(UnitTypes unitType) {
+	public int getCountInQueue(UnitTypes unitType) {
 		int count = 0;
 		for (BuildingPlan plan : buildingQueue) {
 			if (plan.getTypeID() == unitType.ordinal()) {
+				count++;
+			}
+		}
+		for (UnitTypes unitInQueue : unitQueue) {
+			if (unitInQueue.ordinal() == unitType.ordinal()) {
 				count++;
 			}
 		}
@@ -202,9 +215,9 @@ public class BuildManager implements Debuggable {
 				engine.drawText(5, 20, "Building Queue: " + buildQueueString,
 						true);
 				String trainingQueueString = "";
-				for (Unit u : unitQueue.toArray(new Unit[0])) {
-					trainingQueueString += game.getUnitType(u.getTypeID())
-							.toString() + ", ";
+				for (UnitTypes u : unitQueue.toArray(new UnitTypes[0])) {
+					trainingQueueString += game.getUnitType(u.ordinal())
+							.getName() + ", ";
 				}
 				engine.drawText(5, 40,
 						"Training Queue: " + trainingQueueString, true);

@@ -75,10 +75,7 @@ public class GameHandler extends JNIBWAPI {
 				closestDistance = distance;
 			}
 		}
-		if (closestUnit != null) {
-			return closestUnit;
-		}
-		return null;
+		return closestUnit;
 	}
 
 	public Unit getClosestEnemy(Unit toWho) {
