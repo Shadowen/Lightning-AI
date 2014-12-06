@@ -1,26 +1,21 @@
 package eaglesWings.botstate;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import javabot.model.BaseLocation;
+import javabot.model.Unit;
+import javabot.types.UnitType.UnitTypes;
 import eaglesWings.datastructure.Base;
 import eaglesWings.datastructure.BaseManager;
 import eaglesWings.datastructure.BuildManager;
 import eaglesWings.datastructure.GasResource;
 import eaglesWings.datastructure.Resource;
-import eaglesWings.datastructure.Worker;
-import eaglesWings.gamestructure.DebugEngine;
-import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
-import javabot.model.BaseLocation;
-import javabot.model.Unit;
-import javabot.types.UnitType.UnitTypes;
+import eaglesWings.pathfinder.PathingManager;
 
 public class FirstFrameState extends BotState {
 
 	public FirstFrameState(GameHandler igame, BaseManager baseManager,
-			BuildManager buildManager) {
-		super(igame, baseManager, buildManager);
+			BuildManager buildManager, PathingManager pathingManager) {
+		super(igame, baseManager, buildManager, pathingManager);
 	}
 
 	@Override
@@ -56,19 +51,18 @@ public class FirstFrameState extends BotState {
 		for (Unit u : game.getAllUnits()) {
 			Base closestBase = baseManager.getClosestBase(u.getX(), u.getY());
 			if (u.getTypeID() == UnitTypes.Resource_Mineral_Field.ordinal()) {
-				game.sendText("Minerals found at (" + u.getX() + "," + u.getY()
-						+ ")");
 				closestBase.minerals.put(u.getID(), new Resource(u));
 			} else if (u.getTypeID() == UnitTypes.Resource_Vespene_Geyser
 					.ordinal()) {
-				game.sendText("Gas found at (" + u.getX() + "," + u.getY()
-						+ ")");
 				closestBase.gas.put(u.getID(), new GasResource(u));
 			} else if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
 				closestBase.addWorker(u.getID(), u);
-				game.sendText("SCV found");
 			}
 		}
+
+		// Find a path from the nearest choke to the main base
+		pathingManager.findChokeToMain();
+		game.sendText("Choke point detected!");
 
 		// Notify we're complete
 		game.sendText("First frame initialization complete!");

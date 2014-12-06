@@ -128,15 +128,20 @@ public class MicroManager implements Debuggable {
 				game.attack(myUnit.getID(), enemyUnit.getID());
 				// Trigger animation lock
 				ua.task = UnitTask.ANIMATION_LOCK;
-				ua.timeout = 5;
+				// ua.timeout = 5;
 			} else if (ua.task == UnitTask.ANIMATION_LOCK) {
 				// Can leave animation lock
+				game.drawText(myUnit.getX(), myUnit.getY(), "Animation Lock ("
+						+ ua.timeout + ")", false);
 				if (ua.timeout <= 0) {
 					// Keep attacking
-					if (enemyRange < range) {
+					if (range > enemyRange) {
 						// Should kite
 						ua.timeout = maxCooldown + 10;
 						ua.task = UnitTask.RETREATING;
+					} else {
+						// Just fire all day!
+						ua.task = UnitTask.FIRING;
 					}
 				}
 			} else if (ua.task == UnitTask.RETREATING) {
@@ -237,7 +242,7 @@ public class MicroManager implements Debuggable {
 
 	public void unitCreate(int unitID) {
 		Unit unit = game.getUnit(unitID);
-		if (unit.getTypeID() == UnitTypes.Terran_Marine.ordinal()) {
+		if (unit.getTypeID() == UnitTypes.Zerg_Mutalisk.ordinal()) {
 			marines.put(unitID, new UnitAgent(game, unit));
 		}
 	}

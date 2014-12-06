@@ -2,6 +2,10 @@ package eaglesWings.gamestructure;
 
 import java.util.Hashtable;
 import java.util.Map.Entry;
+
+import javabot.BWAPIEventListener;
+import javabot.model.Unit;
+import javabot.types.UnitType.UnitTypes;
 import eaglesWings.botstate.BotState;
 import eaglesWings.botstate.FirstFrameState;
 import eaglesWings.datastructure.Base;
@@ -9,9 +13,7 @@ import eaglesWings.datastructure.BaseManager;
 import eaglesWings.datastructure.BuildManager;
 import eaglesWings.datastructure.BuildingPlan;
 import eaglesWings.micromanager.MicroManager;
-import javabot.BWAPIEventListener;
-import javabot.model.*;
-import javabot.types.UnitType.UnitTypes;
+import eaglesWings.pathfinder.PathingManager;
 
 public class JavaBot implements BWAPIEventListener {
 
@@ -22,6 +24,7 @@ public class JavaBot implements BWAPIEventListener {
 	private BaseManager baseManager;
 	private BuildManager buildManager;
 	private MicroManager microManager;
+	private PathingManager pathingManager;
 
 	public static void main(String[] args) {
 		new JavaBot();
@@ -38,77 +41,87 @@ public class JavaBot implements BWAPIEventListener {
 
 	// Method called at the beginning of the game.
 	public void gameStarted() {
-		// Run BWTA
-		game.loadMapData(true);
-		// Allow manual control of units during the game
-		game.enableUserInput();
-		// Draw the commands each unit is executing
-		game.drawTargets(true);
+		try {
+			// Run BWTA
+			game.loadMapData(true);
+			// Allow manual control of units during the game
+			game.enableUserInput();
+			// Draw the commands each unit is executing
+			game.drawTargets(true);
 
-		// Initialize
-		unitsUnderConstruction = new Hashtable<Integer, Unit>();
+			// Initialize
+			unitsUnderConstruction = new Hashtable<Integer, Unit>();
 
-		// Start all the modules
-		baseManager = new BaseManager(game);
-		buildManager = new BuildManager(game, baseManager);
-		botState = new FirstFrameState(game, baseManager, buildManager);
-		microManager = new MicroManager(game);
+			// Start all the modules
+			baseManager = new BaseManager(game);
+			buildManager = new BuildManager(game, baseManager);
+			pathingManager = new PathingManager(game, baseManager);
+			botState = new FirstFrameState(game, baseManager, buildManager,
+					pathingManager);
+			microManager = new MicroManager(game);
 
-		// Register debuggers
-		baseManager.registerDebugFunctions(game);
-		buildManager.registerDebugFunctions(game);
-		microManager.registerDebugFunctions(game);
-		game.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				engine.drawText(5, 5, "Bot state: "
-						+ botState.getClass().toString(), true);
-				// for (int i = 0; i < game.getMap().getWidth(); i++) {
-				// for (int e = 0; e < game.getMap().getHeight(); e++) {
-				// if (game.isBuildable(i, e, true)) {
-				// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
-				// i * 32 + 16 + 5, e * 32 + 16 + 5,
-				// BWColor.GREEN, true, false);
-				// } else {
-				// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
-				// i * 32 + 16 + 5, e * 32 + 16 + 5,
-				// BWColor.RED, true, false);
-				// }
-				// }
-				// }
-			}
-		});
-		game.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				String uucString = "";
-				for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
-					uucString += game.getUnitType(u.getValue().getTypeID())
-							.getName() + ", ";
+			// Register debuggers
+			baseManager.registerDebugFunctions(game);
+			pathingManager.registerDebugFunctions(game);
+			buildManager.registerDebugFunctions(game);
+			microManager.registerDebugFunctions(game);
+			game.registerDebugFunction(new DebugModule() {
+				@Override
+				public void draw(DebugEngine engine) {
+					engine.drawText(5, 5, "Bot state: "
+							+ botState.getClass().toString(), true);
+					// for (int i = 0; i < game.getMap().getWidth(); i++) {
+					// for (int e = 0; e < game.getMap().getHeight(); e++) {
+					// if (game.isBuildable(i, e, true)) {
+					// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
+					// i * 32 + 16 + 5, e * 32 + 16 + 5,
+					// BWColor.GREEN, true, false);
+					// } else {
+					// engine.drawBox(i * 32 + 16 - 5, e * 32 + 16 - 5,
+					// i * 32 + 16 + 5, e * 32 + 16 + 5,
+					// BWColor.RED, true, false);
+					// }
+					// }
+					// }
 				}
-				engine.drawText(5, 60, "unitsUnderConstruction: " + uucString,
-						true);
-				engine.drawText(500, 15, "Supply: "
-						+ game.getSelf().getSupplyUsed() + "/"
-						+ game.getSelf().getSupplyTotal(), true);
-			}
-		});
+			});
+			// Currently under construction
+			game.registerDebugFunction(new DebugModule() {
+				@Override
+				public void draw(DebugEngine engine) {
+					String uucString = "";
+					for (Entry<Integer, Unit> u : unitsUnderConstruction
+							.entrySet()) {
+						uucString += game.getUnitType(u.getValue().getTypeID())
+								.getName() + ", ";
+					}
+					engine.drawText(5, 60, "unitsUnderConstruction: "
+							+ uucString, true);
+					engine.drawText(500, 15, "Supply: "
+							+ game.getSelf().getSupplyUsed() + "/"
+							+ game.getSelf().getSupplyTotal(), true);
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	// Method called on every logical frame
 	public void gameUpdate() {
-		// Check if any units have completed
-		for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
-			if (u.getValue().isCompleted()) {
-				game.sendText("Unit completed: "
-						+ game.getUnitType(u.getValue().getTypeID()).getName());
-				unitsUnderConstruction.remove(u.getKey());
-				unitComplete(u.getKey());
-			}
-		}
-
-		// Allow the bot to act
 		try {
+			// Check if any units have completed
+			for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
+				if (u.getValue().isCompleted()) {
+					game.sendText("Unit completed: "
+							+ game.getUnitType(u.getValue().getTypeID())
+									.getName());
+					unitsUnderConstruction.remove(u.getKey());
+					unitComplete(u.getKey());
+				}
+			}
+
+			// Allow the bot to act
 			botState = botState.act();
 
 			microManager.micro();
@@ -263,8 +276,6 @@ public class JavaBot implements BWAPIEventListener {
 	}
 
 	public void unitMorph(int unitID) {
-		Unit unit = game.getUnit(unitID);
-		unitsUnderConstruction.put(unitID, unit);
 	}
 
 	public void unitShow(int unitID) {

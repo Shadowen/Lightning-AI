@@ -95,7 +95,7 @@ public class BuildManager implements Debuggable {
 					}
 				}
 			}
-			maxDist += 2;
+			maxDist++;
 		}
 
 		if (ret.x == -1) {
@@ -111,8 +111,8 @@ public class BuildManager implements Debuggable {
 		int height = type.getTileHeight();
 
 		// Check if location is buildable
-		for (int i = left; i < left + width; i++) {
-			for (int j = top; j < top + height; j++) {
+		for (int i = left; i < left + width - 1; i++) {
+			for (int j = top; j < top + height - 1; j++) {
 				if (!(game.isBuildable(i, j, true))) {
 					return false;
 				}
