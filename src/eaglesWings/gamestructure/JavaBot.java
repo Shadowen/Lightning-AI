@@ -118,6 +118,8 @@ public class JavaBot implements BWAPIEventListener {
 									.getName());
 					unitsUnderConstruction.remove(u.getKey());
 					unitComplete(u.getKey());
+					break; // There was some concurrent modification exception
+							// with the hashtable?
 				}
 			}
 

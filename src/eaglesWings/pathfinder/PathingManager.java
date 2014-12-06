@@ -1,8 +1,15 @@
 package eaglesWings.pathfinder;
 
 import java.awt.Point;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
 
 import javabot.model.ChokePoint;
 import javabot.util.BWColor;
@@ -13,11 +20,14 @@ import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
 
 public class PathingManager implements Debuggable {
+	private static final int MAX_RAMP_WALK_TILES = 500;
 	private GameHandler game;
 	private BaseManager baseManager;
 
 	// A list of tiles detailing a path into the main from the choke
-	private List<Point> tilePathIntoMain;
+	private List<Point> pathIntoMain;
+	private Point topOfRamp;
+	private List<Point> chokeRampWalkTiles;
 
 	public PathingManager(GameHandler g, BaseManager bm) {
 		game = g;
@@ -26,13 +36,74 @@ public class PathingManager implements Debuggable {
 
 	public void findChokeToMain() {
 		for (ChokePoint choke : game.getMap().getChokePoints()) {
+			// Find choke to main base
 			if (choke.getFirstRegionID() == baseManager.main.location
 					.getRegionID()
 					|| choke.getSecondRegionID() == baseManager.main.location
 							.getRegionID()) {
-				tilePathIntoMain = findGroundPath(choke.getCenterX(),
+				// Find the path into the main
+				pathIntoMain = findGroundPath(choke.getCenterX(),
 						choke.getCenterY(), baseManager.main.location.getX(),
 						baseManager.main.location.getY());
+
+				// Find top of ramp
+				for (Point p : pathIntoMain) {
+					if (game.getMap().isBuildable(p.x / 32, p.y / 32)) {
+						topOfRamp = p;
+						break;
+					}
+				}
+
+				// Mark entire ramp
+				chokeRampWalkTiles = new ArrayList<Point>();
+				Queue<Point> rampWalkTileOpenSet = new PriorityQueue<Point>(1,
+						new Comparator<Point>() {
+							@Override
+							public int compare(Point p1, Point p2) {
+								Point topOfRampWalkTile = new Point(
+										topOfRamp.x / 8, topOfRamp.y / 8);
+								return (int) (p1.distanceSq(topOfRampWalkTile) - p2
+										.distanceSq(topOfRampWalkTile));
+							}
+						});
+				rampWalkTileOpenSet.add(new Point(choke.getCenterX() / 8, choke
+						.getCenterY() / 8));
+				while (!rampWalkTileOpenSet.isEmpty()) {
+					Point currentNode = rampWalkTileOpenSet.poll();
+					if (game.getMap().isWalkable(currentNode.x, currentNode.y)
+							&& !game.getMap().isBuildable(currentNode.x / 4,
+									currentNode.y / 4)) {
+						chokeRampWalkTiles.add(new Point(currentNode.x,
+								currentNode.y));
+						Point nextNode;
+						nextNode = new Point(currentNode.x - 1, currentNode.y);
+						if (!chokeRampWalkTiles.contains(nextNode)
+								&& !rampWalkTileOpenSet.contains(nextNode)) {
+							rampWalkTileOpenSet.add(nextNode);
+						}
+						nextNode = new Point(currentNode.x + 1, currentNode.y);
+						if (!chokeRampWalkTiles.contains(nextNode)
+								&& !rampWalkTileOpenSet.contains(nextNode)) {
+							rampWalkTileOpenSet.add(nextNode);
+						}
+						nextNode = new Point(currentNode.x, currentNode.y - 1);
+						if (!chokeRampWalkTiles.contains(nextNode)
+								&& !rampWalkTileOpenSet.contains(nextNode)) {
+							rampWalkTileOpenSet.add(nextNode);
+						}
+						nextNode = new Point(currentNode.x, currentNode.y + 1);
+						if (!chokeRampWalkTiles.contains(nextNode)
+								&& !rampWalkTileOpenSet.contains(nextNode)) {
+							rampWalkTileOpenSet.add(nextNode);
+						}
+					}
+
+					// Safety to prevent the whole map from being interpreted as
+					// a ramp
+					if (chokeRampWalkTiles.size() >= MAX_RAMP_WALK_TILES) {
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -141,17 +212,28 @@ public class PathingManager implements Debuggable {
 				}
 			}
 		});
-		// Draw choke into main
+		// Draw path from choke into main
 		g.registerDebugFunction(new DebugModule() {
 			@Override
 			public void draw(DebugEngine engine) {
-				int i = 0;
-				for (Point location : tilePathIntoMain) {
-					engine.drawBox(location.x, location.y, location.x + 8,
-							location.y + 8, BWColor.GREY, false, false);
-					engine.drawText(location.x + 2, location.y,
-							String.valueOf(i), false);
-					i++;
+				for (Point location : pathIntoMain) {
+					engine.drawBox(location.x + 1, location.y + 1,
+							location.x + 6, location.y + 6, BWColor.GREY,
+							false, false);
+				}
+				engine.drawBox(topOfRamp.x + 1, topOfRamp.y + 1,
+						topOfRamp.x + 6, topOfRamp.y + 6, BWColor.RED, false,
+						false);
+			}
+		});
+		// Highlight ramp walk tiles
+		g.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				for (Point location : chokeRampWalkTiles) {
+					engine.drawBox(location.x * 8, location.y * 8,
+							location.x * 8 + 8, location.y * 8 + 8,
+							BWColor.GREEN, false, false);
 				}
 			}
 		});

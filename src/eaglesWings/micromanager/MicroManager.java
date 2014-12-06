@@ -128,7 +128,7 @@ public class MicroManager implements Debuggable {
 				game.attack(myUnit.getID(), enemyUnit.getID());
 				// Trigger animation lock
 				ua.task = UnitTask.ANIMATION_LOCK;
-				// ua.timeout = 5;
+				ua.timeout = 5;
 			} else if (ua.task == UnitTask.ANIMATION_LOCK) {
 				// Can leave animation lock
 				game.drawText(myUnit.getX(), myUnit.getY(), "Animation Lock ("
