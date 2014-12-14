@@ -7,6 +7,7 @@ import eaglesWings.datastructure.Base;
 import eaglesWings.datastructure.BaseManager;
 import eaglesWings.datastructure.BuildManager;
 import eaglesWings.datastructure.GasResource;
+import eaglesWings.datastructure.MineralResource;
 import eaglesWings.datastructure.Resource;
 import eaglesWings.datastructure.Worker;
 import eaglesWings.gamestructure.DebugEngine;
@@ -57,7 +58,7 @@ public class FirstFrameState extends BotState {
 			if (u.getTypeID() == UnitTypes.Resource_Mineral_Field.ordinal()) {
 				game.sendText("Minerals found at (" + u.getX() + "," + u.getY()
 						+ ")");
-				closestBase.minerals.put(u.getID(), new Resource(u));
+				closestBase.minerals.put(u.getID(), new MineralResource(u));
 			} else if (u.getTypeID() == UnitTypes.Resource_Vespene_Geyser
 					.ordinal()) {
 				game.sendText("Gas found at (" + u.getX() + "," + u.getY()
@@ -69,12 +70,9 @@ public class FirstFrameState extends BotState {
 			}
 		}
 
-		// TODO Debugging
-		buildManager.addToQueue(UnitTypes.Terran_Refinery);
-
 		// Notify we're complete
 		game.sendText("First frame initialization complete!");
 		// Move to an opening build
-		return new OpeningBuildState(this);
+		return new StarportRush(this);
 	}
 }

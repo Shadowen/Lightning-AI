@@ -2,7 +2,7 @@ package eaglesWings.datastructure;
 
 import javabot.model.Unit;
 
-public class Resource {
+public abstract class Resource {
 	protected Unit unit;
 	private int gatherers;
 

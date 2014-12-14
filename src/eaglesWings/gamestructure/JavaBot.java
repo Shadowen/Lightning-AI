@@ -46,33 +46,17 @@ public class JavaBot implements BWAPIEventListener {
 		game.loadTypeData();
 	}
 
-	private int mapWidth;
-	private int mapHeight;
+	// private int mapWidth;
+	// private int mapHeight;
 
 	// Method called at the beginning of the game.
 	public void gameStarted() {
-		System.out.println("Game Started");
-
 		// allow me to manually control units during the game
 		game.enableUserInput();
-
 		// analyze the map
 		game.loadMapData(true);
-
-		// ============== YOUR CODE GOES HERE =======================
-
-		// This is called at the beginning of the game. You can
-		// initialize some data structures (or do something similar)
-		// if needed. For example, you should maintain a memory of seen
-		// enemy buildings.
-
-		game.printText("This map is called " + game.getMap().getName());
-		game.printText("Enemy race ID: "
-				+ String.valueOf(game.getEnemies().get(0).getRaceID())); // Z=0,T=1,P=2
-
 		game.drawTargets(true);
 
-		// ==========================================================
 		// Initialize
 		unitsUnderConstruction = new Hashtable<Integer, Unit>();
 
@@ -218,8 +202,6 @@ public class JavaBot implements BWAPIEventListener {
 		// Check if any units have completed
 		for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
 			if (u.getValue().isCompleted()) {
-				game.sendText("Unit completed: "
-						+ game.getUnitType(u.getValue().getTypeID()).getName());
 				unitsUnderConstruction.remove(u.getKey());
 				unitComplete(u.getKey());
 			}
@@ -227,7 +209,11 @@ public class JavaBot implements BWAPIEventListener {
 
 		// Allow the bot to act
 		try {
+			// Bot state updates
 			botState = botState.act();
+
+			// BuildManager check build order
+			buildManager.checkMinimums();
 
 			// Auto economy
 			for (Base b : baseManager.getMyBases()) {
@@ -250,8 +236,7 @@ public class JavaBot implements BWAPIEventListener {
 			if (game.getSelf().getSupplyUsed() > game.getSelf()
 					.getSupplyTotal() - 2 * 2) {
 				// Check that it's not already in the queue
-				if (!buildManager
-						.buildQueueContains(UnitTypes.Terran_Supply_Depot)) {
+				if (!buildManager.isInQueue(UnitTypes.Terran_Supply_Depot)) {
 					buildManager.addToQueue(UnitTypes.Terran_Supply_Depot);
 				}
 			}
@@ -287,11 +272,11 @@ public class JavaBot implements BWAPIEventListener {
 					}
 				}
 
+			// Draw debug information on screen
+			game.drawDebug();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		// Draw debug information on screen
-		game.drawDebug();
 
 		/*
 		 * for (Unit u : game.getMyUnits()) { if (u.getTypeID() ==
@@ -369,7 +354,6 @@ public class JavaBot implements BWAPIEventListener {
 			}
 
 			botState = botState.unitComplete(unitID);
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -419,16 +403,16 @@ public class JavaBot implements BWAPIEventListener {
 	public void keyPressed(int keyCode) {
 	}
 
-	private double[][] threatMap;
-
-	private void drawThreatMap() {
-		// Actually draw
-		for (int x = 1; x < mapWidth; x++) {
-			for (int y = 1; y < mapHeight; y++) {
-				game.drawCircle(x * 32, y * 32,
-						(int) Math.round(threatMap[x][y]), BWColor.RED, false,
-						false);
-			}
-		}
-	}
+	// private double[][] threatMap;
+	//
+	// private void drawThreatMap() {
+	// // Actually draw
+	// for (int x = 1; x < mapWidth; x++) {
+	// for (int y = 1; y < mapHeight; y++) {
+	// game.drawCircle(x * 32, y * 32,
+	// (int) Math.round(threatMap[x][y]), BWColor.RED, false,
+	// false);
+	// }
+	// }
+	// }
 }

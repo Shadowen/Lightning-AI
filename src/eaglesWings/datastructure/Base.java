@@ -45,11 +45,10 @@ public class Base {
 		for (Entry<Integer, Worker> worker : workers.entrySet()) {
 			if (worker.getValue().isIdle()) {
 				// Get back to work
-				if (worker.getValue().getCurrentTask() == WorkerTask.Mining_Minerals) {
-					worker.getValue().mine();
-					continue;
-				} else if (worker.getValue().getCurrentTask() == WorkerTask.Mining_Gas) {
-					// TODO mine gas!
+				WorkerTask currentTask = worker.getValue().getCurrentTask();
+				if (currentTask == WorkerTask.Mining_Minerals
+						|| currentTask == WorkerTask.Mining_Gas) {
+					worker.getValue().gather();
 					continue;
 				}
 
@@ -85,7 +84,7 @@ public class Base {
 				}
 
 				// Actually issue the order
-				worker.getValue().mine(mineral);
+				worker.getValue().gather(mineral);
 			}
 		}
 	}

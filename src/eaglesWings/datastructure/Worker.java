@@ -21,29 +21,24 @@ public class Worker {
 		return unit.isIdle();
 	}
 
-	public void mine() {
-		mine(currentResource);
+	public void gather() {
+		gather(currentResource);
 	}
 
-	public void mine(Resource r) {
+	public void gather(Resource r) {
 		if (currentResource != null) {
 			currentResource.removeGatherer();
 		}
-		game.rightClick(unit.getID(), r.getID());
+
+		game.gather(unit.getID(), r.getID());
 		currentResource = r;
 		r.addGatherer();
-		currentTask = WorkerTask.Mining_Minerals;
-	}
 
-	public void gatherGas(GasResource g) {
-		if (currentResource != null) {
-			currentResource.removeGatherer();
+		if (r instanceof MineralResource) {
+			currentTask = WorkerTask.Mining_Minerals;
+		} else if (r instanceof GasResource) {
+			currentTask = WorkerTask.Mining_Gas;
 		}
-
-		game.rightClick(unit.getID(), g.getID());
-		currentResource = g;
-		g.addGatherer();
-		currentTask = WorkerTask.Mining_Gas;
 	}
 
 	public void build(BuildingPlan toBuild) {

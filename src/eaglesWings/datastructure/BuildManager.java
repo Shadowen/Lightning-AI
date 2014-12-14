@@ -2,6 +2,7 @@ package eaglesWings.datastructure;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
+import java.util.Hashtable;
 import java.util.Map.Entry;
 import java.util.Queue;
 
@@ -18,12 +19,20 @@ public class BuildManager implements Debuggable {
 	private GameHandler game;
 	private BaseManager baseManager;
 
+	public Hashtable<UnitTypes, Integer> unitMinimums;
+
 	public Queue<BuildingPlan> buildingQueue;
 	public Queue<UnitTypes> unitQueue;
 
 	public BuildManager(GameHandler igame, BaseManager ibm) {
 		game = igame;
 		baseManager = ibm;
+
+		unitMinimums = new Hashtable<UnitTypes, Integer>();
+		for (UnitTypes type : UnitTypes.values()) {
+			unitMinimums.put(type, 0);
+		}
+
 		buildingQueue = new ArrayDeque<BuildingPlan>();
 		unitQueue = new ArrayDeque<UnitTypes>();
 	}
@@ -142,7 +151,7 @@ public class BuildManager implements Debuggable {
 					// If it's a refinery, the worker will automatically become
 					// a gas miner!
 					if (u.getTypeID() == UnitTypes.Terran_Refinery.ordinal()) {
-						p.builder.gatherGas((GasResource) baseManager
+						p.builder.gather((GasResource) baseManager
 								.getResource(u));
 					}
 
@@ -156,7 +165,7 @@ public class BuildManager implements Debuggable {
 
 	}
 
-	public boolean buildQueueContains(UnitTypes unitType) {
+	public boolean isInQueue(UnitTypes unitType) {
 		for (BuildingPlan plan : buildingQueue) {
 			if (plan.getTypeID() == unitType.ordinal()) {
 				return true;
@@ -172,7 +181,38 @@ public class BuildManager implements Debuggable {
 				count++;
 			}
 		}
+		for (UnitTypes type : unitQueue) {
+			if (type.ordinal() == unitType.ordinal()) {
+				count++;
+			}
+		}
 		return count;
+	}
+
+	public int countMyUnit(UnitTypes type) {
+		int count = 0;
+		for (Unit u : game.getMyUnits()) {
+			if (!u.isBeingConstructed() && u.getTypeID() == type.ordinal()) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	public void setMinimum(UnitTypes unitType, int min) {
+		unitMinimums.put(unitType, min);
+	}
+
+	public void checkMinimums() {
+		for (Entry<UnitTypes, Integer> entry : unitMinimums.entrySet()) {
+			UnitTypes unitType = entry.getKey();
+			int currentCount = countMyUnit(unitType);
+			int inQueueCount = countInQueue(unitType);
+			int requiredCount = entry.getValue();
+			if (currentCount + inQueueCount < requiredCount) {
+				addToQueue(unitType);
+			}
+		}
 	}
 
 	@Override
@@ -201,24 +241,38 @@ public class BuildManager implements Debuggable {
 				}
 				engine.drawText(5, 20, "Building Queue: " + buildQueueString,
 						true);
+			}
+		});
+		g.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
 				String trainingQueueString = "";
-				for (Unit u : unitQueue.toArray(new Unit[0])) {
-					trainingQueueString += game.getUnitType(u.getTypeID())
-							.toString() + ", ";
+				for (UnitTypes type : unitQueue.toArray(new UnitTypes[0])) {
+					trainingQueueString += type.toString() + ", ";
 				}
 				engine.drawText(5, 40,
 						"Training Queue: " + trainingQueueString, true);
 			}
 		});
-	}
+		g.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				engine.drawText(5, 80, "Unit Minimums", true);
+				int y = 90;
+				for (Entry<UnitTypes, Integer> entry : unitMinimums.entrySet()) {
+					UnitTypes unitType = entry.getKey();
+					int requiredCount = entry.getValue();
+					int inQueueCount = countInQueue(unitType);
+					int currentCount = countMyUnit(unitType);
 
-	public int countMyUnit(UnitTypes type) {
-		int count = 0;
-		for (Unit u : game.getMyUnits()) {
-			if (!u.isBeingConstructed() && u.getTypeID() == type.ordinal()) {
-				count++;
+					if (requiredCount > 0) {
+						engine.drawText(5, y, unitType.toString() + ": "
+								+ currentCount + "(" + inQueueCount + ")/"
+								+ requiredCount, true);
+						y += 10;
+					}
+				}
 			}
-		}
-		return count;
+		});
 	}
 }
