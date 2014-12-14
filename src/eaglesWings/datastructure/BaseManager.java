@@ -110,13 +110,15 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		g.registerDebugFunction(new DebugModule() {
 			@Override
 			public void draw(DebugEngine engine) {
-				engine.drawText(main.location.getX(), main.location.getY(),
-						"Main", false);
+				if (main != null) {
+					engine.drawText(main.location.getX(), main.location.getY(),
+							"Main", false);
+				}
 
 				for (Base b : bases) {
 					if (b.commandCenter != null) {
-						int x = b.commandCenter.getX() - 32 * 2;
-						int y = b.commandCenter.getY() - 32 - 16;
+						int x = b.commandCenter.getTileX() * 32;
+						int y = b.commandCenter.getTileY() * 32;
 						engine.drawBox(x, y, x + 32 * 4, y + 32 * 3,
 								BWColor.TEAL, false, false);
 						engine.drawText(x + 5, y + 5,

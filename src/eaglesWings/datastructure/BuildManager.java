@@ -52,9 +52,12 @@ public class BuildManager implements Debuggable {
 			}
 		} else if (game.getUnitType(unitType.ordinal()).isBuilding()) {
 			// Otherwise, buildings
-			Point location = getBuildLocation(baseManager.main.location.getX(),
-					baseManager.main.location.getY(), unitType);
-			addBuilding(location.x, location.y, unitType);
+			if (baseManager.main != null) {
+				Point location = getBuildLocation(
+						baseManager.main.location.getX(),
+						baseManager.main.location.getY(), unitType);
+				addBuilding(location.x, location.y, unitType);
+			}
 		} else {
 			// Finally, units
 			unitQueue.add(unitType);
@@ -101,7 +104,7 @@ public class BuildManager implements Debuggable {
 					}
 				}
 			}
-			maxDist += 2;
+			maxDist++;
 		}
 
 		if (ret.x == -1) {
@@ -117,8 +120,8 @@ public class BuildManager implements Debuggable {
 		int height = type.getTileHeight();
 
 		// Check if location is buildable
-		for (int i = left; i < left + width; i++) {
-			for (int j = top; j < top + height; j++) {
+		for (int i = left; i < left + width - 1; i++) {
+			for (int j = top; j < top + height - 1; j++) {
 				if (!(game.isBuildable(i, j, true))) {
 					return false;
 				}
@@ -151,8 +154,7 @@ public class BuildManager implements Debuggable {
 					// If it's a refinery, the worker will automatically become
 					// a gas miner!
 					if (u.getTypeID() == UnitTypes.Terran_Refinery.ordinal()) {
-						p.builder.gather((GasResource) baseManager
-								.getResource(u));
+						p.builder.gather(baseManager.getResource(u));
 					}
 
 					break;
@@ -168,6 +170,11 @@ public class BuildManager implements Debuggable {
 	public boolean isInQueue(UnitTypes unitType) {
 		for (BuildingPlan plan : buildingQueue) {
 			if (plan.getTypeID() == unitType.ordinal()) {
+				return true;
+			}
+		}
+		for (UnitTypes unitInQueue : unitQueue) {
+			if (unitInQueue.ordinal() == unitType.ordinal()) {
 				return true;
 			}
 		}

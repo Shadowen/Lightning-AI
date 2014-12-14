@@ -13,7 +13,7 @@ import javabot.util.BWColor;
 public class MassMarineState extends BotState {
 	int frameCount = 0;
 	int enemyLocation = 3;
-	private int armySize = 20;
+	private int armySize = 0;
 
 	public MassMarineState(BotState oldState) {
 		super(oldState);
@@ -43,7 +43,7 @@ public class MassMarineState extends BotState {
 							&& Point.distance(u.getX(), u.getY(),
 									enemyUnit.getX(), enemyUnit.getY()) < 500) {
 						// Attack
-						game.attack(u.getID(), enemyUnit.getID());
+						//game.attack(u.getID(), enemyUnit.getID());
 					} else if (buildManager
 							.countMyUnit(UnitTypes.Terran_Marine) > armySize) {
 						{
