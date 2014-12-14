@@ -1,14 +1,9 @@
 package eaglesWings.gamestructure;
 
-import java.awt.Color;
-import java.awt.Point;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.Set;
 
 import eaglesWings.botstate.BotState;
 import eaglesWings.botstate.FirstFrameState;
@@ -18,13 +13,9 @@ import eaglesWings.datastructure.BuildManager;
 import eaglesWings.datastructure.BuildingPlan;
 import eaglesWings.micromanager.MicroManager;
 import eaglesWings.pathfinder.PathingManager;
-import eaglesWings.datastructure.Resource;
 import javabot.BWAPIEventListener;
 import javabot.model.*;
-import javabot.types.*;
-import javabot.types.OrderType.OrderTypeTypes;
 import javabot.types.UnitType.UnitTypes;
-import javabot.util.BWColor;
 
 public class JavaBot implements BWAPIEventListener {
 
@@ -49,9 +40,6 @@ public class JavaBot implements BWAPIEventListener {
 	public void connected() {
 		game.loadTypeData();
 	}
-
-	// private int mapWidth;
-	// private int mapHeight;
 
 	// Method called at the beginning of the game.
 	public void gameStarted() {
@@ -108,19 +96,25 @@ public class JavaBot implements BWAPIEventListener {
 	public void gameUpdate() {
 		try {
 			// Check if any units have completed
-			for (Entry<Integer, Unit> u : unitsUnderConstruction.entrySet()) {
-				if (u.getValue().isCompleted()) {
-					unitsUnderConstruction.remove(u.getKey());
-					unitComplete(u.getKey());
+			Iterator<Entry<Integer, Unit>> unitsUnderConstructionSet = unitsUnderConstruction
+					.entrySet().iterator();
+			while (unitsUnderConstructionSet.hasNext()) {
+				Entry<Integer, Unit> entry = unitsUnderConstructionSet.next();
+				int unitID = entry.getKey();
+				Unit u = entry.getValue();
+				if (u.isCompleted()) {
+					unitsUnderConstructionSet.remove();
+					unitComplete(unitID);
 				}
 			}
 
 			// Allow the bot to act
 			// Bot state updates
 			botState = botState.act();
-			microManager.micro();
 			// BuildManager check build order
 			buildManager.checkMinimums();
+			// Micro units
+			microManager.micro();
 
 			// Auto economy
 			for (Base b : baseManager.getMyBases()) {
@@ -135,16 +129,6 @@ public class JavaBot implements BWAPIEventListener {
 						game.train(b.commandCenter.getID(),
 								UnitTypes.Terran_SCV.ordinal());
 					}
-				}
-			}
-
-			// Auto supplies
-			// Add supply depots if necessary
-			if (game.getSelf().getSupplyUsed() > game.getSelf()
-					.getSupplyTotal() - 2 * 2) {
-				// Check that it's not already in the queue
-				if (!buildManager.isInQueue(UnitTypes.Terran_Supply_Depot)) {
-					buildManager.addToQueue(UnitTypes.Terran_Supply_Depot);
 				}
 			}
 
@@ -217,6 +201,8 @@ public class JavaBot implements BWAPIEventListener {
 		try {
 			Unit u = game.getUnit(unitID);
 			int typeID = u.getTypeID();
+			game.sendText("Unit complete: "
+					+ game.getUnitType(typeID).getName());
 
 			buildManager.doneBuilding(u);
 
@@ -269,8 +255,12 @@ public class JavaBot implements BWAPIEventListener {
 	}
 
 	public void unitMorph(int unitID) {
-		Unit unit = game.getUnit(unitID);
-		unitsUnderConstruction.put(unitID, unit);
+		try {
+			Unit unit = game.getUnit(unitID);
+			unitsUnderConstruction.put(unitID, unit);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void unitShow(int unitID) {

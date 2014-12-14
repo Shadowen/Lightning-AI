@@ -30,9 +30,8 @@ public class FirstFrameState extends BotState {
 			}
 		}
 		if (commandCenter == null) {
+			game.sendText("No Command Center found.");
 			return this;
-			// game.sendText("No Command Center found.");
-			// throw new NullPointerException(); // TODO custom exceptions
 		}
 
 		// Create a list of bases corresponding to BWTA's analysis
@@ -60,6 +59,9 @@ public class FirstFrameState extends BotState {
 				closestBase.addWorker(u.getID(), u);
 			}
 		}
+
+		// Some other init
+		buildManager.setMinimum(UnitTypes.Terran_Command_Center, 1);
 
 		// Notify we're complete
 		game.sendText("First frame initialization complete!");

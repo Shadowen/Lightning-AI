@@ -140,31 +140,28 @@ public class BuildManager implements Debuggable {
 		return true;
 	}
 
-	// Call this whenever a unit completes contruction
+	// Call this whenever a unit completes construction
 	public void doneBuilding(Unit u) {
-		if (game.getUnitType(u.getTypeID()).isBuilding()) {
-			// Go through planned buildings
-			for (BuildingPlan p : buildingQueue) {
-				// If it's the right building according to the plan
-				if (u.getTypeID() == p.getTypeID() && u.getTileX() == p.getTx()
-						&& u.getTileY() == p.getTy()) {
-					// It has been completed
-					buildingQueue.remove(p);
+		UnitTypes type = UnitTypes.values()[u.getTypeID()];
+		// Go through planned units
+		unitQueue.remove(type);
+		// Go through planned buildings
+		for (BuildingPlan p : buildingQueue) {
+			// If it's the right building according to the plan
+			if (u.getTypeID() == p.getTypeID() && u.getTileX() == p.getTx()
+					&& u.getTileY() == p.getTy()) {
+				// It has been completed
+				buildingQueue.remove(p);
 
-					// If it's a refinery, the worker will automatically become
-					// a gas miner!
-					if (u.getTypeID() == UnitTypes.Terran_Refinery.ordinal()) {
-						p.builder.gather(baseManager.getResource(u));
-					}
-
-					break;
+				// If it's a refinery, the worker will automatically become
+				// a gas miner!
+				if (u.getTypeID() == UnitTypes.Terran_Refinery.ordinal()) {
+					p.builder.gather(baseManager.getResource(u));
 				}
-			}
-		} else {
-			// Go through planned units
-			unitQueue.remove(u);
-		}
 
+				break;
+			}
+		}
 	}
 
 	public boolean isInQueue(UnitTypes unitType) {
@@ -181,7 +178,7 @@ public class BuildManager implements Debuggable {
 		return false;
 	}
 
-	public int countInQueue(UnitTypes unitType) {
+	public int getCountInQueue(UnitTypes unitType) {
 		int count = 0;
 		for (BuildingPlan plan : buildingQueue) {
 			if (plan.getTypeID() == unitType.ordinal()) {
@@ -196,7 +193,7 @@ public class BuildManager implements Debuggable {
 		return count;
 	}
 
-	public int countMyUnit(UnitTypes type) {
+	public int getMyUnitCount(UnitTypes type) {
 		int count = 0;
 		for (Unit u : game.getMyUnits()) {
 			if (!u.isBeingConstructed() && u.getTypeID() == type.ordinal()) {
@@ -213,10 +210,11 @@ public class BuildManager implements Debuggable {
 	public void checkMinimums() {
 		for (Entry<UnitTypes, Integer> entry : unitMinimums.entrySet()) {
 			UnitTypes unitType = entry.getKey();
-			int currentCount = countMyUnit(unitType);
-			int inQueueCount = countInQueue(unitType);
+			int currentCount = getMyUnitCount(unitType);
+			int inQueueCount = getCountInQueue(unitType);
 			int requiredCount = entry.getValue();
 			if (currentCount + inQueueCount < requiredCount) {
+				game.sendText("Queuing up another " + unitType.toString());
 				addToQueue(unitType);
 			}
 		}
@@ -237,6 +235,7 @@ public class BuildManager implements Debuggable {
 							.getTileHeight() * 32;
 					engine.drawBox(x, y, x + width, y + height, BWColor.GREEN,
 							false, false);
+					engine.drawText(x, y, plan.getTypeName(), false);
 					if (plan.builder != null) {
 						int bx = plan.builder.getX();
 						int by = plan.builder.getY();
@@ -264,15 +263,17 @@ public class BuildManager implements Debuggable {
 		g.registerDebugFunction(new DebugModule() {
 			@Override
 			public void draw(DebugEngine engine) {
-				engine.drawText(5, 80, "Unit Minimums", true);
+				engine.drawText(5, 80,
+						"Unit Minimums: current(queued)/required", true);
 				int y = 90;
 				for (Entry<UnitTypes, Integer> entry : unitMinimums.entrySet()) {
 					UnitTypes unitType = entry.getKey();
+					int inQueueCount = getCountInQueue(unitType);
+					int currentCount = getMyUnitCount(unitType);
 					int requiredCount = entry.getValue();
-					int inQueueCount = countInQueue(unitType);
-					int currentCount = countMyUnit(unitType);
 
-					if (requiredCount > 0) {
+					if (inQueueCount != 0 || currentCount != 0
+							|| requiredCount != 0) {
 						engine.drawText(5, y, unitType.toString() + ": "
 								+ currentCount + "(" + inQueueCount + ")/"
 								+ requiredCount, true);

@@ -27,8 +27,8 @@ public class MassMarineState extends BotState {
 		}
 
 		if (game.getSelf().getMinerals() > 200
-				&& buildManager.countMyUnit(UnitTypes.Terran_Barracks)
-						+ buildManager.countInQueue(UnitTypes.Terran_Barracks) < 4) {
+				&& buildManager.getMyUnitCount(UnitTypes.Terran_Barracks)
+						+ buildManager.getCountInQueue(UnitTypes.Terran_Barracks) < 4) {
 			// Add more barracks
 			buildManager.addToQueue(UnitTypes.Terran_Barracks);
 		}
@@ -45,7 +45,7 @@ public class MassMarineState extends BotState {
 						// Attack
 						//game.attack(u.getID(), enemyUnit.getID());
 					} else if (buildManager
-							.countMyUnit(UnitTypes.Terran_Marine) > armySize) {
+							.getMyUnitCount(UnitTypes.Terran_Marine) > armySize) {
 						{
 							// Scout all bases
 							ArrayList<BaseLocation> baseLocations = game

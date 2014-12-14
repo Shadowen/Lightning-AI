@@ -15,6 +15,9 @@ public class StarportRush extends BotState {
 		// Check the build order
 		int supply = game.getSelf().getSupplyUsed() / 2;
 		switch (supply) {
+		case 9:
+			buildManager.setMinimum(UnitTypes.Terran_Supply_Depot, 1);
+			break;
 		case 11:
 			buildManager.setMinimum(UnitTypes.Terran_Barracks, 1);
 			break;
@@ -31,10 +34,20 @@ public class StarportRush extends BotState {
 		case 22:
 			buildManager.setMinimum(UnitTypes.Terran_Starport, 2);
 			buildManager.setMinimum(UnitTypes.Terran_Supply_Depot, 3);
+			buildManager.setMinimum(UnitTypes.Terran_Wraith, 50);
 			break;
 		case 30:
 			buildManager.setMinimum(UnitTypes.Terran_Supply_Depot, 4);
 			break;
+		}
+		if (supply > 30) {
+			int numSupplyDepots = buildManager
+					.getMyUnitCount(UnitTypes.Terran_Supply_Depot);
+			buildManager
+					.setMinimum(UnitTypes.Terran_Supply_Depot,
+							numSupplyDepots
+									+ (supply - game.getSelf().getSupplyTotal()
+											/ 2 + 4) > 0 ? 1 : 0);
 		}
 		return this;
 	}

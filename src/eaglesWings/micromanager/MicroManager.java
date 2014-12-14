@@ -29,7 +29,7 @@ public class MicroManager implements Debuggable {
 
 		mapWidth = game.getMap().getWidth();
 		mapHeight = game.getMap().getHeight();
-		threatMap = new double[mapHeight][mapWidth];
+		threatMap = new double[mapWidth][mapHeight];
 
 		marines = new HashMap<Integer, UnitAgent>();
 
@@ -37,8 +37,8 @@ public class MicroManager implements Debuggable {
 			@Override
 			public void run() {
 				// Reset threat counter
-				for (int x = 0; x < 128; x++) {
-					for (int y = 0; y < 128; y++) {
+				for (int x = 0; x < mapWidth; x++) {
+					for (int y = 0; y < mapHeight; y++) {
 						threatMap[x][y] = 0;
 					}
 				}
@@ -242,7 +242,7 @@ public class MicroManager implements Debuggable {
 
 	public void unitCreate(int unitID) {
 		Unit unit = game.getUnit(unitID);
-		if (unit.getTypeID() == UnitTypes.Zerg_Mutalisk.ordinal()) {
+		if (unit.getTypeID() == UnitTypes.Terran_Marine.ordinal()) {
 			marines.put(unitID, new UnitAgent(game, unit));
 		}
 	}

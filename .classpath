@@ -4,7 +4,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JNIBWAPI-Client-Bridge">
 		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="EaglesWings/release"/>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="C:/Users/wesley/Desktop/JNIBWAPI Starter Pack/jnibwapi/release"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
