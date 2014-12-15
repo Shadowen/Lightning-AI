@@ -33,7 +33,7 @@ public class MicroManager implements Debuggable {
 
 		mapWidth = game.getMap().getWidth();
 		mapHeight = game.getMap().getHeight();
-		threatMap = new double[mapWidth][mapHeight];
+		threatMap = new double[mapWidth + 1][mapHeight + 1];
 
 		units = new HashMap<UnitTypes, HashMap<Integer, UnitAgent>>();
 
@@ -50,15 +50,17 @@ public class MicroManager implements Debuggable {
 
 				// Count the threats
 				for (Unit u : game.getEnemyUnits()) {
+					UnitType unitType = game.getUnitType(u.getTypeID());
 					// Get the x and y grid point coordinates
 					int x = u.getX() / 32;
 					int y = u.getY() / 32;
 					// Get the ground weapon's range
-					double radius = game
-							.getWeaponType(
-									game.getUnitType(u.getTypeID())
-											.getGroundWeaponID()).getMaxRange() / 32 + 2;
-					double threat = 1;
+					double radius = game.getWeaponType(
+							unitType.getGroundWeaponID()).getMaxRange() / 32 + 2;
+					double threat = 10;
+					if (unitType.isWorker()) {
+						threat = -10;
+					}
 					ArrayList<Point> threatPoints = generateCircleCoordinates(
 							x, y, radius);
 					for (Point p : threatPoints) {
