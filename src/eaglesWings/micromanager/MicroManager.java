@@ -3,11 +3,13 @@ package eaglesWings.micromanager;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import javabot.model.Unit;
+import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
 import javabot.util.BWColor;
 import eaglesWings.gamestructure.DebugEngine;
@@ -16,13 +18,15 @@ import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
 
 public class MicroManager implements Debuggable {
-	GameHandler game;
+
+	private GameHandler game;
 
 	private int mapWidth;
 	private int mapHeight;
 	private double[][] threatMap;
+	private static final long THREAT_MAP_REFRESH_DELAY = 1000;
 
-	private HashMap<Integer, UnitAgent> marines;
+	private HashMap<UnitTypes, HashMap<Integer, UnitAgent>> units;
 
 	public MicroManager(GameHandler igame) {
 		game = igame;
@@ -31,8 +35,9 @@ public class MicroManager implements Debuggable {
 		mapHeight = game.getMap().getHeight();
 		threatMap = new double[mapWidth][mapHeight];
 
-		marines = new HashMap<Integer, UnitAgent>();
+		units = new HashMap<UnitTypes, HashMap<Integer, UnitAgent>>();
 
+		// Update threat map
 		new Timer().scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
@@ -79,86 +84,100 @@ public class MicroManager implements Debuggable {
 				}
 				return points;
 			}
-		}, 1000, 1000);
+		}, 0, THREAT_MAP_REFRESH_DELAY);
 	}
 
-	public void micro() {
-		for (Entry<Integer, UnitAgent> entry : marines.entrySet()) {
-			UnitAgent ua = entry.getValue();
-			Unit myUnit = ua.unit;
-			Unit enemyUnit = game.getClosestEnemy(myUnit);
+	public void act() {
+		for (Entry<UnitTypes, HashMap<Integer, UnitAgent>> unitTypeMap : units
+				.entrySet()) {
+			for (Entry<Integer, UnitAgent> entry : unitTypeMap.getValue()
+					.entrySet()) {
+				UnitAgent ua = entry.getValue();
+				Unit myUnit = ua.unit;
+				Unit enemyUnit = game.getClosestEnemy(myUnit);
 
-			// Get the unit to move if there's a target
-			if (enemyUnit == null) {
-				ua.task = UnitTask.IDLE;
-				break;
-			} else if (ua.task == UnitTask.IDLE) {
-				ua.task = UnitTask.ATTACK_RUN;
-			}
-
-			// Calculate some values
-			int maxCooldown = game.getWeaponType(
-					game.getUnitType(myUnit.getTypeID()).getAirWeaponID())
-					.getDamageCooldown();
-			int range = game.getWeaponType(
-					game.getUnitType(myUnit.getTypeID()).getGroundWeaponID())
-					.getMaxRange();
-			int enemyRange = game
-					.getWeaponType(
-							game.getUnitType(enemyUnit.getTypeID())
-									.getGroundWeaponID()).getMaxRange();
-
-			// FSM
-			if (ua.task == UnitTask.ATTACK_RUN) {
-				// Move in on an attack run
-				game.drawText(myUnit.getX(), myUnit.getY(), "Attack Run", false);
-				game.drawLine(myUnit.getX(), myUnit.getY(), enemyUnit.getX(),
-						enemyUnit.getY(), BWColor.YELLOW, false);
-				game.move(myUnit.getID(), enemyUnit.getX(), enemyUnit.getY());
-				// Fire when in range
-				if (Point.distance(myUnit.getX(), myUnit.getY(),
-						enemyUnit.getX(), enemyUnit.getY()) <= range) {
-					ua.task = UnitTask.FIRING;
-				}
-			} else if (ua.task == UnitTask.FIRING) {
-				// Attack
-				game.drawText(myUnit.getX(), myUnit.getY(), "Attacking", false);
-				game.drawLine(myUnit.getX(), myUnit.getY(), enemyUnit.getX(),
-						enemyUnit.getY(), BWColor.RED, false);
-				game.attack(myUnit.getID(), enemyUnit.getID());
-				// Trigger animation lock
-				ua.task = UnitTask.ANIMATION_LOCK;
-				ua.timeout = 5;
-			} else if (ua.task == UnitTask.ANIMATION_LOCK) {
-				// Can leave animation lock
-				game.drawText(myUnit.getX(), myUnit.getY(), "Animation Lock ("
-						+ ua.timeout + ")", false);
-				if (ua.timeout <= 0) {
-					// Keep attacking
-					if (range > enemyRange) {
-						// Should kite
-						ua.timeout = maxCooldown + 10;
-						ua.task = UnitTask.RETREATING;
-					} else {
-						// Just fire all day!
-						ua.task = UnitTask.FIRING;
-					}
-				}
-			} else if (ua.task == UnitTask.RETREATING) {
-				// Attack is on cooldown - retreat
-				Point destPoint = retreat(myUnit.getX(), myUnit.getY(), 64);
-				game.drawText(myUnit.getX(), myUnit.getY(), "Retreating", false);
-				game.drawLine(myUnit.getX(), myUnit.getY(), destPoint.x,
-						destPoint.y, BWColor.GREEN, false);
-				game.move(myUnit.getID(), destPoint.x, destPoint.y);
-				// Switch to attack run when ready
-				if (ua.timeout <= 0) {
+				// Get the unit to move if there's a target
+				if (enemyUnit == null) {
+					ua.task = UnitTask.IDLE;
+					break;
+				} else if (ua.task == UnitTask.IDLE) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
-			}
 
-			// Reduce the timeout every frame
-			ua.timeout -= 1;
+				// Calculate some values
+				int maxCooldown = game.getWeaponType(
+						game.getUnitType(myUnit.getTypeID()).getAirWeaponID())
+						.getDamageCooldown();
+				int range = game.getWeaponType(
+						game.getUnitType(myUnit.getTypeID())
+								.getGroundWeaponID()).getMaxRange();
+				int enemyRange = game.getWeaponType(
+						game.getUnitType(enemyUnit.getTypeID())
+								.getGroundWeaponID()).getMaxRange();
+
+				// FSM
+				if (ua.task == UnitTask.ATTACK_RUN) {
+					// Move in on an attack run
+					game.drawText(myUnit.getX(), myUnit.getY(), "Attack Run",
+							false);
+					game.drawLine(myUnit.getX(), myUnit.getY(),
+							enemyUnit.getX(), enemyUnit.getY(), BWColor.YELLOW,
+							false);
+					game.move(myUnit.getID(), enemyUnit.getX(),
+							enemyUnit.getY());
+					// Fire when in range
+					if (Point.distance(myUnit.getX(), myUnit.getY(),
+							enemyUnit.getX(), enemyUnit.getY()) <= range) {
+						ua.task = UnitTask.FIRING;
+					}
+				} else if (ua.task == UnitTask.FIRING) {
+					// Attack
+					game.drawText(myUnit.getX(), myUnit.getY(), "Attacking",
+							false);
+					game.drawLine(myUnit.getX(), myUnit.getY(),
+							enemyUnit.getX(), enemyUnit.getY(), BWColor.RED,
+							false);
+					game.attack(myUnit.getID(), enemyUnit.getID());
+					// Trigger animation lock
+					ua.task = UnitTask.ANIMATION_LOCK;
+					if (ua.unit.getTypeID() == UnitTypes.Terran_Marine
+							.ordinal()) {
+						ua.timeout = 5;
+					} else {
+						ua.timeout = 0;
+					}
+				} else if (ua.task == UnitTask.ANIMATION_LOCK) {
+					// Can leave animation lock
+					game.drawText(myUnit.getX(), myUnit.getY(),
+							"Animation Lock (" + ua.timeout + ")", false);
+					if (ua.timeout <= 0) {
+						// Keep attacking
+						if (range > enemyRange) {
+							// Should kite
+							ua.timeout = maxCooldown + 10;
+							ua.task = UnitTask.RETREATING;
+						} else {
+							// Just fire all day!
+							ua.task = UnitTask.FIRING;
+						}
+					}
+				} else if (ua.task == UnitTask.RETREATING) {
+					// Attack is on cooldown - retreat
+					Point destPoint = retreat(myUnit.getX(), myUnit.getY(), 64);
+					game.drawText(myUnit.getX(), myUnit.getY(), "Retreating",
+							false);
+					game.drawLine(myUnit.getX(), myUnit.getY(), destPoint.x,
+							destPoint.y, BWColor.GREEN, false);
+					game.move(myUnit.getID(), destPoint.x, destPoint.y);
+					// Switch to attack run when ready
+					if (ua.timeout <= 0) {
+						ua.task = UnitTask.ATTACK_RUN;
+					}
+				}
+
+				// Reduce the timeout every frame
+				ua.timeout -= 1;
+			}
 		}
 	}
 
@@ -202,6 +221,26 @@ public class MicroManager implements Debuggable {
 		return retreat(bestRetreat.x, bestRetreat.y, distance - 32);
 	}
 
+	public void unitCreate(int unitID) {
+		Unit unit = game.getUnit(unitID);
+		UnitTypes type = UnitTypes.values()[unit.getTypeID()];
+		if (type == UnitTypes.Terran_SCV) {
+			return;
+		}
+
+		// Add a new hashmap if needed
+		units.putIfAbsent(type, new HashMap<Integer, UnitAgent>());
+		units.get(type).put(unitID, new UnitAgent(game, unit));
+	}
+
+	public void unitDestroy(Integer unitID) {
+		Iterator<Entry<UnitTypes, HashMap<Integer, UnitAgent>>> i = units
+				.entrySet().iterator();
+		while (i.hasNext()) {
+			i.next().getValue().remove(unitID);
+		}
+	}
+
 	@Override
 	public void registerDebugFunctions(GameHandler g) {
 		// Threat map
@@ -222,32 +261,30 @@ public class MicroManager implements Debuggable {
 		g.registerDebugFunction(new DebugModule() {
 			@Override
 			public void draw(DebugEngine engine) {
-				for (Entry<Integer, UnitAgent> entry : marines.entrySet()) {
-					UnitAgent ua = entry.getValue();
-					Unit u = ua.unit;
-					int cooldownBarSize = 20;
-					int cooldownRemaining = u.getGroundWeaponCooldown();
-					int maxCooldown = game.getWeaponType(
-							game.getUnitType(u.getTypeID()).getAirWeaponID())
-							.getDamageCooldown();
-					game.drawLine(u.getX(), u.getY(), u.getX()
-							+ cooldownBarSize, u.getY(), BWColor.GREEN, false);
-					game.drawLine(u.getX(), u.getY(),
-							u.getX() + cooldownRemaining * cooldownBarSize
+				for (Entry<UnitTypes, HashMap<Integer, UnitAgent>> unitTypeMap : units
+						.entrySet()) {
+					for (Entry<Integer, UnitAgent> entry : unitTypeMap
+							.getValue().entrySet()) {
+						UnitAgent ua = entry.getValue();
+						Unit u = ua.unit;
+						UnitType unitType = game.getUnitType(u.getTypeID());
+						if (unitType.isCanAttackGround()
+								|| unitType.isCanAttackAir()) {
+							int cooldownBarSize = 20;
+							int cooldownRemaining = u.getGroundWeaponCooldown();
+							int maxCooldown = game.getWeaponType(
+									unitType.getGroundWeaponID())
+									.getDamageCooldown();
+							game.drawLine(u.getX(), u.getY(), u.getX()
+									+ cooldownBarSize, u.getY(), BWColor.GREEN,
+									false);
+							game.drawLine(u.getX(), u.getY(), u.getX()
+									+ cooldownRemaining * cooldownBarSize
 									/ maxCooldown, u.getY(), BWColor.RED, false);
+						}
+					}
 				}
 			}
 		});
-	}
-
-	public void unitCreate(int unitID) {
-		Unit unit = game.getUnit(unitID);
-		if (unit.getTypeID() == UnitTypes.Terran_Marine.ordinal()) {
-			marines.put(unitID, new UnitAgent(game, unit));
-		}
-	}
-
-	public void unitDestroy(int unitID) {
-		marines.remove(unitID);
 	}
 }

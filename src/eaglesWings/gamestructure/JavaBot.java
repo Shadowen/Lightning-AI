@@ -114,7 +114,7 @@ public class JavaBot implements BWAPIEventListener {
 			// BuildManager check build order
 			buildManager.checkMinimums();
 			// Micro units
-			microManager.micro();
+			microManager.act();
 
 			// Auto economy
 			for (Base b : baseManager.getMyBases()) {
