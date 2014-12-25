@@ -3,20 +3,24 @@ package eaglesWings.botstate;
 import eaglesWings.datastructure.BaseManager;
 import eaglesWings.datastructure.BuildManager;
 import eaglesWings.gamestructure.GameHandler;
+import eaglesWings.micromanager.MicroManager;
 import eaglesWings.pathfinder.PathingManager;
 
 public abstract class BotState {
 	protected GameHandler game;
 	protected BaseManager baseManager;
 	protected BuildManager buildManager;
+	protected MicroManager microManager;
 	protected PathingManager pathingManager;
 
 	// Constructor used for creating a new BotState
 	protected BotState(GameHandler igame, BaseManager ibaseManager,
-			BuildManager ibuildManager, PathingManager ipathingManager) {
+			BuildManager ibuildManager, MicroManager imicroManager,
+			PathingManager ipathingManager) {
 		game = igame;
 		baseManager = ibaseManager;
 		buildManager = ibuildManager;
+		microManager = imicroManager;
 		pathingManager = ipathingManager;
 	}
 
@@ -25,6 +29,7 @@ public abstract class BotState {
 		game = oldState.game;
 		baseManager = oldState.baseManager;
 		buildManager = oldState.buildManager;
+		microManager = oldState.microManager;
 		pathingManager = oldState.pathingManager;
 	}
 

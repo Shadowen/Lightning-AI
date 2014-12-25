@@ -12,11 +12,15 @@ import javabot.util.BWColor;
 public class Base {
 	private GameHandler game;
 
-	public java.util.Map<Integer, Resource> minerals;
+	public java.util.Map<Integer, MineralResource> minerals;
 	public java.util.Map<Integer, GasResource> gas;
 	public java.util.Map<Integer, Worker> workers;
 	public Unit commandCenter;
-	public BaseLocation location;
+	private BaseLocation location;
+
+	private BaseStatus status;
+	// When the base was last scouted, in game frames
+	private long lastScouted;
 
 	public Base(GameHandler g, BaseLocation l) {
 		game = g;
@@ -24,16 +28,19 @@ public class Base {
 		workers = new HashMap<Integer, Worker>();
 		location = l;
 
-		minerals = new HashMap<Integer, Resource>();
+		minerals = new HashMap<Integer, MineralResource>();
 		gas = new HashMap<Integer, GasResource>();
 
+		status = BaseStatus.UNOCCUPIED;
+		lastScouted = 0;
 	}
 
-	public int getOwner() {
-		if (commandCenter == null) {
-			return -1;
-		}
-		return commandCenter.getPlayerID();
+	public int getX() {
+		return location.getX();
+	}
+
+	public int getY() {
+		return location.getY();
 	}
 
 	public int getMineralCount() {
@@ -45,7 +52,7 @@ public class Base {
 		for (Entry<Integer, Worker> worker : workers.entrySet()) {
 			if (worker.getValue().isIdle()) {
 				// Get back to work
-				WorkerTask currentTask = worker.getValue().getCurrentTask();
+				WorkerTask currentTask = worker.getValue().getTask();
 				if (currentTask == WorkerTask.Mining_Minerals
 						|| currentTask == WorkerTask.Mining_Gas) {
 					worker.getValue().gather();
@@ -67,7 +74,8 @@ public class Base {
 						throw new StackOverflowError();
 					}
 
-					for (Entry<Integer, Resource> m : minerals.entrySet()) {
+					for (Entry<Integer, MineralResource> m : minerals
+							.entrySet()) {
 						if (m.getValue().getNumGatherers() < maxMiners) {
 							// Find closest mineral patch
 							double newDistance = game.distance(
@@ -92,7 +100,7 @@ public class Base {
 	public Worker getBuilder() {
 		Worker u = null;
 		for (Entry<Integer, Worker> w : workers.entrySet()) {
-			if (w.getValue().getCurrentTask() == WorkerTask.Mining_Minerals) {
+			if (w.getValue().getTask() == WorkerTask.Mining_Minerals) {
 				u = w.getValue();
 			}
 		}
@@ -103,8 +111,20 @@ public class Base {
 		return workers.size();
 	}
 
+	public int getMineralWorkerCount() {
+		int i = 0;
+		for (Entry<Integer, Worker> w : workers.entrySet()) {
+			if (w.getValue().getTask() == WorkerTask.Mining_Minerals) {
+				i++;
+			}
+		}
+		return i;
+	}
+
 	public void addWorker(int unitID, Unit unit) {
-		workers.put(unitID, new Worker(game, unit));
+		Worker w = new Worker(game, unit);
+		w.setBase(this);
+		workers.put(unitID, w);
 	}
 
 	public boolean removeWorker(int unitID) {
@@ -116,5 +136,22 @@ public class Base {
 		}
 		// That worker does not belong to this base
 		return false;
+	}
+
+	public BaseLocation getLocation() {
+		return location;
+	}
+
+	public void setStatus(BaseStatus s) {
+		status = s;
+		lastScouted = game.getFrameCount();
+	}
+
+	public BaseStatus getStatus() {
+		return status;
+	}
+
+	public long getLastScouted() {
+		return lastScouted;
 	}
 }

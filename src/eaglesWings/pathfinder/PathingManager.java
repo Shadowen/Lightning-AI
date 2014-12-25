@@ -37,14 +37,14 @@ public class PathingManager implements Debuggable {
 	public void findChokeToMain() {
 		for (ChokePoint choke : game.getMap().getChokePoints()) {
 			// Find choke to main base
-			if (choke.getFirstRegionID() == baseManager.main.location
+			if (choke.getFirstRegionID() == baseManager.main.getLocation()
 					.getRegionID()
-					|| choke.getSecondRegionID() == baseManager.main.location
-							.getRegionID()) {
+					|| choke.getSecondRegionID() == baseManager.main
+							.getLocation().getRegionID()) {
 				// Find the path into the main
 				pathIntoMain = findGroundPath(choke.getCenterX(),
-						choke.getCenterY(), baseManager.main.location.getX(),
-						baseManager.main.location.getY());
+						choke.getCenterY(), baseManager.main.getX(),
+						baseManager.main.getY());
 
 				// Find top of ramp
 				for (Point p : pathIntoMain) {

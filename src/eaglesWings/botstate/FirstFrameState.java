@@ -5,18 +5,21 @@ import javabot.model.Unit;
 import javabot.types.UnitType.UnitTypes;
 import eaglesWings.datastructure.Base;
 import eaglesWings.datastructure.BaseManager;
+import eaglesWings.datastructure.BaseStatus;
 import eaglesWings.datastructure.BuildManager;
 import eaglesWings.datastructure.GasResource;
 import eaglesWings.datastructure.MineralResource;
 import eaglesWings.datastructure.Resource;
 import eaglesWings.gamestructure.GameHandler;
+import eaglesWings.micromanager.MicroManager;
 import eaglesWings.pathfinder.PathingManager;
 
 public class FirstFrameState extends BotState {
 
 	public FirstFrameState(GameHandler igame, BaseManager baseManager,
-			BuildManager buildManager, PathingManager pathingManager) {
-		super(igame, baseManager, buildManager, pathingManager);
+			BuildManager buildManager, MicroManager imicroManager,
+			PathingManager pathingManager) {
+		super(igame, baseManager, buildManager, imicroManager, pathingManager);
 	}
 
 	@Override
@@ -38,9 +41,10 @@ public class FirstFrameState extends BotState {
 		for (BaseLocation location : game.getMap().getBaseLocations()) {
 			Base b = new Base(game, location);
 			// Main base
-			if (b.location.getX() == commandCenter.getX()
+			if (location.getX() == commandCenter.getX()
 					&& location.getY() == commandCenter.getY()) {
 				b.commandCenter = commandCenter;
+				b.setStatus(BaseStatus.OCCUPIED_SELF);
 				baseManager.main = b;
 				game.sendText("Main set");
 			}

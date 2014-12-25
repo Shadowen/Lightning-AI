@@ -1,5 +1,6 @@
 package eaglesWings.gamestructure;
 
+import java.awt.Point;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -9,17 +10,22 @@ import eaglesWings.botstate.BotState;
 import eaglesWings.botstate.FirstFrameState;
 import eaglesWings.datastructure.Base;
 import eaglesWings.datastructure.BaseManager;
+import eaglesWings.datastructure.BaseStatus;
 import eaglesWings.datastructure.BuildManager;
 import eaglesWings.datastructure.BuildingPlan;
+import eaglesWings.datastructure.MineralResource;
+import eaglesWings.datastructure.Resource;
 import eaglesWings.micromanager.MicroManager;
 import eaglesWings.pathfinder.PathingManager;
 import javabot.BWAPIEventListener;
 import javabot.model.*;
+import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
 
 public class JavaBot implements BWAPIEventListener {
 
 	private GameHandler game;
+	// Only contains my units under construction
 	private Hashtable<Integer, Unit> unitsUnderConstruction;
 
 	private BotState botState;
@@ -27,6 +33,10 @@ public class JavaBot implements BWAPIEventListener {
 	private BuildManager buildManager;
 	private MicroManager microManager;
 	private PathingManager pathingManager;
+
+	// The radius the bot looks around a potential base location to determine if
+	// it is occupied
+	private static final double BASE_RADIUS = 300;
 
 	public static void main(String[] args) {
 		new JavaBot();
@@ -57,13 +67,20 @@ public class JavaBot implements BWAPIEventListener {
 			baseManager = new BaseManager(game);
 			buildManager = new BuildManager(game, baseManager);
 			pathingManager = new PathingManager(game, baseManager);
+			microManager = new MicroManager(game, baseManager);
 			botState = new FirstFrameState(game, baseManager, buildManager,
-					pathingManager);
-			microManager = new MicroManager(game);
+					microManager, pathingManager);
 
 			baseManager.registerDebugFunctions(game);
 			buildManager.registerDebugFunctions(game);
 			microManager.registerDebugFunctions(game);
+			game.registerDebugFunction(new DebugModule() {
+				@Override
+				public void draw(DebugEngine engine) {
+					engine.drawText(20, 300, "Frame: " + game.getFrameCount(),
+							true);
+				}
+			});
 			game.registerDebugFunction(new DebugModule() {
 				@Override
 				public void draw(DebugEngine engine) {
@@ -108,6 +125,45 @@ public class JavaBot implements BWAPIEventListener {
 				}
 			}
 
+			// Base occupation detection
+			for (Base b : baseManager) {
+				int bx = b.getX();
+				int by = b.getY();
+				// If we can see the base
+				if (game.isVisible(bx / 32, by / 32)) {
+					// Find the closest resource depot
+					Unit closestCC = null;
+					double closestDistance = Double.MIN_VALUE;
+					for (Unit u : game.getAllUnits()) {
+						// Only check resource depots
+						UnitTypes type = UnitTypes.values()[u.getTypeID()];
+						if (!GameHandler.resourceDepotTypes.contains(type)) {
+							continue;
+						}
+						// Calculate the distance
+						double newDistance = Point.distance(bx, by, u.getX(),
+								u.getY());
+						if (newDistance < BASE_RADIUS) {
+							if (closestCC == null
+									|| newDistance < closestDistance) {
+								closestCC = u;
+								closestDistance = newDistance;
+							}
+						}
+					}
+					// Categorize the base
+					if (closestCC == null) {
+						b.setStatus(BaseStatus.UNOCCUPIED);
+					} else {
+						if (closestCC.getPlayerID() == game.getSelf().getID()) {
+							b.setStatus(BaseStatus.OCCUPIED_SELF);
+						} else {
+							b.setStatus(BaseStatus.OCCUPIED_ENEMY);
+						}
+					}
+				}
+			}
+
 			// Allow the bot to act
 			// Bot state updates
 			botState = botState.act();
@@ -123,11 +179,16 @@ public class JavaBot implements BWAPIEventListener {
 				// Train SCVS if necessary
 				// This can't go in the build queue since it is specific to a
 				// command center!
-				if (b.getWorkerCount() < b.getMineralCount() * 2) {
-					if (game.getSelf().getMinerals() >= 50
-							&& b.commandCenter.getTrainingQueueSize() == 0) {
-						game.train(b.commandCenter.getID(),
-								UnitTypes.Terran_SCV.ordinal());
+				if (game.getSelf().getMinerals() >= 50
+						&& b.commandCenter.getTrainingQueueSize() == 0) {
+					for (Entry<Integer, MineralResource> mineral : b.minerals
+							.entrySet()) {
+						if (mineral.getValue().getNumGatherers() < 2) {
+							// Do training
+							game.train(b.commandCenter.getID(),
+									UnitTypes.Terran_SCV.ordinal());
+							break;
+						}
 					}
 				}
 			}
@@ -188,8 +249,11 @@ public class JavaBot implements BWAPIEventListener {
 
 	public void unitCreate(int unitID) {
 		try {
-			unitsUnderConstruction.put(unitID, game.getUnit(unitID));
-			microManager.unitCreate(unitID);
+			Unit unit = game.getUnit(unitID);
+			if (unit.getPlayerID() == game.getSelf().getID()) {
+				unitsUnderConstruction.put(unitID, unit);
+				microManager.unitCreate(unitID);
+			}
 			botState = botState.unitCreate(unitID);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -242,6 +306,7 @@ public class JavaBot implements BWAPIEventListener {
 
 	public void unitDiscover(int unitID) {
 		try {
+			// Update botstate
 			botState = botState.unitDiscover(unitID);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -255,12 +320,7 @@ public class JavaBot implements BWAPIEventListener {
 	}
 
 	public void unitMorph(int unitID) {
-		try {
-			Unit unit = game.getUnit(unitID);
-			unitsUnderConstruction.put(unitID, unit);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		unitCreate(unitID);
 	}
 
 	public void unitShow(int unitID) {

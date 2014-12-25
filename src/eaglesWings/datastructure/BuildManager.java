@@ -43,7 +43,6 @@ public class BuildManager implements Debuggable {
 			for (Base b : baseManager.getMyBases()) {
 				for (Entry<Integer, GasResource> r : b.gas.entrySet()) {
 					if (!r.getValue().gasTaken()) {
-						game.sendText("Trying to take gas!");
 						addBuilding(r.getValue().getX() / 32 - 2, r.getValue()
 								.getY() / 32 - 1, UnitTypes.Terran_Refinery);
 						break;
@@ -53,9 +52,8 @@ public class BuildManager implements Debuggable {
 		} else if (game.getUnitType(unitType.ordinal()).isBuilding()) {
 			// Otherwise, buildings
 			if (baseManager.main != null) {
-				Point location = getBuildLocation(
-						baseManager.main.location.getX(),
-						baseManager.main.location.getY(), unitType);
+				Point location = getBuildLocation(baseManager.main.getX(),
+						baseManager.main.getY(), unitType);
 				addBuilding(location.x, location.y, unitType);
 			}
 		} else {
@@ -64,20 +62,29 @@ public class BuildManager implements Debuggable {
 		}
 	}
 
+	// Add multiple units at once
+	public void addToQueue(UnitTypes unitType, int count) {
+		for (int i = 0; i < count; i++) {
+			addToQueue(unitType);
+		}
+	}
+
+	// Build a building at a specific location
 	public void addBuilding(Point buildLocation, UnitTypes type) {
 		addBuilding(buildLocation.x, buildLocation.y, type);
 	}
 
+	// Build a building at a specific location
 	public void addBuilding(int tx, int ty, UnitTypes type) {
 		buildingQueue.add(new BuildingPlan(game, tx, ty, type));
 	}
 
-	// Finds a nearby valid build location
+	// Finds a nearby valid build location for the building of specified type
+	// Returns the Point object representing the suitable build tile
+	// position
+	// for a given building type near specified pixel position (or
+	// Point(-1,-1) if not found)
 	private Point getBuildLocation(int x, int y, UnitTypes toBuild) {
-		// Returns the Point object representing the suitable build tile
-		// position
-		// for a given building type near specified pixel position (or
-		// Point(-1,-1) if not found)
 		Point ret = new Point(-1, -1);
 		int maxDist = 3;
 		int stopDist = 40;
@@ -114,6 +121,8 @@ public class BuildManager implements Debuggable {
 		return ret;
 	}
 
+	// Checks if the building type specified can be built at the coordinates
+	// given
 	private boolean canBuildHere(int left, int top, UnitTypes typeEnum) {
 		UnitType type = game.getUnitType(typeEnum.ordinal());
 		int width = type.getTileWidth();

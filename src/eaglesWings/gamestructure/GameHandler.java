@@ -2,6 +2,7 @@ package eaglesWings.gamestructure;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -15,6 +16,17 @@ import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
 
 public class GameHandler extends JNIBWAPI {
+	// A set containing the resource depot types
+	public static final Set<UnitTypes> resourceDepotTypes;
+	static {
+		resourceDepotTypes = new HashSet<UnitTypes>();
+		resourceDepotTypes.add(UnitTypes.Terran_Command_Center);
+		resourceDepotTypes.add(UnitTypes.Protoss_Nexus);
+		resourceDepotTypes.add(UnitTypes.Zerg_Hatchery);
+		resourceDepotTypes.add(UnitTypes.Zerg_Lair);
+		resourceDepotTypes.add(UnitTypes.Zerg_Hive);
+	}
+
 	private DebugEngine debugEngine;
 
 	public GameHandler(BWAPIEventListener listener) {
@@ -25,7 +37,7 @@ public class GameHandler extends JNIBWAPI {
 	public Unit getClosestUnitOfType(int x, int y, UnitTypes type) {
 		Unit closest = null;
 		double closestDistance = Double.MAX_VALUE;
-		for (Unit u : getNeutralUnits()) {
+		for (Unit u : getAllUnits()) {
 			if (u.getTypeID() == type.ordinal()) {
 				double distance = Point.distance(x, y, u.getX(), u.getY());
 				if (distance < closestDistance) {
