@@ -16,6 +16,17 @@ public class StarportRush extends BotState {
 
 	@Override
 	public BotState act() {
+		// TODO
+		if (!microManager.isScouting()) {
+			Worker w = baseManager.getBuilder();
+			if (w == null) {
+				game.sendText("Can't scout since no workers available!");
+			} else {
+				w.setTask(WorkerTask.Scouting, null);
+				microManager.setScoutingUnit(w.getUnit());
+			}
+		}
+
 		// Check the build order
 		int supply = game.getSelf().getSupplyUsed() / 2;
 		if (previousSupply < supply) {

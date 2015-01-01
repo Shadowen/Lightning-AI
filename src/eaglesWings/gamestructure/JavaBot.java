@@ -1,9 +1,14 @@
 package eaglesWings.gamestructure;
 
 import java.awt.Point;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.PriorityQueue;
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 
 import eaglesWings.botstate.BotState;
@@ -67,18 +72,28 @@ public class JavaBot implements BWAPIEventListener {
 			baseManager = new BaseManager(game);
 			buildManager = new BuildManager(game, baseManager);
 			pathingManager = new PathingManager(game, baseManager);
-			microManager = new MicroManager(game, baseManager);
+			microManager = new MicroManager(game, baseManager, pathingManager);
 			botState = new FirstFrameState(game, baseManager, buildManager,
 					microManager, pathingManager);
 
 			baseManager.registerDebugFunctions(game);
 			buildManager.registerDebugFunctions(game);
+			pathingManager.registerDebugFunctions(game);
 			microManager.registerDebugFunctions(game);
 			game.registerDebugFunction(new DebugModule() {
+				private Queue<Long> fpsQueue = new ArrayDeque<Long>();
+
 				@Override
 				public void draw(DebugEngine engine) {
-					engine.drawText(20, 300, "Frame: " + game.getFrameCount(),
+					long currentTime = System.currentTimeMillis();
+					fpsQueue.add(currentTime);
+					while (fpsQueue.peek() < currentTime - 1000) {
+						fpsQueue.remove();
+					}
+
+					engine.drawText(20, 285, "Frame: " + game.getFrameCount(),
 							true);
+					engine.drawText(20, 300, "FPS: " + fpsQueue.size(), true);
 				}
 			});
 			game.registerDebugFunction(new DebugModule() {

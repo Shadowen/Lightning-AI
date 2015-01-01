@@ -9,7 +9,7 @@ import javabot.util.BWColor;
 
 public class DebugEngine {
 	private GameHandler game;
-	private List<DebugModule> debugModules;
+	public List<DebugModule> debugModules;
 
 	public DebugEngine(GameHandler igame) {
 		game = igame;
@@ -20,10 +20,6 @@ public class DebugEngine {
 		for (DebugModule d : debugModules) {
 			d.draw(this);
 		}
-	}
-
-	public void registerDebugFunction(DebugModule m) {
-		debugModules.add(m);
 	}
 
 	public void drawCircle(int x, int y, int radius, int color, boolean fill,

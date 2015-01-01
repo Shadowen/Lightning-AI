@@ -1,10 +1,18 @@
 package eaglesWings.micromanager;
 
 import java.awt.Point;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -22,26 +30,34 @@ import eaglesWings.gamestructure.DebugEngine;
 import eaglesWings.gamestructure.DebugModule;
 import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
+import eaglesWings.pathfinder.Node;
+import eaglesWings.pathfinder.NodeSet;
+import eaglesWings.pathfinder.PathingManager;
 
 public class MicroManager implements Debuggable {
 
 	private GameHandler game;
 	private BaseManager baseManager;
+	private PathingManager pathingManager;
 
 	private int mapWidth;
 	private int mapHeight;
 	private double[][] targetMap;
 	private double[][] threatMap;
 	private static final long THREAT_MAP_REFRESH_DELAY = 1000;
+	private static final int MAX_ATTACK_RUN_ITERATIONS = 5;
 
 	private Base scoutingTarget;
+	private Queue<Point> scoutPath = new ArrayDeque<Point>();
 	private Unit scoutingUnit;
 
 	private HashMap<UnitTypes, HashMap<Integer, UnitAgent>> units;
 
-	public MicroManager(GameHandler igame, BaseManager ibaseManager) {
+	public MicroManager(GameHandler igame, BaseManager ibaseManager,
+			PathingManager ipathingManager) {
 		game = igame;
 		baseManager = ibaseManager;
+		pathingManager = ipathingManager;
 
 		mapWidth = game.getMap().getWidth();
 		mapHeight = game.getMap().getHeight();
@@ -227,14 +243,8 @@ public class MicroManager implements Debuggable {
 		}
 
 		// Calculate some values
-		int maxCooldown = game.getWeaponType(
-				game.getUnitType(ua.unit.getTypeID()).getGroundWeaponID())
-				.getDamageCooldown();
 		int range = game.getWeaponType(
 				game.getUnitType(ua.unit.getTypeID()).getGroundWeaponID())
-				.getMaxRange();
-		int enemyRange = game.getWeaponType(
-				game.getUnitType(enemyUnit.getTypeID()).getGroundWeaponID())
 				.getMaxRange();
 
 		// FSM
@@ -256,28 +266,8 @@ public class MicroManager implements Debuggable {
 			game.drawLine(ua.unit.getX(), ua.unit.getY(), enemyUnit.getX(),
 					enemyUnit.getY(), BWColor.RED, false);
 			game.attack(ua.unit.getID(), enemyUnit.getID());
-			// Trigger animation lock
-			ua.task = UnitTask.ANIMATION_LOCK;
-			if (ua.unit.getTypeID() == UnitTypes.Terran_Marine.ordinal()) {
-				ua.timeout = 5;
-			} else {
-				ua.timeout = 0;
-			}
-		} else if (ua.task == UnitTask.ANIMATION_LOCK) {
-			// Can leave animation lock
-			game.drawText(ua.unit.getX(), ua.unit.getY(), "Animation Lock ("
-					+ ua.timeout + ")", false);
-			if (ua.timeout <= 0) {
-				// Keep attacking
-				if (range > enemyRange) {
-					// Should kite
-					ua.timeout = maxCooldown;
-					ua.task = UnitTask.RETREATING;
-				} else {
-					// Just fire all day!
-					ua.task = UnitTask.FIRING;
-				}
-			}
+			// Wraiths have no animation lock
+			ua.task = UnitTask.RETREATING;
 		} else if (ua.task == UnitTask.RETREATING) {
 			// Attack is on cooldown - retreat
 			Point destPoint = retreat(ua.unit.getX(), ua.unit.getY(), 64);
@@ -295,44 +285,57 @@ public class MicroManager implements Debuggable {
 		ua.timeout -= 1;
 	}
 
+	Queue<Point> openSet = new PriorityQueue<Point>(new Comparator<Point>() {
+		@Override
+		public int compare(Point arg0, Point arg1) {
+			return (int) ((targetMap[arg0.x][arg0.y] - targetMap[arg1.x][arg1.y]) * 1000);
+		}
+
+	});
+	Set<Point> closedSet = new HashSet<Point>();
+
 	private Point attackRun(int x, int y, int distance) {
-		// Grid coordinates of x and y
-		int gx = (int) Math.round(x / 32);
-		int gy = (int) Math.round(y / 32);
-		if (distance <= 0 || gx <= 0 || gy <= 0 || gx >= mapWidth
-				|| gy >= mapHeight) {
-			return new Point(x, y);
+		int gx = x / 32;
+		int gy = y / 32;
+
+		openSet.clear();
+		closedSet.clear();
+
+		Point startNode = new Point(gx, gy);
+		openSet.add(startNode);
+
+		for (int iterations = 0; iterations < MAX_ATTACK_RUN_ITERATIONS
+				&& openSet.size() > 0; iterations++) {
+			Point currentNode = openSet.remove();
+			closedSet.add(currentNode);
+
+			for (Point p : getNeighbors(gx, gy)) {
+				if (closedSet.contains(p)) {
+					continue;
+				}
+
+				openSet.add(p);
+			}
 		}
 
-		Point bestAttack = new Point();
+		return openSet.element();
+	}
 
-		double maxValue = Double.MIN_VALUE;
-		double targetMapValue = targetMap[gx + 1][gy + 1];
-		if (targetMapValue >= maxValue) {
-			bestAttack.x = x + 32;
-			bestAttack.y = y + 32;
-			maxValue = targetMapValue;
+	private List<Point> getNeighbors(int gx, int gy) {
+		List<Point> neighbors = new ArrayList<Point>();
+		if (gx - 1 >= 0) {
+			neighbors.add(new Point(gx - 1, gy));
 		}
-		targetMapValue = targetMap[gx + 1][gy - 1];
-		if (targetMapValue >= maxValue) {
-			bestAttack.x = x + 32;
-			bestAttack.y = y - 32;
-			maxValue = targetMapValue;
+		if (gx + 1 < mapWidth) {
+			neighbors.add(new Point(gx + 1, gy));
 		}
-		targetMapValue = targetMap[gx - 1][gy + 1];
-		if (targetMapValue >= maxValue) {
-			bestAttack.x = x - 32;
-			bestAttack.y = y + 32;
-			maxValue = targetMapValue;
+		if (gy - 1 >= 0) {
+			neighbors.add(new Point(gx, gy - 1));
 		}
-		targetMapValue = targetMap[gx - 1][gy - 1];
-		if (targetMapValue >= maxValue) {
-			bestAttack.x = x - 32;
-			bestAttack.y = y - 32;
-			maxValue = targetMapValue;
+		if (gy + 1 < mapHeight) {
+			neighbors.add(new Point(gx, gy + 1));
 		}
-
-		return retreat(bestAttack.x, bestAttack.y, distance - 32);
+		return neighbors;
 	}
 
 	private Point retreat(int x, int y, int distance) {
@@ -382,24 +385,77 @@ public class MicroManager implements Debuggable {
 		}
 
 		// Acquire a target if necessary
-		if (scoutingTarget == null) {
+		if (scoutingTarget == null
+				|| game.isVisible(scoutingTarget.getX() / 32,
+						scoutingTarget.getY() / 32)) {
 			scoutingTarget = getScoutingTarget();
+			// Calculate a good path
+			scoutPath = pathingManager.findGroundPath(scoutingUnit.getX(),
+					scoutingUnit.getY(), scoutingTarget.getX(),
+					scoutingTarget.getY(), scoutingUnit.getTypeID(), 100);
 		}
 
 		// Issue commands as appropriate
 		if (scoutingUnit != null && scoutingTarget != null) {
-			game.move(scoutingUnit.getID(), scoutingTarget.getX(),
-					scoutingTarget.getY());
+			if (scoutPath.size() < 15) {
+				scoutPath = pathingManager.findGroundPath(scoutingUnit.getX(),
+						scoutingUnit.getY(), scoutingTarget.getX(),
+						scoutingTarget.getY(), scoutingUnit.getTypeID(), 100);
+			}
+			try {
+				Point moveTarget = scoutPath.element();
+				double distanceToCheckPoint = Point.distance(
+						scoutingUnit.getX(), scoutingUnit.getY(), moveTarget.x,
+						moveTarget.y);
+				if (distanceToCheckPoint < 64) {
+					// Next checkpoint
+					scoutPath.remove();
+				} else if (distanceToCheckPoint > 50) {
+					// Recalculate a path
+					/*
+					 * scoutPath =
+					 * pathingManager.findGroundPath(scoutingUnit.getX(),
+					 * scoutingUnit.getY(), scoutingTarget.getX(),
+					 * scoutingTarget.getY());
+					 */
+				}
+
+				if (scoutPath.size() == 0) {
+					// Reached destination
+					return;
+				}
+
+				// Issue a movement command
+				game.move(scoutingUnit.getID(), moveTarget.x, moveTarget.y);
+			} catch (NoSuchElementException e) {
+				// No path?
+				game.sendText("No scouting path planned!");
+				return;
+			}
 		}
 	}
 
 	private Base getScoutingTarget() {
 		Base target = null;
 		for (Base b : baseManager) {
+			// Scout all mains
 			if (b.getLocation().isStartLocation()) {
-				if (target == null
-						|| (b.getStatus() == BaseStatus.UNOCCUPIED && b
-								.getLastScouted() < target.getLastScouted())) {
+				if (b.getStatus() == BaseStatus.UNOCCUPIED
+						&& (target == null || b.getLastScouted() < target
+								.getLastScouted())) {
+					target = b;
+				}
+			}
+
+		}
+
+		// If there is still no target
+		if (target == null) {
+			for (Base b : baseManager) {
+				// Scout all expos
+				if (b.getStatus() == BaseStatus.UNOCCUPIED
+						&& (target == null || b.getLastScouted() < target
+								.getLastScouted())) {
 					target = b;
 				}
 			}
@@ -438,8 +494,9 @@ public class MicroManager implements Debuggable {
 			i.next().getValue().remove(unitID);
 		}
 
-		if (unitID == scoutingUnit.getID()) {
+		if (scoutingUnit != null && unitID == scoutingUnit.getID()) {
 			scoutingUnit = null;
+			scoutPath = new ArrayDeque<Point>();
 		}
 	}
 
@@ -499,6 +556,11 @@ public class MicroManager implements Debuggable {
 							BWColor.RED, false);
 					engine.drawLine(x + 10, y - 10, x - 10, y + 10,
 							BWColor.RED, false);
+				}
+
+				for (Point p : scoutPath) {
+					engine.drawBox(p.x - 4, p.y - 4, p.x + 4, p.y + 4,
+							BWColor.YELLOW, false, false);
 				}
 			}
 		});

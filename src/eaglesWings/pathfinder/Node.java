@@ -8,10 +8,9 @@ public class Node {
 	public double predictedTotalCost;
 	public Node parent;
 
-	public Node(int ix, int iy, boolean iwalkable) {
+	public Node(int ix, int iy) {
 		x = ix;
 		y = iy;
-		walkable = iwalkable;
 	}
 
 	public String toString() {

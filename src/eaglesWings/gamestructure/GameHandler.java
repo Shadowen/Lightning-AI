@@ -49,24 +49,8 @@ public class GameHandler extends JNIBWAPI {
 		return closest;
 	}
 
-	// TODO this doesn't need to be here.
-	public Point getUnitVector(Point start, Point dest) {
-		double distance = 1;
-		return new Point((int) ((dest.x - start.x) / distance * 1000),
-				(int) ((dest.y - start.y) / distance * 1000));
-	}
-
-	public double distance(Worker w, Resource r) {
-		return Point.distance(w.getX(), w.getY(), r.getX(), r.getY());
-	}
-
-	// Provides a public method for build
-	public void build(int id, BuildingPlan toBuild) {
-		build(id, toBuild.getTx(), toBuild.getTy(), toBuild.getTypeID());
-	}
-
 	public void registerDebugFunction(DebugModule m) {
-		debugEngine.registerDebugFunction(m);
+		debugEngine.debugModules.add(m);
 	}
 
 	public void drawDebug() {

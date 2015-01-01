@@ -41,7 +41,8 @@ public class Worker {
 	}
 
 	public void build(BuildingPlan toBuild) {
-		game.build(unit.getID(), toBuild);
+		game.build(unit.getID(), toBuild.getTx(), toBuild.getTy(),
+				toBuild.getTypeID());
 		toBuild.setBuilder(this);
 		currentTask = WorkerTask.Constructing_Building;
 	}

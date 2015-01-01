@@ -1,5 +1,6 @@
 package eaglesWings.datastructure;
 
+import java.awt.Point;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -78,8 +79,10 @@ public class Base {
 							.entrySet()) {
 						if (m.getValue().getNumGatherers() < maxMiners) {
 							// Find closest mineral patch
-							double newDistance = game.distance(
-									worker.getValue(), m.getValue());
+							double newDistance = Point.distance(worker
+									.getValue().getX(), worker.getValue()
+									.getY(), m.getValue().getX(), m.getValue()
+									.getY());
 							if (mineral == null || newDistance < distance) {
 								mineral = m.getValue();
 								distance = newDistance;

@@ -5,13 +5,18 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Stack;
 
 import javabot.model.ChokePoint;
+import javabot.model.Unit;
+import javabot.types.UnitType;
+import javabot.types.UnitType.UnitTypes;
 import javabot.util.BWColor;
 import eaglesWings.datastructure.BaseManager;
 import eaglesWings.gamestructure.DebugEngine;
@@ -24,6 +29,10 @@ public class PathingManager implements Debuggable {
 	private GameHandler game;
 	private BaseManager baseManager;
 
+	private ArrayList<ArrayList<Node>> walkableNodes;
+	private int mapWalkWidth;
+	private int mapWalkHeight;
+
 	// A list of tiles detailing a path into the main from the choke
 	private List<Point> pathIntoMain;
 	private Point topOfRamp;
@@ -32,6 +41,18 @@ public class PathingManager implements Debuggable {
 	public PathingManager(GameHandler g, BaseManager bm) {
 		game = g;
 		baseManager = bm;
+
+		mapWalkWidth = game.getMap().getWalkWidth();
+		mapWalkHeight = game.getMap().getWalkHeight();
+
+		// Init walkable map
+		walkableNodes = new ArrayList<ArrayList<Node>>();
+		for (int wx = 0; wx < game.getMap().getWidth() * 4; wx++) {
+			walkableNodes.add(new ArrayList<Node>());
+			for (int wy = 0; wy < game.getMap().getHeight() * 4; wy++) {
+				walkableNodes.get(wx).add(new Node(wx, wy));
+			}
+		}
 	}
 
 	public void findChokeToMain() {
@@ -42,9 +63,10 @@ public class PathingManager implements Debuggable {
 					|| choke.getSecondRegionID() == baseManager.main
 							.getLocation().getRegionID()) {
 				// Find the path into the main
-				pathIntoMain = findGroundPath(choke.getCenterX(),
-						choke.getCenterY(), baseManager.main.getX(),
-						baseManager.main.getY());
+				pathIntoMain = new ArrayList<Point>(findGroundPath(
+						choke.getCenterX(), choke.getCenterY(),
+						baseManager.main.getX(), baseManager.main.getY(),
+						UnitTypes.Zerg_Zergling));
 
 				// Find top of ramp
 				for (Point p : pathIntoMain) {
@@ -108,37 +130,85 @@ public class PathingManager implements Debuggable {
 		}
 	}
 
-	public List<Point> findGroundPath(int startx, int starty, int endx, int endy) {
+	public Queue<Point> findGroundPath(int startx, int starty, int endx,
+			int endy, int type, int length) {
+		return findGroundPath(startx, starty, endx, endy,
+				game.getUnitType(type), length);
+	}
+
+	public Queue<Point> findGroundPath(int startx, int starty, int endx,
+			int endy, UnitTypes type) {
+		return findGroundPath(startx, starty, endx, endy,
+				game.getUnitType(type.ordinal()), Integer.MAX_VALUE);
+	}
+
+	public Queue<Point> findGroundPath(int startx, int starty, int endx,
+			int endy, UnitType type) {
+		return findGroundPath(startx, starty, endx, endy, type,
+				Integer.MAX_VALUE);
+	}
+
+	public Queue<Point> findGroundPath(int startx, int starty, int endx,
+			int endy, UnitType type, int length) {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
 		int endWx = endx / 8;
 		int endWy = endy / 8;
 
-		// Init walkable map
-		List<ArrayList<Node>> nodes = new ArrayList<ArrayList<Node>>();
+		// Initialize
+		for (int wx = 0; wx < mapWalkWidth; wx++) {
+			for (int wy = 0; wy < mapWalkHeight; wy++) {
+				walkableNodes.get(wx).get(wy).parent = null;
+				walkableNodes.get(wx).get(wy).costFromStart = 0;
+				walkableNodes.get(wx).get(wy).predictedTotalCost = 0;
+				walkableNodes.get(wx).get(wy).walkable = true;
+			}
+		}
+		// Avoid cliffs
 		for (int wx = 0; wx < game.getMap().getWidth() * 4; wx++) {
-			nodes.add(new ArrayList<Node>());
 			for (int wy = 0; wy < game.getMap().getHeight() * 4; wy++) {
-				nodes.get(wx).add(
-						new Node(wx, wy, game.getMap().isWalkable(wx, wy)));
+				if (!game.getMap().isWalkable(wx, wy)) {
+					for (int iwx = Integer.max(wx - 3, 0); iwx < Integer.min(
+							wx + 3, mapWalkWidth); iwx++) {
+						for (int iwy = Integer.max(wy - 3, 0); iwy < Integer
+								.min(wy + 3, mapWalkHeight); iwy++) {
+							walkableNodes.get(iwx).get(iwy).walkable = false;
+						}
+					}
+				}
+			}
+		}
+		// Avoid buildings
+		for (Unit u : game.getAllUnits()) {
+			UnitType utype = game.getUnitType(u.getTypeID());
+			if (!utype.isCanMove()) {
+				int uwidth = utype.getTileWidth();
+				int uheight = utype.getTileHeight();
+				for (int wx = Integer.max(u.getTileX() * 4 - 3, 0); wx < Integer
+						.min((u.getTileX() + uwidth) * 4 + 3, mapWalkWidth); wx++) {
+					for (int wy = Integer.max(u.getTileY() * 4 - 3, 0); wy < Integer
+							.min((u.getTileY() + uheight) * 4 + 3,
+									mapWalkHeight); wy++) {
+						walkableNodes.get(wx).get(wy).walkable = false;
+					}
+				}
 			}
 		}
 
-		// Initialize
 		NodeSet openSet = new NodeSet();
-		nodes.get(endWx).get(endWy).costFromStart = 0;
-		nodes.get(endWx).get(endWy).predictedTotalCost = nodes.get(endWx).get(
-				endWy).costFromStart
-				+ Point.distance(endWx, endWy, startWx, startWy);
-		openSet.add(nodes.get(endWx).get(endWy));
-		NodeSet closedSet = new NodeSet();
+		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
+		walkableNodes.get(startWx).get(startWy).predictedTotalCost = walkableNodes
+				.get(startWx).get(startWy).costFromStart
+				+ Point.distance(startWx, startWy, endWx, endWy);
+		openSet.add(walkableNodes.get(startWx).get(startWy));
+		Set<Node> closedSet = new HashSet<Node>();
 
 		// Iterate
 		while (openSet.size() > 0) {
 			Node currentNode = openSet.getNext();
 			// Base case
-			if (currentNode.x == startWx && currentNode.y == startWy) {
-				List<Point> path = new ArrayList<Point>();
+			if (currentNode.x == endWx && currentNode.y == endWy) {
+				Deque<Point> path = new ArrayDeque<Point>();
 				reconstructPath(path, currentNode);
 				return path;
 			}
@@ -146,48 +216,79 @@ public class PathingManager implements Debuggable {
 			openSet.remove(currentNode);
 			closedSet.add(currentNode);
 			// Add all neigbors to the open set
-			for (Node neighbor : getNeighbors(nodes, currentNode.x,
+			for (Node neighbor : getNeighbors(walkableNodes, currentNode.x,
 					currentNode.y)) {
 				if (closedSet.contains(neighbor) || !neighbor.walkable) {
 					continue;
 				}
 
-				double tentative_g_score = currentNode.costFromStart + 1;
+				double tentative_g_score = currentNode.costFromStart
+						+ Point.distance(currentNode.x, currentNode.y,
+								neighbor.x, neighbor.y);
 				if (!openSet.contains(neighbor)
 						|| tentative_g_score < neighbor.costFromStart) {
 					neighbor.parent = currentNode;
 					neighbor.costFromStart = tentative_g_score;
 					neighbor.predictedTotalCost = tentative_g_score
-							+ Point.distance(neighbor.x, neighbor.y, startWx,
-									startWy);
+							+ Point.distance(neighbor.x, neighbor.y, endWx,
+									endWy);
 					openSet.add(neighbor);
 				}
+			}
+
+			// Length
+			if (currentNode.costFromStart > length) {
+				Deque<Point> path = new ArrayDeque<Point>();
+				reconstructPath(path, currentNode);
+				return path;
 			}
 		}
 
 		// throw noPathException!?
-		return new ArrayList<Point>();
+		return new ArrayDeque<Point>();
 	}
 
 	private List<Node> getNeighbors(List<ArrayList<Node>> allNodes, int x, int y) {
 		List<Node> neighbors = new ArrayList<Node>();
-		if (x - 1 >= 0) {
-			neighbors.add(allNodes.get(x - 1).get(y));
+
+		// NORTH
+		if (y + 1 < allNodes.get(x).size()) {
+			neighbors.add(allNodes.get(x).get(y + 1));
+			// NORTH-EAST
+			if (x + 1 < allNodes.size()) {
+				neighbors.add(allNodes.get(x + 1).get(y + 1));
+			}
+			// NORTH-WEST
+			if (x - 1 >= 0) {
+				neighbors.add(allNodes.get(x - 1).get(y + 1));
+			}
 		}
+		// EAST
 		if (x + 1 < allNodes.size()) {
 			neighbors.add(allNodes.get(x + 1).get(y));
 		}
+		// SOUTH
 		if (y - 1 >= 0) {
 			neighbors.add(allNodes.get(x).get(y - 1));
+			// SOUTH-EAST
+			if (x + 1 < allNodes.size()) {
+				neighbors.add(allNodes.get(x + 1).get(y - 1));
+			}
+			// SOUTH-WEST
+			if (x - 1 >= 0) {
+				neighbors.add(allNodes.get(x - 1).get(y - 1));
+			}
 		}
-		if (y + 1 < allNodes.get(x).size()) {
-			neighbors.add(allNodes.get(x).get(y + 1));
+		// WEST
+		if (x - 1 >= 0) {
+			neighbors.add(allNodes.get(x - 1).get(y));
 		}
+
 		return neighbors;
 	}
 
-	private List<Point> reconstructPath(List<Point> path, Node finalNode) {
-		path.add(new Point(finalNode.x * 8, finalNode.y * 8));
+	private Deque<Point> reconstructPath(Deque<Point> path, Node finalNode) {
+		path.push(new Point(finalNode.x * 8, finalNode.y * 8));
 
 		// Base case
 		if (finalNode.parent == null) {
@@ -212,30 +313,30 @@ public class PathingManager implements Debuggable {
 				}
 			}
 		});
-		// Draw path from choke into main
-		g.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				for (Point location : pathIntoMain) {
-					engine.drawBox(location.x + 1, location.y + 1,
-							location.x + 6, location.y + 6, BWColor.GREY,
-							false, false);
-				}
-				engine.drawBox(topOfRamp.x + 1, topOfRamp.y + 1,
-						topOfRamp.x + 6, topOfRamp.y + 6, BWColor.RED, false,
-						false);
-			}
-		});
-		// Highlight ramp walk tiles
-		g.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				for (Point location : chokeRampWalkTiles) {
-					engine.drawBox(location.x * 8, location.y * 8,
-							location.x * 8 + 8, location.y * 8 + 8,
-							BWColor.GREEN, false, false);
-				}
-			}
-		});
+		// // Draw path from choke into main
+		// g.registerDebugFunction(new DebugModule() {
+		// @Override
+		// public void draw(DebugEngine engine) {
+		// for (Point location : pathIntoMain) {
+		// engine.drawBox(location.x + 1, location.y + 1,
+		// location.x + 6, location.y + 6, BWColor.GREY,
+		// false, false);
+		// }
+		// engine.drawBox(topOfRamp.x + 1, topOfRamp.y + 1,
+		// topOfRamp.x + 6, topOfRamp.y + 6, BWColor.RED, false,
+		// false);
+		// }
+		// });
+		// // Highlight ramp walk tiles
+		// g.registerDebugFunction(new DebugModule() {
+		// @Override
+		// public void draw(DebugEngine engine) {
+		// for (Point location : chokeRampWalkTiles) {
+		// engine.drawBox(location.x * 8, location.y * 8,
+		// location.x * 8 + 8, location.y * 8 + 8,
+		// BWColor.GREEN, false, false);
+		// }
+		// }
+		// });
 	}
 }
