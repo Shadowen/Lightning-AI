@@ -3,7 +3,6 @@ package eaglesWings.pathfinder;
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
@@ -11,13 +10,10 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Stack;
-
 import javabot.model.ChokePoint;
 import javabot.model.Unit;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
-import javabot.util.BWColor;
 import eaglesWings.datastructure.BaseManager;
 import eaglesWings.gamestructure.DebugEngine;
 import eaglesWings.gamestructure.DebugModule;
@@ -158,9 +154,6 @@ public class PathingManager implements Debuggable {
 		// Initialize
 		for (int wx = 0; wx < mapWalkWidth; wx++) {
 			for (int wy = 0; wy < mapWalkHeight; wy++) {
-				walkableNodes.get(wx).get(wy).parent = null;
-				walkableNodes.get(wx).get(wy).costFromStart = 0;
-				walkableNodes.get(wx).get(wy).predictedTotalCost = 0;
 				walkableNodes.get(wx).get(wy).walkable = true;
 			}
 		}
@@ -196,10 +189,10 @@ public class PathingManager implements Debuggable {
 		}
 
 		NodeSet openSet = new NodeSet();
+		walkableNodes.get(startWx).get(startWy).parent = null;
 		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
-		walkableNodes.get(startWx).get(startWy).predictedTotalCost = walkableNodes
-				.get(startWx).get(startWy).costFromStart
-				+ Point.distance(startWx, startWy, endWx, endWy);
+		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point
+				.distance(startWx, startWy, endWx, endWy);
 		openSet.add(walkableNodes.get(startWx).get(startWy));
 		Set<Node> closedSet = new HashSet<Node>();
 
@@ -207,7 +200,8 @@ public class PathingManager implements Debuggable {
 		while (openSet.size() > 0) {
 			Node currentNode = openSet.getNext();
 			// Base case
-			if (currentNode.x == endWx && currentNode.y == endWy) {
+			if ((currentNode.x == endWx && currentNode.y == endWy)
+					|| currentNode.costFromStart > length) {
 				Deque<Point> path = new ArrayDeque<Point>();
 				reconstructPath(path, currentNode);
 				return path;
@@ -216,8 +210,7 @@ public class PathingManager implements Debuggable {
 			openSet.remove(currentNode);
 			closedSet.add(currentNode);
 			// Add all neigbors to the open set
-			for (Node neighbor : getNeighbors(walkableNodes, currentNode.x,
-					currentNode.y)) {
+			for (Node neighbor : getNeighbors(currentNode.x, currentNode.y)) {
 				if (closedSet.contains(neighbor) || !neighbor.walkable) {
 					continue;
 				}
@@ -235,53 +228,45 @@ public class PathingManager implements Debuggable {
 					openSet.add(neighbor);
 				}
 			}
-
-			// Length
-			if (currentNode.costFromStart > length) {
-				Deque<Point> path = new ArrayDeque<Point>();
-				reconstructPath(path, currentNode);
-				return path;
-			}
 		}
 
-		// throw noPathException!?
-		return new ArrayDeque<Point>();
+		throw new NullPointerException();
 	}
 
-	private List<Node> getNeighbors(List<ArrayList<Node>> allNodes, int x, int y) {
+	private List<Node> getNeighbors(int x, int y) {
 		List<Node> neighbors = new ArrayList<Node>();
 
 		// NORTH
-		if (y + 1 < allNodes.get(x).size()) {
-			neighbors.add(allNodes.get(x).get(y + 1));
+		if (y + 1 < walkableNodes.get(x).size()) {
+			neighbors.add(walkableNodes.get(x).get(y + 1));
 			// NORTH-EAST
-			if (x + 1 < allNodes.size()) {
-				neighbors.add(allNodes.get(x + 1).get(y + 1));
+			if (x + 1 < walkableNodes.size()) {
+				neighbors.add(walkableNodes.get(x + 1).get(y + 1));
 			}
 			// NORTH-WEST
 			if (x - 1 >= 0) {
-				neighbors.add(allNodes.get(x - 1).get(y + 1));
+				neighbors.add(walkableNodes.get(x - 1).get(y + 1));
 			}
 		}
 		// EAST
-		if (x + 1 < allNodes.size()) {
-			neighbors.add(allNodes.get(x + 1).get(y));
+		if (x + 1 < walkableNodes.size()) {
+			neighbors.add(walkableNodes.get(x + 1).get(y));
 		}
 		// SOUTH
 		if (y - 1 >= 0) {
-			neighbors.add(allNodes.get(x).get(y - 1));
+			neighbors.add(walkableNodes.get(x).get(y - 1));
 			// SOUTH-EAST
-			if (x + 1 < allNodes.size()) {
-				neighbors.add(allNodes.get(x + 1).get(y - 1));
+			if (x + 1 < walkableNodes.size()) {
+				neighbors.add(walkableNodes.get(x + 1).get(y - 1));
 			}
 			// SOUTH-WEST
 			if (x - 1 >= 0) {
-				neighbors.add(allNodes.get(x - 1).get(y - 1));
+				neighbors.add(walkableNodes.get(x - 1).get(y - 1));
 			}
 		}
 		// WEST
 		if (x - 1 >= 0) {
-			neighbors.add(allNodes.get(x - 1).get(y));
+			neighbors.add(walkableNodes.get(x - 1).get(y));
 		}
 
 		return neighbors;

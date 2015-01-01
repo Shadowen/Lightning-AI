@@ -389,49 +389,42 @@ public class MicroManager implements Debuggable {
 				|| game.isVisible(scoutingTarget.getX() / 32,
 						scoutingTarget.getY() / 32)) {
 			scoutingTarget = getScoutingTarget();
-			// Calculate a good path
-			scoutPath = pathingManager.findGroundPath(scoutingUnit.getX(),
-					scoutingUnit.getY(), scoutingTarget.getX(),
-					scoutingTarget.getY(), scoutingUnit.getTypeID(), 100);
+			// Clear previous path
+			scoutPath.clear();
 		}
 
 		// Issue commands as appropriate
 		if (scoutingUnit != null && scoutingTarget != null) {
 			if (scoutPath.size() < 15) {
+				// Path planned is short
 				scoutPath = pathingManager.findGroundPath(scoutingUnit.getX(),
 						scoutingUnit.getY(), scoutingTarget.getX(),
 						scoutingTarget.getY(), scoutingUnit.getTypeID(), 100);
 			}
-			try {
-				Point moveTarget = scoutPath.element();
-				double distanceToCheckPoint = Point.distance(
-						scoutingUnit.getX(), scoutingUnit.getY(), moveTarget.x,
-						moveTarget.y);
-				if (distanceToCheckPoint < 64) {
-					// Next checkpoint
+
+			Point moveTarget;
+			double distanceToCheckPoint;
+			while (true) {
+				moveTarget = scoutPath.element();
+				distanceToCheckPoint = Point.distance(scoutingUnit.getX(),
+						scoutingUnit.getY(), moveTarget.x, moveTarget.y);
+
+				// if (distanceToCheckPoint > 128) {
+				// // Recalculate a path
+				// scoutPath.clear();
+				// return;
+				// } else
+				if (distanceToCheckPoint > 64) {
+					// Keep following existing path
+					break;
+				} else {
+					// Checkpoint
 					scoutPath.remove();
-				} else if (distanceToCheckPoint > 50) {
-					// Recalculate a path
-					/*
-					 * scoutPath =
-					 * pathingManager.findGroundPath(scoutingUnit.getX(),
-					 * scoutingUnit.getY(), scoutingTarget.getX(),
-					 * scoutingTarget.getY());
-					 */
 				}
-
-				if (scoutPath.size() == 0) {
-					// Reached destination
-					return;
-				}
-
-				// Issue a movement command
-				game.move(scoutingUnit.getID(), moveTarget.x, moveTarget.y);
-			} catch (NoSuchElementException e) {
-				// No path?
-				game.sendText("No scouting path planned!");
-				return;
 			}
+
+			// Issue a movement command
+			game.move(scoutingUnit.getID(), moveTarget.x, moveTarget.y);
 		}
 	}
 
