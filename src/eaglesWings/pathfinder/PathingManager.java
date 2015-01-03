@@ -177,11 +177,8 @@ public class PathingManager implements Debuggable {
 			if (!utype.isCanMove()) {
 				int uwidth = utype.getTileWidth();
 				int uheight = utype.getTileHeight();
-				for (int wx = Integer.max(u.getTileX() * 4 - 3, 0); wx < Integer
-						.min((u.getTileX() + uwidth) * 4 + 3, mapWalkWidth); wx++) {
-					for (int wy = Integer.max(u.getTileY() * 4 - 3, 0); wy < Integer
-							.min((u.getTileY() + uheight) * 4 + 3,
-									mapWalkHeight); wy++) {
+				for (int wx = u.getTileX() * 4; wx < (u.getTileX() + uwidth) * 4; wx++) {
+					for (int wy = u.getTileY() * 4; wy < (u.getTileY() + uheight) * 4; wy++) {
 						walkableNodes.get(wx).get(wy).walkable = false;
 					}
 				}
@@ -273,7 +270,7 @@ public class PathingManager implements Debuggable {
 	}
 
 	private Deque<Point> reconstructPath(Deque<Point> path, Node finalNode) {
-		path.push(new Point(finalNode.x * 8, finalNode.y * 8));
+		path.push(new Point(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
 
 		// Base case
 		if (finalNode.parent == null) {

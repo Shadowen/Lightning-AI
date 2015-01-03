@@ -393,38 +393,42 @@ public class MicroManager implements Debuggable {
 			scoutPath.clear();
 		}
 
-		// Issue commands as appropriate
-		if (scoutingUnit != null && scoutingTarget != null) {
-			if (scoutPath.size() < 15) {
-				// Path planned is short
-				scoutPath = pathingManager.findGroundPath(scoutingUnit.getX(),
-						scoutingUnit.getY(), scoutingTarget.getX(),
-						scoutingTarget.getY(), scoutingUnit.getTypeID(), 100);
-			}
-
-			Point moveTarget;
-			double distanceToCheckPoint;
-			while (true) {
-				moveTarget = scoutPath.element();
-				distanceToCheckPoint = Point.distance(scoutingUnit.getX(),
-						scoutingUnit.getY(), moveTarget.x, moveTarget.y);
-
-				// if (distanceToCheckPoint > 128) {
-				// // Recalculate a path
-				// scoutPath.clear();
-				// return;
-				// } else
-				if (distanceToCheckPoint > 64) {
-					// Keep following existing path
-					break;
-				} else {
-					// Checkpoint
-					scoutPath.remove();
+		try {
+			// Issue commands as appropriate
+			if (scoutingUnit != null && scoutingTarget != null) {
+				if (scoutPath.size() < 15) {
+					// Path planned is short
+					scoutPath = pathingManager.findGroundPath(
+							scoutingUnit.getX(), scoutingUnit.getY(),
+							scoutingTarget.getX(), scoutingTarget.getY(),
+							scoutingUnit.getTypeID(), 128);
 				}
-			}
 
-			// Issue a movement command
-			game.move(scoutingUnit.getID(), moveTarget.x, moveTarget.y);
+				Point moveTarget;
+				double distanceToCheckPoint;
+				while (true) {
+					moveTarget = scoutPath.element();
+					distanceToCheckPoint = Point.distance(scoutingUnit.getX(),
+							scoutingUnit.getY(), moveTarget.x, moveTarget.y);
+
+					if (distanceToCheckPoint > 128) {
+						// Recalculate a path
+						scoutPath.clear();
+						return;
+					} else if (distanceToCheckPoint > 64) {
+						// Keep following existing path
+						break;
+					} else {
+						// Checkpoint
+						scoutPath.remove();
+					}
+				}
+
+				// Issue a movement command
+				game.move(scoutingUnit.getID(), moveTarget.x, moveTarget.y);
+			}
+		} catch (NullPointerException e) {
+			System.out.println("Pathfinder failed to find a path...");
 		}
 	}
 
