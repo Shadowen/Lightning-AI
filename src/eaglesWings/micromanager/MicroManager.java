@@ -285,7 +285,7 @@ public class MicroManager implements Debuggable {
 		ua.timeout -= 1;
 	}
 
-	Queue<Point> openSet = new PriorityQueue<Point>(new Comparator<Point>() {
+	Queue<Point> openSet = new PriorityQueue<Point>(1, new Comparator<Point>() {
 		@Override
 		public int compare(Point arg0, Point arg1) {
 			return (int) ((targetMap[arg0.x][arg0.y] - targetMap[arg1.x][arg1.y]) * 1000);
@@ -480,7 +480,9 @@ public class MicroManager implements Debuggable {
 		}
 
 		// Add a new hashmap if needed
-		units.putIfAbsent(type, new HashMap<Integer, UnitAgent>());
+		if (!units.containsKey(type)) {
+			units.put(type, new HashMap<Integer, UnitAgent>());
+		}
 		units.get(type).put(unitID, new UnitAgent(game, unit));
 	}
 

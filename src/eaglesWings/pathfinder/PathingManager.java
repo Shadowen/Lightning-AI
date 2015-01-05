@@ -161,10 +161,10 @@ public class PathingManager implements Debuggable {
 		for (int wx = 0; wx < game.getMap().getWidth() * 4; wx++) {
 			for (int wy = 0; wy < game.getMap().getHeight() * 4; wy++) {
 				if (!game.getMap().isWalkable(wx, wy)) {
-					for (int iwx = Integer.max(wx - 3, 0); iwx < Integer.min(
-							wx + 3, mapWalkWidth); iwx++) {
-						for (int iwy = Integer.max(wy - 3, 0); iwy < Integer
-								.min(wy + 3, mapWalkHeight); iwy++) {
+					for (int iwx = Math.max(wx - 3, 0); iwx < Math.min(wx + 3,
+							mapWalkWidth); iwx++) {
+						for (int iwy = Math.max(wy - 3, 0); iwy < Math.min(
+								wy + 3, mapWalkHeight); iwy++) {
 							walkableNodes.get(iwx).get(iwy).walkable = false;
 						}
 					}
