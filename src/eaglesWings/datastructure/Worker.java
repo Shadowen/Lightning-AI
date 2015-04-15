@@ -26,8 +26,8 @@ public class Worker {
 		return unit.isIdle();
 	}
 
-	public void gather() {
-		game.gather(unit.getID(), currentResource.getID());
+	public void move(int x, int y) {
+		game.move(unit.getID(), x, y);
 	}
 
 	public void gather(Resource r) {
@@ -37,6 +37,9 @@ public class Worker {
 			setTask(WorkerTask.Mining_Minerals, r);
 		} else if (r instanceof GasResource) {
 			setTask(WorkerTask.Mining_Gas, r);
+		} else {
+			game.sendText("Error in gathering");
+			setTask(WorkerTask.SCOUTING, null);
 		}
 	}
 
@@ -53,15 +56,21 @@ public class Worker {
 
 	public void setTask(WorkerTask task, Resource newResource) {
 		currentTask = task;
-		if (currentResource != null) {
-			currentResource.removeGatherer();
-		}
-		currentResource = newResource;
+
 		if (task == WorkerTask.Mining_Minerals || task == WorkerTask.Mining_Gas) {
-			newResource.addGatherer();
-		} else if (task == WorkerTask.Scouting) {
-			base.removeWorker(getID());
+			if (currentResource != null) {
+				currentResource.removeGatherer();
+			}
+			if (newResource != null) {
+				newResource.addGatherer();
+			}
+		} else if (task == WorkerTask.SCOUTING) {
+			if (base != null) {
+				base.removeWorker(getID());
+			}
 		}
+
+		currentResource = newResource;
 	}
 
 	public int getX() {
@@ -78,6 +87,10 @@ public class Worker {
 
 	public Unit getUnit() {
 		return unit;
+	}
+
+	public Resource getCurrentResource() {
+		return currentResource;
 	}
 
 	public void unitDestroyed() {

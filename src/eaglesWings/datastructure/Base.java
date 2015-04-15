@@ -50,13 +50,15 @@ public class Base {
 
 	public void gatherResources() {
 		// Idle workers
-		for (Entry<Integer, Worker> worker : workers.entrySet()) {
-			if (worker.getValue().isIdle()) {
+		for (Entry<Integer, Worker> entry : workers.entrySet()) {
+			Worker worker = entry.getValue();
+			WorkerTask currentTask = worker.getTask();
+			if (worker.isIdle()
+					&& (currentTask == WorkerTask.Mining_Minerals || currentTask == WorkerTask.Mining_Gas)) {
+				game.sendText("Idle worker detected!");
 				// Get back to work
-				WorkerTask currentTask = worker.getValue().getTask();
-				if (currentTask == WorkerTask.Mining_Minerals
-						|| currentTask == WorkerTask.Mining_Gas) {
-					worker.getValue().gather();
+				if (worker.getCurrentResource() != null) {
+					worker.gather(worker.getCurrentResource());
 					continue;
 				}
 
@@ -79,10 +81,10 @@ public class Base {
 							.entrySet()) {
 						if (m.getValue().getNumGatherers() < maxMiners) {
 							// Find closest mineral patch
-							double newDistance = Point.distance(worker
-									.getValue().getX(), worker.getValue()
-									.getY(), m.getValue().getX(), m.getValue()
-									.getY());
+							double newDistance = Point.distance(entry
+									.getValue().getX(),
+									entry.getValue().getY(), m.getValue()
+											.getX(), m.getValue().getY());
 							if (mineral == null || newDistance < distance) {
 								mineral = m.getValue();
 								distance = newDistance;
@@ -95,7 +97,7 @@ public class Base {
 				}
 
 				// Actually issue the order
-				worker.getValue().gather(mineral);
+				entry.getValue().gather(mineral);
 			}
 		}
 	}
@@ -127,6 +129,7 @@ public class Base {
 	public void addWorker(int unitID, Unit unit) {
 		Worker w = new Worker(game, unit);
 		w.setBase(this);
+		w.setTask(WorkerTask.Mining_Minerals, null);
 		workers.put(unitID, w);
 	}
 

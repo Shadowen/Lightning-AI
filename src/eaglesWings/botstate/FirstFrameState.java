@@ -60,6 +60,7 @@ public class FirstFrameState extends BotState {
 					.ordinal()) {
 				closestBase.gas.put(u.getID(), new GasResource(u));
 			} else if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
+				game.sendText("Found SCV");
 				closestBase.addWorker(u.getID(), u);
 			}
 		}

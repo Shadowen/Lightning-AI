@@ -189,6 +189,10 @@ public class JavaBot implements BWAPIEventListener {
 
 			// Auto economy
 			for (Base b : baseManager.getMyBases()) {
+				if (b.commandCenter == null) {
+					continue;
+				}
+
 				b.gatherResources();
 
 				// Train SCVS if necessary

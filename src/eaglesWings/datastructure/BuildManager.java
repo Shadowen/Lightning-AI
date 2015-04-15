@@ -162,10 +162,13 @@ public class BuildManager implements Debuggable {
 				// It has been completed
 				buildingQueue.remove(p);
 
-				// If it's a refinery, the worker will automatically become
-				// a gas miner!
 				if (u.getTypeID() == UnitTypes.Terran_Refinery.ordinal()) {
+					// If it's a refinery, the worker will automatically become
+					// a gas miner!
 					p.builder.gather(baseManager.getResource(u));
+				} else {
+					// Otherwise, back to work!
+					p.builder.gather(p.builder.getCurrentResource());
 				}
 
 				break;

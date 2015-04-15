@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+
 import javabot.model.ChokePoint;
 import javabot.model.Unit;
 import javabot.types.UnitType;
@@ -185,7 +186,14 @@ public class PathingManager implements Debuggable {
 			}
 		}
 
-		NodeSet openSet = new NodeSet();
+		Queue<Node> openSet = new PriorityQueue<Node>(1,
+				new Comparator<Node>() {
+					@Override
+					public int compare(Node n1, Node n2) {
+						return (int) Math
+								.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
+					}
+				});
 		walkableNodes.get(startWx).get(startWy).parent = null;
 		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
 		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point
@@ -195,7 +203,7 @@ public class PathingManager implements Debuggable {
 
 		// Iterate
 		while (openSet.size() > 0) {
-			Node currentNode = openSet.getNext();
+			Node currentNode = openSet.remove();
 			// Base case
 			if ((currentNode.x == endWx && currentNode.y == endWy)
 					|| currentNode.costFromStart > length) {
@@ -204,7 +212,6 @@ public class PathingManager implements Debuggable {
 				return path;
 			}
 			// Move the node from the open set to the closed set
-			openSet.remove(currentNode);
 			closedSet.add(currentNode);
 			// Add all neigbors to the open set
 			for (Node neighbor : getNeighbors(currentNode.x, currentNode.y)) {

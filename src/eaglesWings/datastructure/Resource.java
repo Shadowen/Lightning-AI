@@ -37,4 +37,12 @@ public abstract class Resource {
 	public int getY() {
 		return unit.getY();
 	}
+
+	public int getTileX() {
+		return unit.getTileX();
+	}
+
+	public int getTileY() {
+		return unit.getTileY();
+	}
 }

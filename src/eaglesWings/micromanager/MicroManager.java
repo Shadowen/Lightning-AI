@@ -4,12 +4,12 @@ import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
@@ -24,6 +24,9 @@ import javabot.util.BWColor;
 import eaglesWings.datastructure.Base;
 import eaglesWings.datastructure.BaseManager;
 import eaglesWings.datastructure.BaseStatus;
+import eaglesWings.datastructure.BuildingPlan;
+import eaglesWings.datastructure.GasResource;
+import eaglesWings.datastructure.Resource;
 import eaglesWings.datastructure.Worker;
 import eaglesWings.datastructure.WorkerTask;
 import eaglesWings.gamestructure.DebugEngine;
@@ -31,7 +34,6 @@ import eaglesWings.gamestructure.DebugModule;
 import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
 import eaglesWings.pathfinder.Node;
-import eaglesWings.pathfinder.NodeSet;
 import eaglesWings.pathfinder.PathingManager;
 
 public class MicroManager implements Debuggable {
@@ -48,8 +50,10 @@ public class MicroManager implements Debuggable {
 	private static final int MAX_ATTACK_RUN_ITERATIONS = 5;
 
 	private Base scoutingTarget;
-	private Queue<Point> scoutPath = new ArrayDeque<Point>();
+	private Queue<Point> scoutPath;
 	private Unit scoutingUnit;
+
+	private ArrayList<Worker> gasBlockers;
 
 	private HashMap<UnitTypes, HashMap<Integer, UnitAgent>> units;
 
@@ -65,6 +69,10 @@ public class MicroManager implements Debuggable {
 		threatMap = new double[mapWidth + 1][mapHeight + 1];
 
 		units = new HashMap<UnitTypes, HashMap<Integer, UnitAgent>>();
+
+		scoutPath = new ArrayDeque<Point>();
+
+		gasBlockers = new ArrayList<Worker>();
 
 		// Update threat map
 		new Timer().scheduleAtFixedRate(new TimerTask() {
@@ -129,6 +137,8 @@ public class MicroManager implements Debuggable {
 	public void act() {
 		// Move scouting unit(s)
 		scout();
+		// Gas hog
+		occupyGas();
 
 		// Manage the rest of the units
 		for (Entry<UnitTypes, HashMap<Integer, UnitAgent>> unitTypeMap : units
@@ -285,40 +295,8 @@ public class MicroManager implements Debuggable {
 		ua.timeout -= 1;
 	}
 
-	Queue<Point> openSet = new PriorityQueue<Point>(1, new Comparator<Point>() {
-		@Override
-		public int compare(Point arg0, Point arg1) {
-			return (int) ((targetMap[arg0.x][arg0.y] - targetMap[arg1.x][arg1.y]) * 1000);
-		}
-
-	});
-	Set<Point> closedSet = new HashSet<Point>();
-
 	private Point attackRun(int x, int y, int distance) {
-		int gx = x / 32;
-		int gy = y / 32;
-
-		openSet.clear();
-		closedSet.clear();
-
-		Point startNode = new Point(gx, gy);
-		openSet.add(startNode);
-
-		for (int iterations = 0; iterations < MAX_ATTACK_RUN_ITERATIONS
-				&& openSet.size() > 0; iterations++) {
-			Point currentNode = openSet.remove();
-			closedSet.add(currentNode);
-
-			for (Point p : getNeighbors(gx, gy)) {
-				if (closedSet.contains(p)) {
-					continue;
-				}
-
-				openSet.add(p);
-			}
-		}
-
-		return openSet.element();
+		return null;
 	}
 
 	private List<Point> getNeighbors(int gx, int gy) {
@@ -401,7 +379,7 @@ public class MicroManager implements Debuggable {
 					scoutPath = pathingManager.findGroundPath(
 							scoutingUnit.getX(), scoutingUnit.getY(),
 							scoutingTarget.getX(), scoutingTarget.getY(),
-							scoutingUnit.getTypeID(), 128);
+							scoutingUnit.getTypeID(), 256);
 				}
 
 				Point moveTarget;
@@ -429,6 +407,33 @@ public class MicroManager implements Debuggable {
 			}
 		} catch (NullPointerException e) {
 			System.out.println("Pathfinder failed to find a path...");
+		}
+	}
+
+	public void addGasOccupier(Worker w, GasResource r) {
+		gasBlockers.add(w);
+		w.setTask(WorkerTask.OCCUPY_GAS, r);
+	}
+
+	private void occupyGas() {
+		for (Worker w : gasBlockers) {
+			Resource target = w.getCurrentResource();
+			if (Math.abs(w.getX() - target.getX()) > 16
+					|| Math.abs(w.getY() - target.getY()) > 16) {
+				// Get on the geyser by building refinery
+				w.build(new BuildingPlan(game, target.getTileX(), target
+						.getTileY(), UnitTypes.Terran_Refinery));
+			} else {
+				game.sendText("Holding position");
+				if (w.getTask() == WorkerTask.Constructing_Building) {
+					w.setTask(WorkerTask.OCCUPY_GAS, w.getCurrentResource());
+					// Cancel refinery
+					game.cancelConstruction(game.getClosestUnitOfType(w.getX(),
+							w.getY(), UnitTypes.Terran_Refinery).getID());
+				}
+				// Hold position
+				w.move(target.getX(), target.getY());
+			}
 		}
 	}
 
@@ -560,6 +565,17 @@ public class MicroManager implements Debuggable {
 				for (Point p : scoutPath) {
 					engine.drawBox(p.x - 4, p.y - 4, p.x + 4, p.y + 4,
 							BWColor.YELLOW, false, false);
+				}
+			}
+		});
+		// Gas blockers
+		g.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				for (Worker w : gasBlockers) {
+					engine.drawCircle(w.getCurrentResource().getX(), w
+							.getCurrentResource().getY(), 2, BWColor.RED, true,
+							false);
 				}
 			}
 		});
