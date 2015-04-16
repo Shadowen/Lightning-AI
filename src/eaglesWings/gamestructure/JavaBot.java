@@ -80,7 +80,7 @@ public class JavaBot implements BWAPIEventListener {
 			buildManager.registerDebugFunctions(game);
 			pathingManager.registerDebugFunctions(game);
 			microManager.registerDebugFunctions(game);
-			game.registerDebugFunction(new DebugModule() {
+			game.registerDebugFunction(new DebugModule("fps") {
 				private Queue<Long> fpsQueue = new ArrayDeque<Long>();
 
 				@Override
@@ -97,7 +97,7 @@ public class JavaBot implements BWAPIEventListener {
 					engine.drawText(20, 300, "FPS: " + fpsQueue.size(), true);
 				}
 			});
-			game.registerDebugFunction(new DebugModule() {
+			game.registerDebugFunction(new DebugModule("botstate") {
 				@Override
 				public void draw(DebugEngine engine)
 						throws ShapeOverflowException {
@@ -105,7 +105,7 @@ public class JavaBot implements BWAPIEventListener {
 							+ botState.getClass().toString(), true);
 				}
 			});
-			game.registerDebugFunction(new DebugModule() {
+			game.registerDebugFunction(new DebugModule("construction") {
 				@Override
 				public void draw(DebugEngine engine)
 						throws ShapeOverflowException {
@@ -117,6 +117,12 @@ public class JavaBot implements BWAPIEventListener {
 					}
 					engine.drawText(5, 60, "unitsUnderConstruction: "
 							+ uucString, true);
+				}
+			});
+			game.registerDebugFunction(new DebugModule("supply") {
+				@Override
+				public void draw(DebugEngine engine)
+						throws ShapeOverflowException {
 					engine.drawText(500, 15, "Supply: "
 							+ game.getSelf().getSupplyUsed() + "/"
 							+ game.getSelf().getSupplyTotal(), true);
@@ -349,5 +355,6 @@ public class JavaBot implements BWAPIEventListener {
 	}
 
 	public void keyPressed(int keyCode) {
+		game.sendText(String.valueOf(keyCode));
 	}
 }

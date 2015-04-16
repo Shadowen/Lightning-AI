@@ -12,14 +12,14 @@ import javabot.util.BWColor;
 
 public class DebugEngine {
 	private GameHandler game;
-	public List<DebugModule> activeDebugModules;
+	public List<DebugModule> debugModules;
 
 	public DebugEngine(GameHandler igame) {
 		game = igame;
-		activeDebugModules = new ArrayList<DebugModule>();
+		debugModules = new ArrayList<DebugModule>();
 
 		// Debugger debugger
-		activeDebugModules.add(new DebugModule() {
+		debugModules.add(new DebugModule("shapecount") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				engine.drawText(400, 100,
@@ -37,13 +37,13 @@ public class DebugEngine {
 	private int shapeCount = 0;
 	/**
 	 * The maximum amount of shapes that can be drawn by {@link DebugEngine}
-	 * before errors start occuring. This should be between 26000 and 39000
+	 * before errors start occurring. This should be between 26000 and 39000
 	 * depending on the type of shapes being drawn.
 	 **/
 	private static final int MAX_SHAPES = 26000;
 
 	/**
-	 * Iterate through the {@link #activeDebugModules} and tell each one to
+	 * Iterate through the {@link #debugModules} and tell each one to
 	 * {@link DebugModule#draw}.
 	 */
 	public void draw() {
@@ -51,7 +51,7 @@ public class DebugEngine {
 		// many objects attempting to draw, then print the stack trace.
 		shapeCount = 0;
 		try {
-			for (DebugModule d : activeDebugModules) {
+			for (DebugModule d : debugModules) {
 				d.draw(this);
 			}
 		} catch (ShapeOverflowException soe) {

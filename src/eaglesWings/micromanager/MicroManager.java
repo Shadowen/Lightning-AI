@@ -463,7 +463,7 @@ public class MicroManager implements Debuggable {
 	@Override
 	public void registerDebugFunctions(GameHandler g) {
 		// Threat map
-		// g.registerDebugFunction(new DebugModule() {
+		// g.registerDebugFunction(new DebugModule("threats") {
 		// @Override
 		// public void draw(DebugEngine engine) {
 		// // Actually draw
@@ -477,7 +477,7 @@ public class MicroManager implements Debuggable {
 		// }
 		// });
 		// Target map
-		// g.registerDebugFunction(new DebugModule() {
+		// g.registerDebugFunction(new DebugModule("targets") {
 		// @Override
 		// public void draw(DebugEngine engine) throws ShapeOverflowException{
 		// // Actually draw
@@ -497,7 +497,7 @@ public class MicroManager implements Debuggable {
 		// }
 		// });
 		// Weapon cooldown bars
-		g.registerDebugFunction(new DebugModule() {
+		g.registerDebugFunction(new DebugModule("cooldowns") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				for (Entry<UnitTypes, HashMap<Integer, UnitAgent>> unitTypeMap : units
@@ -526,7 +526,7 @@ public class MicroManager implements Debuggable {
 			}
 		});
 		// Scouting Target
-		g.registerDebugFunction(new DebugModule() {
+		g.registerDebugFunction(new DebugModule("scouting") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				if (scoutingTarget != null) {
