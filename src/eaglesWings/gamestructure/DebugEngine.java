@@ -12,31 +12,32 @@ import javabot.util.BWColor;
 
 public class DebugEngine {
 	private GameHandler game;
-	public List<DebugModule> debugModules;
+	public List<DebugModule> activeDebugModules;
 
 	public DebugEngine(GameHandler igame) {
 		game = igame;
-		debugModules = new ArrayList<DebugModule>();
+		activeDebugModules = new ArrayList<DebugModule>();
 
 		// Debugger debugger
-		debugModules.add(new DebugModule() {
+		activeDebugModules.add(new DebugModule() {
 			@Override
 			public void draw(DebugEngine engine) {
 				engine.drawText(100, 100,
 						"Debug Shapes: " + String.valueOf(shapeCount + 1) + "/"
 								+ MAX_SHAPES, true);
+
 			}
 		});
 	}
 
 	private int shapeCount = 0;
-	private static final int MAX_SHAPES = 39312;
+	private static final int MAX_SHAPES = 26000;
 
 	public void draw() {
 		shapeCount = 0;
-		for (DebugModule d : debugModules) {
+		for (DebugModule d : activeDebugModules) {
 			try {
-				//d.draw(this);
+				d.draw(this);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

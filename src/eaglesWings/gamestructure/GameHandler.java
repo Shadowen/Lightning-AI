@@ -50,7 +50,7 @@ public class GameHandler extends JNIBWAPI {
 	}
 
 	public void registerDebugFunction(DebugModule m) {
-		debugEngine.debugModules.add(m);
+		//debugEngine.activeDebugModules.add(m);
 	}
 
 	public void drawDebug() {

@@ -462,39 +462,39 @@ public class MicroManager implements Debuggable {
 	@Override
 	public void registerDebugFunctions(GameHandler g) {
 		// Threat map
-		g.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				// Actually draw
-				for (int x = 1; x < mapWidth; x++) {
-					for (int y = 1; y < mapHeight; y++) {
-						engine.drawCircle(x * 32, y * 32,
-								(int) Math.round(threatMap[x][y]), BWColor.RED,
-								false, false);
-					}
-				}
-			}
-		});
+//		g.registerDebugFunction(new DebugModule() {
+//			@Override
+//			public void draw(DebugEngine engine) {
+//				// Actually draw
+//				for (int x = 1; x < mapWidth; x++) {
+//					for (int y = 1; y < mapHeight; y++) {
+//						engine.drawCircle(x * 32, y * 32,
+//								(int) Math.round(threatMap[x][y]), BWColor.RED,
+//								false, false);
+//					}
+//				}
+//			}
+//		});
 		// Target map
-		g.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				// Actually draw
-				for (int tx = 1; tx < mapWidth - 1; tx++) {
-					int x = tx * 32;
-					for (int ty = 1; ty < mapHeight - 1; ty++) {
-						int y = ty * 32;
-
-						int north = (int) Math.round(targetMap[tx][ty - 1]);
-						int east = (int) Math.round(targetMap[tx + 1][ty]);
-						int south = (int) Math.round(targetMap[tx][ty - 1]);
-						int west = (int) Math.round(targetMap[tx - 1][ty]);
-						engine.drawArrow(x, y, x + (east - west) * 5, y
-								+ (north - south) * 5, BWColor.TEAL, false);
-					}
-				}
-			}
-		});
+//		g.registerDebugFunction(new DebugModule() {
+//			@Override
+//			public void draw(DebugEngine engine) {
+//				// Actually draw
+//				for (int tx = 1; tx < mapWidth - 1; tx++) {
+//					int x = tx * 32;
+//					for (int ty = 1; ty < mapHeight - 1; ty++) {
+//						int y = ty * 32;
+//
+//						int north = (int) Math.round(targetMap[tx][ty - 1]);
+//						int east = (int) Math.round(targetMap[tx + 1][ty]);
+//						int south = (int) Math.round(targetMap[tx][ty - 1]);
+//						int west = (int) Math.round(targetMap[tx - 1][ty]);
+//						engine.drawArrow(x, y, x + (east - west) * 5, y
+//								+ (north - south) * 5, BWColor.TEAL, false);
+//					}
+//				}
+//			}
+//		});
 		// Weapon cooldown bars
 		g.registerDebugFunction(new DebugModule() {
 			@Override
