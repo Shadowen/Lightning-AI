@@ -54,14 +54,16 @@ public class FirstFrameState extends BotState {
 		// Sort SCVs and resources
 		for (Unit u : game.getAllUnits()) {
 			Base closestBase = baseManager.getClosestBase(u.getX(), u.getY());
-			if (u.getTypeID() == UnitTypes.Resource_Mineral_Field.ordinal()) {
-				closestBase.minerals.put(u.getID(), new MineralResource(u));
-			} else if (u.getTypeID() == UnitTypes.Resource_Vespene_Geyser
-					.ordinal()) {
-				closestBase.gas.put(u.getID(), new GasResource(u));
-			} else if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
-				game.sendText("Found SCV");
-				closestBase.addWorker(u.getID(), u);
+			if (closestBase != null) {
+				if (u.getTypeID() == UnitTypes.Resource_Mineral_Field.ordinal()) {
+					closestBase.minerals.put(u.getID(), new MineralResource(u));
+				} else if (u.getTypeID() == UnitTypes.Resource_Vespene_Geyser
+						.ordinal()) {
+					closestBase.gas.put(u.getID(), new GasResource(u));
+				} else if (u.getTypeID() == UnitTypes.Terran_SCV.ordinal()) {
+					game.sendText("Found SCV");
+					closestBase.addWorker(u.getID(), u);
+				}
 			}
 		}
 

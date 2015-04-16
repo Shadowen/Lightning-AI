@@ -72,8 +72,6 @@ public class MicroManager implements Debuggable {
 
 		scoutPath = new ArrayDeque<Point>();
 
-		gasBlockers = new ArrayList<Worker>();
-
 		// Update threat map
 		new Timer().scheduleAtFixedRate(new TimerTask() {
 			@Override
@@ -86,7 +84,7 @@ public class MicroManager implements Debuggable {
 					}
 				}
 
-				// Count the targets and threats
+				// Loop through enemy units
 				for (Unit u : game.getEnemyUnits()) {
 					UnitType unitType = game.getUnitType(u.getTypeID());
 					// Get the x and y grid point coordinates
@@ -95,50 +93,34 @@ public class MicroManager implements Debuggable {
 					// Get the ground weapon's range
 					WeaponType weapon = game.getWeaponType(unitType
 							.getGroundWeaponID());
-					double radius = weapon.getMaxRange() / 32 + 2;
-					double target;
+
+					double targetValue = 0;
 					if (unitType.isWorker()) {
-						target = 100;
-					} else {
-						target = 0;
+						targetValue = 1;
 					}
-					double threat = weapon.getDamageAmount();
 
-					ArrayList<Point> threatPoints = generateCircleCoordinates(
-							x, y, radius);
-					for (Point p : threatPoints) {
-						targetMap[p.x][p.y] += target * (10 - p.distance(x, y))
-								/ 10;
-						threatMap[p.x][p.y] += threat
-								* (radius - p.distance(x, y)) / radius;
-					}
-				}
-			}
-
-			private ArrayList<Point> generateCircleCoordinates(int cx, int cy,
-					double r) {
-				ArrayList<Point> points = new ArrayList<Point>();
-				for (int x = (int) Math.floor(-r); x < r; x++) {
-					int y1 = (int) Math.round(Math.sqrt(Math.pow(r, 2)
-							- Math.pow(x, 2)));
-					int y2 = -y1;
-					for (int y = y2; y < y1; y++) {
-						if (x + cx > 0 && x + cx < mapWidth && y + cy > 0
-								&& y + cy < mapHeight) {
-							points.add(new Point(x + cx, y + cy));
+					// Loop through all points in a circle around the unit
+					int radius = 10;
+					int startX = Math.max(x - radius, 0);
+					int endX = Math.min(x + radius, mapWidth);
+					for (int cx = startX; cx < endX; cx++) {
+						int remainingRadius = radius - Math.abs(cx - x);
+						int startY = Math.max(y - remainingRadius, 0);
+						int endY = Math.min(y + remainingRadius, mapHeight);
+						for (int cy = startY; cy < endY; cy++) {
+							targetMap[cx][cy] += targetValue
+									/ Point.distance(x, y, cx, cy);
 						}
 					}
 				}
-				return points;
 			}
+
 		}, 0, THREAT_MAP_REFRESH_DELAY);
 	}
 
 	public void act() {
 		// Move scouting unit(s)
 		scout();
-		// Gas hog
-		occupyGas();
 
 		// Manage the rest of the units
 		for (Entry<UnitTypes, HashMap<Integer, UnitAgent>> unitTypeMap : units
@@ -410,33 +392,6 @@ public class MicroManager implements Debuggable {
 		}
 	}
 
-	public void addGasOccupier(Worker w, GasResource r) {
-		gasBlockers.add(w);
-		w.setTask(WorkerTask.OCCUPY_GAS, r);
-	}
-
-	private void occupyGas() {
-		for (Worker w : gasBlockers) {
-			Resource target = w.getCurrentResource();
-			if (Math.abs(w.getX() - target.getX()) > 16
-					|| Math.abs(w.getY() - target.getY()) > 16) {
-				// Get on the geyser by building refinery
-				w.build(new BuildingPlan(game, target.getTileX(), target
-						.getTileY(), UnitTypes.Terran_Refinery));
-			} else {
-				game.sendText("Holding position");
-				if (w.getTask() == WorkerTask.Constructing_Building) {
-					w.setTask(WorkerTask.OCCUPY_GAS, w.getCurrentResource());
-					// Cancel refinery
-					game.cancelConstruction(game.getClosestUnitOfType(w.getX(),
-							w.getY(), UnitTypes.Terran_Refinery).getID());
-				}
-				// Hold position
-				w.move(target.getX(), target.getY());
-			}
-		}
-	}
-
 	private Base getScoutingTarget() {
 		Base target = null;
 		for (Base b : baseManager) {
@@ -513,9 +468,29 @@ public class MicroManager implements Debuggable {
 				// Actually draw
 				for (int x = 1; x < mapWidth; x++) {
 					for (int y = 1; y < mapHeight; y++) {
-						game.drawCircle(x * 32, y * 32,
+						engine.drawCircle(x * 32, y * 32,
 								(int) Math.round(threatMap[x][y]), BWColor.RED,
 								false, false);
+					}
+				}
+			}
+		});
+		// Target map
+		g.registerDebugFunction(new DebugModule() {
+			@Override
+			public void draw(DebugEngine engine) {
+				// Actually draw
+				for (int tx = 1; tx < mapWidth - 1; tx++) {
+					int x = tx * 32;
+					for (int ty = 1; ty < mapHeight - 1; ty++) {
+						int y = ty * 32;
+
+						int north = (int) Math.round(targetMap[tx][ty - 1]);
+						int east = (int) Math.round(targetMap[tx + 1][ty]);
+						int south = (int) Math.round(targetMap[tx][ty - 1]);
+						int west = (int) Math.round(targetMap[tx - 1][ty]);
+						engine.drawArrow(x, y, x + (east - west) * 5, y
+								+ (north - south) * 5, BWColor.TEAL, false);
 					}
 				}
 			}
@@ -538,10 +513,10 @@ public class MicroManager implements Debuggable {
 							int maxCooldown = game.getWeaponType(
 									unitType.getGroundWeaponID())
 									.getDamageCooldown();
-							game.drawLine(u.getX(), u.getY(), u.getX()
+							engine.drawLine(u.getX(), u.getY(), u.getX()
 									+ cooldownBarSize, u.getY(), BWColor.GREEN,
 									false);
-							game.drawLine(u.getX(), u.getY(), u.getX()
+							engine.drawLine(u.getX(), u.getY(), u.getX()
 									+ cooldownRemaining * cooldownBarSize
 									/ maxCooldown, u.getY(), BWColor.RED, false);
 						}
@@ -565,17 +540,6 @@ public class MicroManager implements Debuggable {
 				for (Point p : scoutPath) {
 					engine.drawBox(p.x - 4, p.y - 4, p.x + 4, p.y + 4,
 							BWColor.YELLOW, false, false);
-				}
-			}
-		});
-		// Gas blockers
-		g.registerDebugFunction(new DebugModule() {
-			@Override
-			public void draw(DebugEngine engine) {
-				for (Worker w : gasBlockers) {
-					engine.drawCircle(w.getCurrentResource().getX(), w
-							.getCurrentResource().getY(), 2, BWColor.RED, true,
-							false);
 				}
 			}
 		});

@@ -12,32 +12,17 @@ public class StarportRush extends BotState {
 
 	protected StarportRush(BotState oldState) {
 		super(oldState);
+		Worker w = baseManager.getBuilder();
+		if (w == null) {
+			game.sendText("Can't scout since no workers available!");
+		} else {
+			// w.setTask(WorkerTask.SCOUTING, null);
+			// microManager.setScoutingUnit(w.getUnit());
+		}
 	}
-
-	boolean firstTime = true;
 
 	@Override
 	public BotState act() {
-		// TODO
-		if (firstTime) {
-			Worker w = baseManager.getBuilder();
-			if (w == null) {
-				game.sendText("Can't scout since no workers available!");
-			} else {
-				// w.setTask(WorkerTask.SCOUTING, null);
-				// microManager.setScoutingUnit(w.getUnit());
-				firstTime = false;
-			}
-
-			w = baseManager.getBuilder();
-			if (w == null) {
-			} else {
-				// microManager.addGasOccupier(w, baseManager.main.gas.values()
-				// .iterator().next());
-				firstTime = false;
-			}
-		}
-
 		// Check the build order
 		int supply = game.getSelf().getSupplyUsed() / 2;
 		if (previousSupply < supply) {
