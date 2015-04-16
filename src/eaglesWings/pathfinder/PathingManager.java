@@ -20,6 +20,7 @@ import eaglesWings.gamestructure.DebugEngine;
 import eaglesWings.gamestructure.DebugModule;
 import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
+import eaglesWings.gamestructure.ShapeOverflowException;
 
 public class PathingManager implements Debuggable {
 	private static final int MAX_RAMP_WALK_TILES = 500;
@@ -290,7 +291,7 @@ public class PathingManager implements Debuggable {
 		// Label all chokes
 		g.registerDebugFunction(new DebugModule() {
 			@Override
-			public void draw(DebugEngine engine) {
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				int i = 0;
 				for (ChokePoint choke : game.getMap().getChokePoints()) {
 					engine.drawText(choke.getCenterX() - 10,
@@ -305,7 +306,7 @@ public class PathingManager implements Debuggable {
 		// // Draw path from choke into main
 		// g.registerDebugFunction(new DebugModule() {
 		// @Override
-		// public void draw(DebugEngine engine) {
+		// public void draw(DebugEngine engine) throws ShapeOverflowException {
 		// for (Point location : pathIntoMain) {
 		// engine.drawBox(location.x + 1, location.y + 1,
 		// location.x + 6, location.y + 6, BWColor.GREY,
@@ -319,7 +320,7 @@ public class PathingManager implements Debuggable {
 		// // Highlight ramp walk tiles
 		// g.registerDebugFunction(new DebugModule() {
 		// @Override
-		// public void draw(DebugEngine engine) {
+		// public void draw(DebugEngine engine) throws ShapeOverflowException {
 		// for (Point location : chokeRampWalkTiles) {
 		// engine.drawBox(location.x * 8, location.y * 8,
 		// location.x * 8 + 8, location.y * 8 + 8,

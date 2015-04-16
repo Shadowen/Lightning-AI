@@ -10,6 +10,7 @@ import eaglesWings.gamestructure.DebugEngine;
 import eaglesWings.gamestructure.DebugModule;
 import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
+import eaglesWings.gamestructure.ShapeOverflowException;
 import javabot.model.Unit;
 import javabot.util.BWColor;
 
@@ -115,7 +116,7 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	public void registerDebugFunctions(GameHandler g) {
 		g.registerDebugFunction(new DebugModule() {
 			@Override
-			public void draw(DebugEngine engine) {
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				if (main != null) {
 					engine.drawText(main.getX(), main.getY(), "Main", false);
 				}

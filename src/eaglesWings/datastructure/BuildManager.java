@@ -10,6 +10,7 @@ import eaglesWings.gamestructure.DebugEngine;
 import eaglesWings.gamestructure.DebugModule;
 import eaglesWings.gamestructure.Debuggable;
 import eaglesWings.gamestructure.GameHandler;
+import eaglesWings.gamestructure.ShapeOverflowException;
 import javabot.model.Unit;
 import javabot.types.UnitType;
 import javabot.types.UnitType.UnitTypes;
@@ -236,7 +237,7 @@ public class BuildManager implements Debuggable {
 	public void registerDebugFunctions(GameHandler g) {
 		g.registerDebugFunction(new DebugModule() {
 			@Override
-			public void draw(DebugEngine engine) {
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				String buildQueueString = "";
 				for (BuildingPlan plan : buildingQueue) {
 					int x = plan.getTx() * 32;
@@ -263,7 +264,7 @@ public class BuildManager implements Debuggable {
 		});
 		g.registerDebugFunction(new DebugModule() {
 			@Override
-			public void draw(DebugEngine engine) {
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				String trainingQueueString = "";
 				for (UnitTypes type : unitQueue.toArray(new UnitTypes[0])) {
 					trainingQueueString += type.toString() + ", ";
@@ -274,7 +275,7 @@ public class BuildManager implements Debuggable {
 		});
 		g.registerDebugFunction(new DebugModule() {
 			@Override
-			public void draw(DebugEngine engine) {
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				engine.drawText(5, 80,
 						"Unit Minimums: current(queued)/required", true);
 				int y = 90;

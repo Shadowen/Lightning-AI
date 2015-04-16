@@ -84,7 +84,8 @@ public class JavaBot implements BWAPIEventListener {
 				private Queue<Long> fpsQueue = new ArrayDeque<Long>();
 
 				@Override
-				public void draw(DebugEngine engine) {
+				public void draw(DebugEngine engine)
+						throws ShapeOverflowException {
 					long currentTime = System.currentTimeMillis();
 					fpsQueue.add(currentTime);
 					while (fpsQueue.peek() < currentTime - 1000) {
@@ -98,14 +99,16 @@ public class JavaBot implements BWAPIEventListener {
 			});
 			game.registerDebugFunction(new DebugModule() {
 				@Override
-				public void draw(DebugEngine engine) {
+				public void draw(DebugEngine engine)
+						throws ShapeOverflowException {
 					engine.drawText(5, 5, "Bot state: "
 							+ botState.getClass().toString(), true);
 				}
 			});
 			game.registerDebugFunction(new DebugModule() {
 				@Override
-				public void draw(DebugEngine engine) {
+				public void draw(DebugEngine engine)
+						throws ShapeOverflowException {
 					String uucString = "";
 					for (Entry<Integer, Unit> u : unitsUnderConstruction
 							.entrySet()) {
