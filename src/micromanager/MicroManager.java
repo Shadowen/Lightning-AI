@@ -181,7 +181,7 @@ public class MicroManager implements Debuggable {
 		for (Base b : baseManager) {
 			// Scout all mains
 			if (b.getLocation().isStartLocation()) {
-				if (b.getStatus() == BaseStatus.UNOCCUPIED
+				if (b.getPlayer() == game.getNeutralPlayer()
 						&& (target == null || b.getLastScouted() < target
 								.getLastScouted())) {
 					target = b;
@@ -194,7 +194,7 @@ public class MicroManager implements Debuggable {
 		if (target == null) {
 			for (Base b : baseManager) {
 				// Scout all expos
-				if (b.getStatus() == BaseStatus.UNOCCUPIED
+				if (b.getPlayer() == game.getNeutralPlayer()
 						&& (target == null || b.getLastScouted() < target
 								.getLastScouted())) {
 					target = b;

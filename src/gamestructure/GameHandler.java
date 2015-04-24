@@ -1,7 +1,14 @@
 package gamestructure;
 
 import java.awt.Point;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Collections;
+
 import bwapi.Game;
 import bwapi.Player;
 import bwapi.Unit;
@@ -14,6 +21,10 @@ public class GameHandler {
 	public GameHandler(Game g) {
 		game = g;
 		debugEngine = new DebugEngine(game);
+
+		game.setTextSize(1);
+		// allow me to manually control units during the game
+		game.enableFlag(1);
 	}
 
 	public Unit getClosestUnitOfType(int x, int y, UnitType type) {
@@ -21,6 +32,22 @@ public class GameHandler {
 		double closestDistance = Double.MAX_VALUE;
 		for (Unit u : game.getAllUnits()) {
 			if (u.getType() == type) {
+				double distance = Point.distance(x, y, u.getX(), u.getY());
+				if (distance < closestDistance) {
+					closestDistance = distance;
+					closest = u;
+				}
+			}
+		}
+		return closest;
+	}
+
+	public Unit getClosestUnitOfType(int x, int y, UnitType... types) {
+		Set<UnitType> typesSet = new HashSet<UnitType>(Arrays.asList(types));
+		Unit closest = null;
+		double closestDistance = Double.MAX_VALUE;
+		for (Unit u : game.getAllUnits()) {
+			if (typesSet.contains(u.getType())) {
 				double distance = Point.distance(x, y, u.getX(), u.getY());
 				if (distance < closestDistance) {
 					closestDistance = distance;
@@ -42,8 +69,7 @@ public class GameHandler {
 	public Unit getClosestEnemy(int x, int y) {
 		double closestDistance = Double.MAX_VALUE;
 		Unit closestUnit = null;
-		for (Unit u : game.getAllUnits()) {
-			// TODO get enemy units only
+		for (Unit u : game.enemy().getUnits()) {
 			double distanceX = x - u.getX();
 			double distanceY = y - u.getY();
 			double distance = Math.sqrt(Math.pow(distanceX, 2)
@@ -61,20 +87,25 @@ public class GameHandler {
 		return getClosestEnemy(toWho.getX(), toWho.getY());
 	}
 
-	public void setTextSize(int size) {
-		game.setTextSize(size);
-	}
-
-	public void enableFlag(int i) {
-		game.enableFlag(i);
-	}
-
 	public int getFrameCount() {
 		return game.getFrameCount();
 	}
 
-	public Player self() {
+	public Player getSelfPlayer() {
 		return game.self();
+	}
+
+	/**
+	 * Get the neutral player.
+	 * 
+	 * @return The neutral player.
+	 */
+	public Player getNeutralPlayer() {
+		return game.neutral();
+	}
+
+	public Player getEnemyPlayer() {
+		return game.enemy();
 	}
 
 	public boolean isVisible(int tileX, int tileY) {

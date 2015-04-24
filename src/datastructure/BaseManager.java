@@ -6,7 +6,10 @@ import java.util.Iterator;
 import java.util.Set;
 
 import bwapi.Color;
+import bwapi.Position;
 import bwapi.Unit;
+import bwta.BWTA;
+import bwta.BaseLocation;
 import gamestructure.DebugEngine;
 import gamestructure.DebugModule;
 import gamestructure.Debuggable;
@@ -14,25 +17,22 @@ import gamestructure.GameHandler;
 import gamestructure.ShapeOverflowException;
 
 public class BaseManager implements Iterable<Base>, Debuggable {
+	private GameHandler game;
 	private Set<Base> bases;
 	public Base main;
 
-	private int selfPlayerID;
-
-	public BaseManager(GameHandler game) {
+	public BaseManager(GameHandler g) {
+		game = g;
 		bases = new HashSet<Base>();
-
-		selfPlayerID = game.self().getID();
-	}
-
-	public void addBase(Base b) {
-		bases.add(b);
+		for (BaseLocation location : BWTA.getBaseLocations()) {
+			bases.add(new Base(game, location));
+		}
 	}
 
 	public Set<Base> getMyBases() {
 		Set<Base> myBases = new HashSet<Base>();
 		for (Base b : bases) {
-			if (b.getStatus() == BaseStatus.OCCUPIED_SELF) {
+			if (b.getPlayer() == game.getSelfPlayer()) {
 				myBases.add(b);
 			}
 		}
@@ -51,6 +51,10 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 			}
 		}
 		return closest;
+	}
+
+	private Base getClosestBase(Position position) {
+		return getClosestBase(position.getX(), position.getY());
 	}
 
 	public Worker getBuilder() {
@@ -110,6 +114,23 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		return null;
 	}
 
+	public void resourceDepotShown(Unit unit) {
+		Base b = getClosestBase(unit.getPosition());
+		b.commandCenter = unit;
+		b.setPlayer(unit.getPlayer());
+	}
+
+	public void resourceDepotDestroyed(Unit unit) {
+		Base b = getClosestBase(unit.getPosition());
+		b.commandCenter = null;
+		b.setPlayer(game.getNeutralPlayer());
+	}
+
+	public void resourceDepotHidden(Unit unit) {
+		Base b = getClosestBase(unit.getPosition());
+		b.setLastScouted();
+	}
+
 	@Override
 	public void registerDebugFunctions(GameHandler g) {
 		g.registerDebugFunction(new DebugModule("bases") {
@@ -123,10 +144,11 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 					// Status
 					engine.drawCircle(b.getX(), b.getY(), 100, Color.Teal,
 							false, false);
+
 					engine.drawText(
 							b.getX() + 5,
 							b.getY() + 5,
-							"Status: " + b.getStatus().toString() + " @ "
+							"Status: " + b.getPlayer().getName() + " @ "
 									+ b.getLastScouted(), false);
 
 					// Command center

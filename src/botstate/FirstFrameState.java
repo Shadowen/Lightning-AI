@@ -15,20 +15,6 @@ public class FirstFrameState extends BotState {
 			BuildManager buildManager, MicroManager imicroManager,
 			PathingManager pathingManager) {
 		super(igame, baseManager, buildManager, imicroManager, pathingManager);
-
-		// Create a list of bases corresponding to BWTA's analysis
-		for (BaseLocation location : BWTA.getBaseLocations()) {
-			Base b = new Base(game, location);
-			baseManager.addBase(b);
-		}
-
-		// // Main base
-		// Base main = baseManager.getClosestBase(commandCenter.getX(),
-		// commandCenter.getY());
-		// main.commandCenter = commandCenter;
-		// baseManager.main = main;
-		// game.sendText("Main set");
-		//
 		// // Sort SCVs and resources
 		// for (Unit u : game.getAllUnits()) {
 		// Base closestBase = baseManager.getClosestBase(u.getX(), u.getY());

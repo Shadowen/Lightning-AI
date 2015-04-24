@@ -27,7 +27,7 @@ public class MassMarineState extends BotState {
 			buildManager.addToQueue(UnitType.Terran_Marine);
 		}
 
-		if (game.self().minerals() > 200
+		if (game.getSelfPlayer().minerals() > 200
 				&& buildManager.getMyUnitCount(UnitType.Terran_Barracks)
 						+ buildManager
 								.getCountInQueue(UnitType.Terran_Barracks) < 4) {

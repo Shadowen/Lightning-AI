@@ -12,7 +12,7 @@ public class OpeningBuildState extends BotState {
 	@Override
 	public BotState act() {
 		// Add barracks at 11 supply
-		if (game.self().supplyUsed() / 2 == 11) {
+		if (game.getSelfPlayer().supplyUsed() / 2 == 11) {
 			// Check that it's not already in the queue
 			if (!buildManager.isInQueue(UnitType.Terran_Barracks)) {
 				buildManager.addToQueue(UnitType.Terran_Barracks);
