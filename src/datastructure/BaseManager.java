@@ -8,6 +8,7 @@ import java.util.Set;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
+import bwapi.UnitType;
 import bwta.BWTA;
 import bwta.BaseLocation;
 import gamestructure.DebugEngine;
@@ -25,7 +26,19 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		game = g;
 		bases = new HashSet<Base>();
 		for (BaseLocation location : BWTA.getBaseLocations()) {
-			bases.add(new Base(game, location));
+			Base b = new Base(game, location);
+			bases.add(b);
+		}
+		for (Unit u : game.getNeutralUnits()) {
+			UnitType type = u.getType();
+			Base closestBase = getClosestBase(u.getPosition());
+			if (type == UnitType.Resource_Mineral_Field
+					|| type == UnitType.Resource_Mineral_Field_Type_2
+					|| type == UnitType.Resource_Mineral_Field_Type_3) {
+				closestBase.minerals.add(new MineralResource(u));
+			} else if (type == UnitType.Resource_Vespene_Geyser) {
+				closestBase.gas.add(new GasResource(u));
+			}
 		}
 	}
 
@@ -132,8 +145,8 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	}
 
 	@Override
-	public void registerDebugFunctions(GameHandler g) {
-		g.registerDebugFunction(new DebugModule("bases") {
+	public void registerDebugFunctions(DebugEngine debugEngine) {
+		debugEngine.registerDebugFunction(new DebugModule("bases") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				if (main != null) {
@@ -166,11 +179,19 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 					}
 
 					// Miner counts
-					engine.drawText(b.getX() + 5, b.getY() + 15,
+					int bx = b.getX() - 60;
+					int by = b.getY() - 48;
+					engine.drawText(bx, by,
 							"Mineral Miners: " + b.getMineralWorkerCount(),
 							false);
-					engine.drawText(b.getX() + 5, b.getY() + 25,
-							"Mineral Fields: " + b.minerals.size(), false);
+					engine.drawText(bx, by + 10,
+							"Mineral Miners: " + b.getMineralWorkerCount(),
+							false);
+					engine.drawText(bx, by + 20, "Mineral Fields: "
+							+ b.minerals.size(), false);
+					engine.drawText(bx, by + 30, "Gas Miners: " + "TODO", false); // TODO
+					engine.drawText(bx, by + 40,
+							"Gas Geysers: " + b.gas.size(), false);
 
 					// Workers
 					for (Worker w : b.workers) {

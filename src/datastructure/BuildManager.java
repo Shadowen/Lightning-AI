@@ -234,8 +234,8 @@ public class BuildManager implements Debuggable {
 	}
 
 	@Override
-	public void registerDebugFunctions(GameHandler g) {
-		g.registerDebugFunction(new DebugModule("buildingqueue") {
+	public void registerDebugFunctions(DebugEngine debugEngine) {
+		debugEngine.registerDebugFunction(new DebugModule("buildingqueue") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				String buildQueueString = "";
@@ -260,7 +260,7 @@ public class BuildManager implements Debuggable {
 						true);
 			}
 		});
-		g.registerDebugFunction(new DebugModule("trainingqueue") {
+		debugEngine.registerDebugFunction(new DebugModule("trainingqueue") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				String trainingQueueString = "";
@@ -271,7 +271,7 @@ public class BuildManager implements Debuggable {
 						"Training Queue: " + trainingQueueString, true);
 			}
 		});
-		g.registerDebugFunction(new DebugModule("unitminimums") {
+		debugEngine.registerDebugFunction(new DebugModule("unitminimums") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				engine.drawText(5, 80,

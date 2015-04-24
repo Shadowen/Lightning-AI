@@ -11,7 +11,7 @@ import bwapi.Game;
 
 public class DebugEngine {
 	private Game game;
-	public List<DebugModule> debugModules;
+	private List<DebugModule> debugModules;
 
 	public DebugEngine(Game igame) {
 		game = igame;
@@ -26,6 +26,10 @@ public class DebugEngine {
 								+ MAX_SHAPES, true);
 			}
 		});
+	}
+
+	public void registerDebugFunction(DebugModule dm) {
+		debugModules.add(dm);
 	}
 
 	/***

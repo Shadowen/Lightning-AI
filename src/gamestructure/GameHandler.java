@@ -16,11 +16,9 @@ import bwapi.UnitType;
 
 public class GameHandler {
 	private Game game;
-	private DebugEngine debugEngine;
 
 	public GameHandler(Game g) {
 		game = g;
-		debugEngine = new DebugEngine(game);
 
 		game.setTextSize(1);
 		// allow me to manually control units during the game
@@ -56,14 +54,6 @@ public class GameHandler {
 			}
 		}
 		return closest;
-	}
-
-	public void registerDebugFunction(DebugModule m) {
-		debugEngine.debugModules.add(m);
-	}
-
-	public void drawDebug() {
-		debugEngine.draw();
 	}
 
 	public Unit getClosestEnemy(int x, int y) {
@@ -102,6 +92,10 @@ public class GameHandler {
 	 */
 	public Player getNeutralPlayer() {
 		return game.neutral();
+	}
+
+	public List<Unit> getNeutralUnits() {
+		return game.getNeutralUnits();
 	}
 
 	public Player getEnemyPlayer() {

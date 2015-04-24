@@ -1,21 +1,17 @@
 package gamestructure;
 
-import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import micromanager.MicroManager;
 import pathfinder.PathingManager;
 import datastructure.Base;
 import datastructure.BaseManager;
-import datastructure.BaseStatus;
 import datastructure.BuildManager;
-import datastructure.MineralResource;
+import datastructure.Resource;
 import botstate.BotState;
 import botstate.FirstFrameState;
 import bwapi.DefaultBWListener;
@@ -29,6 +25,7 @@ import bwta.BWTA;
 public class JavaBot extends DefaultBWListener {
 	private Mirror mirror = new Mirror();
 	private GameHandler game;
+	private DebugEngine debugEngine;
 	// Only contains my units under construction
 	private List<Unit> unitsUnderConstruction;
 
@@ -56,8 +53,9 @@ public class JavaBot extends DefaultBWListener {
 	 */
 	@Override
 	public void onStart() {
-		game = new GameHandler(mirror.getGame());
 		try {
+			game = new GameHandler(mirror.getGame());
+			debugEngine = new DebugEngine(mirror.getGame());
 			// Use BWTA to analyze map
 			// This may take a few minutes if the map is processed first time!
 			System.out.println("Analyzing map...");
@@ -76,11 +74,11 @@ public class JavaBot extends DefaultBWListener {
 			botState = new FirstFrameState(game, baseManager, buildManager,
 					microManager, pathingManager);
 
-			baseManager.registerDebugFunctions(game);
-			buildManager.registerDebugFunctions(game);
-			pathingManager.registerDebugFunctions(game);
-			microManager.registerDebugFunctions(game);
-			game.registerDebugFunction(new DebugModule("fps") {
+			baseManager.registerDebugFunctions(debugEngine);
+			buildManager.registerDebugFunctions(debugEngine);
+			pathingManager.registerDebugFunctions(debugEngine);
+			microManager.registerDebugFunctions(debugEngine);
+			debugEngine.registerDebugFunction(new DebugModule("fps") {
 				private Queue<Long> fpsQueue = new ArrayDeque<Long>();
 
 				@Override
@@ -97,7 +95,7 @@ public class JavaBot extends DefaultBWListener {
 					engine.drawText(20, 300, "FPS: " + fpsQueue.size(), true);
 				}
 			});
-			game.registerDebugFunction(new DebugModule("botstate") {
+			debugEngine.registerDebugFunction(new DebugModule("botstate") {
 				@Override
 				public void draw(DebugEngine engine)
 						throws ShapeOverflowException {
@@ -105,7 +103,7 @@ public class JavaBot extends DefaultBWListener {
 							+ botState.getClass().toString(), true);
 				}
 			});
-			game.registerDebugFunction(new DebugModule("construction") {
+			debugEngine.registerDebugFunction(new DebugModule("construction") {
 				@Override
 				public void draw(DebugEngine engine)
 						throws ShapeOverflowException {
@@ -117,7 +115,7 @@ public class JavaBot extends DefaultBWListener {
 							+ uucString, true);
 				}
 			});
-			game.registerDebugFunction(new DebugModule("supply") {
+			debugEngine.registerDebugFunction(new DebugModule("supply") {
 				@Override
 				public void draw(DebugEngine engine)
 						throws ShapeOverflowException {
@@ -165,20 +163,19 @@ public class JavaBot extends DefaultBWListener {
 
 				b.gatherResources();
 
-				// // Train SCVS if necessary
-				// // This can't go in the build queue since it is specific to a
-				// // command center!
-				// if (game.self().minerals() >= 50
-				// && !b.commandCenter.isTraining()) {
-				// for (Entry<Integer, MineralResource> mineral : b.minerals
-				// .entrySet()) {
-				// if (mineral.getValue().getNumGatherers() < 2) {
-				// // Do training
-				// b.commandCenter.train(UnitType.Terran_SCV);
-				// break;
-				// }
-				// }
-				// }
+				// Train SCVS if necessary
+				// This can't go in the build queue since it is specific to a
+				// command center!
+				if (game.getSelfPlayer().minerals() >= 50
+						&& !b.commandCenter.isTraining()) {
+					for (Resource mineral : b.minerals) {
+						if (mineral.getNumGatherers() < 2) {
+							// Do training
+							b.commandCenter.train(UnitType.Terran_SCV);
+							break;
+						}
+					}
+				}
 			}
 
 			// Auto build
@@ -210,7 +207,7 @@ public class JavaBot extends DefaultBWListener {
 			// }
 
 			// Draw debug information on screen
-			game.drawDebug();
+			debugEngine.draw();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
