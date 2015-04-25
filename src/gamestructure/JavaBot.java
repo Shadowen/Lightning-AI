@@ -11,6 +11,7 @@ import pathfinder.PathingManager;
 import datastructure.Base;
 import datastructure.BaseManager;
 import datastructure.BuildManager;
+import datastructure.BuildingPlan;
 import datastructure.Resource;
 import botstate.BotState;
 import botstate.FirstFrameState;
@@ -138,31 +139,28 @@ public class JavaBot extends DefaultBWListener {
 			// Check if any units have completed
 			unitsUnderConstruction.removeIf(new Predicate<Unit>() {
 				@Override
-				public boolean test(bwapi.Unit unit) {
+				public boolean test(Unit unit) {
 					if (unit.isCompleted()) {
-						botState.unitComplete(unit);
+						onUnitConstructed(unit);
 						return true;
 					}
 					return false;
 				}
 			});
-
 			// Allow the bot to act
 			// Bot state updates
 			botState = botState.act();
 			// BuildManager check build order
-			// buildManager.checkMinimums();
+			buildManager.checkMinimums();
 			// Micro units
 			// microManager.act();
 
 			// Auto economy
+			baseManager.gatherResources();
 			for (Base b : baseManager.getMyBases()) {
 				if (b.commandCenter == null) {
 					continue;
 				}
-
-				b.gatherResources();
-
 				// Train SCVS if necessary
 				// This can't go in the build queue since it is specific to a
 				// command center!
@@ -179,20 +177,24 @@ public class JavaBot extends DefaultBWListener {
 			}
 
 			// Auto build
-			// for (BuildingPlan toBuild : buildManager.buildingQueue) {
-			// // If we have the minerals and gas
-			// if (game.self().minerals() > toBuild.getType().mineralPrice()
-			// && game.self().gas() >= toBuild.getType().gasPrice()) {
-			// // If it has a builder, tell them to hurry up!
-			// if (toBuild.hasBuilder()) {
-			// toBuild.builder.build(toBuild);
-			// } else {
-			// // If it isn't being built yet
-			// baseManager.getBuilder().build(toBuild);
-			// }
-			// }
-			// }
-			// Auto train
+			for (BuildingPlan toBuild : buildManager.buildingQueue) {
+				// If we have the minerals and gas
+				if (game.getSelfPlayer().minerals() > toBuild.getType()
+						.mineralPrice()
+						&& game.getSelfPlayer().gas() >= toBuild.getType()
+								.gasPrice()) {
+					// If it has a builder, tell them to hurry up!
+					if (toBuild.hasBuilder()) {
+						if (!toBuild.builder.getUnit().isConstructing()) {
+							toBuild.builder.build(toBuild);
+						}
+					} else {
+						// If it isn't being built yet
+						baseManager.getBuilder().build(toBuild);
+					}
+				}
+			}
+			// //Auto train
 			// for (UnitType toTrain : buildManager.unitQueue)
 			// if (toTrain != null) {
 			// UnitType trainFrom = toTrain.whatBuilds(); // TODO
@@ -283,9 +285,9 @@ public class JavaBot extends DefaultBWListener {
 				baseManager.resourceDepotDestroyed(unit);
 			}
 			// Remove workers from the baseManager
-			baseManager.removeWorker(unit);
+			baseManager.unitDestroyed(unit);
 			// Deletes units from microManager
-			microManager.unitDestroy(unit);
+			microManager.unitDestroyed(unit);
 
 			// Allow the bot state to act
 			botState = botState.unitDestroy(unit);
@@ -304,19 +306,13 @@ public class JavaBot extends DefaultBWListener {
 
 	}
 
-	@Override
-	public void onSaveGame(String s) {
-
-	}
-
-	@Override
-	public void onUnitComplete(Unit unit) {
+	public void onUnitConstructed(Unit unit) {
 		try {
 			UnitType type = unit.getType();
-			if (unit.getPlayer() == game.getSelfPlayer()) {
+			if (unit.getPlayer().equals(game.getSelfPlayer())) {
 				System.out.println("Unit complete: " + type.toString());
 
-				buildManager.doneBuilding(unit);
+				buildManager.buildingComplete(unit);
 
 				if (type == UnitType.Terran_SCV) {
 					// Add new workers to nearest base

@@ -10,9 +10,17 @@ import bwapi.Color;
 import bwapi.Game;
 
 public class DebugEngine {
+	/** The game being acted on **/
 	private Game game;
+	/** The debug modules **/
 	private List<DebugModule> debugModules;
 
+	/**
+	 * Construct a DebugEngine for the specified game.
+	 * 
+	 * @param igame
+	 *            The game to debug for.
+	 */
 	public DebugEngine(Game igame) {
 		game = igame;
 		debugModules = new ArrayList<DebugModule>();
@@ -28,6 +36,12 @@ public class DebugEngine {
 		});
 	}
 
+	/**
+	 * Register a module to be added to the list of debug modules.
+	 * 
+	 * @param dm
+	 *            The debug module to add.
+	 */
 	public void registerDebugFunction(DebugModule dm) {
 		debugModules.add(dm);
 	}

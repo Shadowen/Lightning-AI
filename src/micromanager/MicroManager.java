@@ -219,7 +219,7 @@ public class MicroManager implements Debuggable {
 	public void unitCreate(Unit unit) {
 	}
 
-	public void unitDestroy(Unit unit) {
+	public void unitDestroyed(Unit unit) {
 		Iterator<Entry<UnitType, HashMap<Integer, UnitAgent>>> i = units
 				.entrySet().iterator();
 		while (i.hasNext()) {

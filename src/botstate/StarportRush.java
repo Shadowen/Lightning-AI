@@ -11,13 +11,6 @@ public class StarportRush extends BotState {
 
 	protected StarportRush(BotState oldState) {
 		super(oldState);
-		Worker w = baseManager.getBuilder();
-		if (w == null) {
-			game.sendText("Can't scout since no workers available!");
-		} else {
-			// w.setTask(WorkerTask.SCOUTING, null);
-			// microManager.setScoutingUnit(w.getUnit());
-		}
 	}
 
 	@Override
@@ -70,7 +63,9 @@ public class StarportRush extends BotState {
 					.setMinimum(
 							UnitType.Terran_Supply_Depot,
 							numSupplyDepots
-									+ (supply - game.getSelfPlayer().supplyTotal() / 2 + 4) > 0 ? 1
+									+ (supply
+											- game.getSelfPlayer()
+													.supplyTotal() / 2 + 4) > 0 ? 1
 									: 0);
 		}
 		return this;

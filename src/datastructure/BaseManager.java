@@ -32,13 +32,17 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		for (Unit u : game.getNeutralUnits()) {
 			UnitType type = u.getType();
 			Base closestBase = getClosestBase(u.getPosition());
-			if (type == UnitType.Resource_Mineral_Field
-					|| type == UnitType.Resource_Mineral_Field_Type_2
-					|| type == UnitType.Resource_Mineral_Field_Type_3) {
+			if (type.isMineralField()) {
 				closestBase.minerals.add(new MineralResource(u));
-			} else if (type == UnitType.Resource_Vespene_Geyser) {
+			} else if (type.equals(UnitType.Resource_Vespene_Geyser)) {
 				closestBase.gas.add(new GasResource(u));
 			}
+		}
+	}
+
+	public void gatherResources() {
+		for (Base b : bases) {
+			b.gatherResources();
 		}
 	}
 
@@ -80,10 +84,26 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		return null;
 	}
 
-	public void removeWorker(Unit unit) {
-		for (Base b : bases) {
-			if (b.removeWorker(unit)) {
-				break;
+	public void unitDestroyed(Unit unit) {
+		UnitType type = unit.getType();
+		if (type == UnitType.Terran_SCV) {
+			for (Base b : bases) {
+				if (b.removeWorker(unit)) {
+					break;
+				}
+			}
+		} else if (type.isMineralField()) {
+			for (Base b : bases) {
+				if (b.minerals.remove(unit)) {
+					break;
+				}
+			}
+		} else if (type.equals(UnitType.Resource_Vespene_Geyser)
+				|| type.isRefinery()) {
+			for (Base b : bases) {
+				if (b.gas.remove(unit)) {
+					break;
+				}
 			}
 		}
 	}
@@ -109,6 +129,10 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 			}
 		}
 		return null;
+	}
+
+	public void refineryComplete(Unit u) {
+		getClosestBase(u.getPosition()).gas.add(new GasResource(u));
 	}
 
 	public Resource getResource(Unit u) {
@@ -150,17 +174,20 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				if (main != null) {
-					engine.drawText(main.getX(), main.getY(), "Main", false);
+					engine.drawText(main.getX() - 90, main.getY() - 60, "Main",
+							false);
 				}
 
 				for (Base b : bases) {
+					int bx = b.getX() - 60;
+					int by = b.getY() - 48;
 					// Status
 					engine.drawCircle(b.getX(), b.getY(), 100, Color.Teal,
 							false, false);
 
 					engine.drawText(
-							b.getX() + 5,
-							b.getY() + 5,
+							bx,
+							by - 10,
 							"Status: " + b.getPlayer().getName() + " @ "
 									+ b.getLastScouted(), false);
 
@@ -177,21 +204,25 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 						engine.drawText(r.getX() - 8, r.getY() - 8,
 								String.valueOf(r.getNumGatherers()), false);
 					}
+					// Gas
+					for (GasResource r : b.gas) {
+						if (!r.gasTaken()) {
+							engine.drawText(r.getX(), r.getY(), "Geyser", false);
+						} else {
+							engine.drawText(r.getX(), r.getY(), "Refinery",
+									false);
+						}
+					}
 
 					// Miner counts
-					int bx = b.getX() - 60;
-					int by = b.getY() - 48;
 					engine.drawText(bx, by,
 							"Mineral Miners: " + b.getMineralWorkerCount(),
 							false);
-					engine.drawText(bx, by + 10,
-							"Mineral Miners: " + b.getMineralWorkerCount(),
-							false);
-					engine.drawText(bx, by + 20, "Mineral Fields: "
+					engine.drawText(bx, by + 10, "Mineral Fields: "
 							+ b.minerals.size(), false);
-					engine.drawText(bx, by + 30, "Gas Miners: " + "TODO", false); // TODO
-					engine.drawText(bx, by + 40,
-							"Gas Geysers: " + b.gas.size(), false);
+					engine.drawText(bx, by + 20, "Gas Miners: " + "TODO", false); // TODO
+					engine.drawText(bx, by + 30, "Gas Geysers/Refineries: "
+							+ b.gas.size(), false);
 
 					// Workers
 					for (Worker w : b.workers) {
