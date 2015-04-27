@@ -183,7 +183,7 @@ public class MicroManager implements Debuggable {
 		for (Base b : baseManager) {
 			// Scout all mains
 			if (b.getLocation().isStartLocation()) {
-				if (b.getStatus() == BaseStatus.UNOCCUPIED
+				if (b.getPlayer() == game.getNeutralPlayer()
 						&& (target == null || b.getLastScouted() < target
 								.getLastScouted())) {
 					target = b;
@@ -196,7 +196,7 @@ public class MicroManager implements Debuggable {
 		if (target == null) {
 			for (Base b : baseManager) {
 				// Scout all expos
-				if (b.getStatus() == BaseStatus.UNOCCUPIED
+				if (b.getPlayer() == game.getNeutralPlayer()
 						&& (target == null || b.getLastScouted() < target
 								.getLastScouted())) {
 					target = b;
@@ -221,7 +221,7 @@ public class MicroManager implements Debuggable {
 	public void unitCreate(Unit unit) {
 	}
 
-	public void unitDestroy(Unit unit) {
+	public void unitDestroyed(Unit unit) {
 		Iterator<Entry<UnitType, HashMap<Integer, UnitAgent>>> i = units
 				.entrySet().iterator();
 		while (i.hasNext()) {
@@ -237,7 +237,7 @@ public class MicroManager implements Debuggable {
 	@Override
 	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Threat map
-		// g.registerDebugFunction(new DebugModule("threats") {
+		// debugEngine.registerDebugFunction(new DebugModule("threats") {
 		// @Override
 		// public void draw(DebugEngine engine) {
 		// // Actually draw
@@ -251,7 +251,7 @@ public class MicroManager implements Debuggable {
 		// }
 		// });
 		// Target map
-		// g.registerDebugFunction(new DebugModule("targets") {
+		// debugEngine.registerDebugFunction(new DebugModule("targets") {
 		// @Override
 		// public void draw(DebugEngine engine) throws ShapeOverflowException{
 		// // Actually draw
@@ -271,7 +271,7 @@ public class MicroManager implements Debuggable {
 		// }
 		// });
 		// Weapon cooldown bars
-		// g.registerDebugFunction(new DebugModule("cooldowns") {
+		// debugEngine.registerDebugFunction(new DebugModule("cooldowns") {
 		// @Override
 		// public void draw(DebugEngine engine) throws ShapeOverflowException {
 		// for (Entry<UnitType, HashMap<Integer, UnitAgent>> unitTypeMap : units
@@ -299,7 +299,7 @@ public class MicroManager implements Debuggable {
 		// }
 		// });
 		// // Scouting Target
-		// g.registerDebugFunction(new DebugModule("scouting") {
+		// debugEngine.registerDebugFunction(new DebugModule("scouting") {
 		// @Override
 		// public void draw(DebugEngine engine) throws ShapeOverflowException {
 		// if (scoutingTarget != null) {

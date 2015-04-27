@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
+import bwapi.Player;
+import bwapi.Playerset;
+import bwapi.TilePosition;
 import bwapi.Unit;
 import bwta.BaseLocation;
 import gamestructure.GameHandler;
@@ -18,7 +21,7 @@ public class Base {
 	public Unit commandCenter;
 	private BaseLocation location;
 
-	private BaseStatus status;
+	private Player player;
 	// When the base was last scouted, in game frames
 	private long lastScouted;
 
@@ -31,7 +34,7 @@ public class Base {
 		minerals = new ArrayList<MineralResource>();
 		gas = new ArrayList<GasResource>();
 
-		status = BaseStatus.UNOCCUPIED;
+		setPlayer(g.getNeutralPlayer());
 		lastScouted = 0;
 	}
 
@@ -53,7 +56,7 @@ public class Base {
 			WorkerTask currentTask = worker.getTask();
 			if (worker.isIdle()
 					&& (currentTask == WorkerTask.Mining_Minerals || currentTask == WorkerTask.Mining_Gas)) {
-				game.sendText("Idle worker detected!");
+				// game.sendText("Idle worker detected!"); // TODO
 				// Get back to work
 				if (worker.getCurrentResource() != null) {
 					worker.gather(worker.getCurrentResource());
@@ -140,16 +143,33 @@ public class Base {
 		return location;
 	}
 
-	public void setStatus(BaseStatus s) {
-		status = s;
+	public void setPlayer(Player p) {
+		player = p;
 		lastScouted = game.getFrameCount();
 	}
 
-	public BaseStatus getStatus() {
-		return status;
+	public Player getPlayer() {
+		return player;
 	}
 
+	/**
+	 * Set the last scouted timer to the current time in frames.
+	 */
+	public void setLastScouted() {
+		lastScouted = game.getFrameCount();
+	}
+
+	/**
+	 * Get the time this base was last scouted. Will update the lastScouted time
+	 * if the base is still visible.
+	 * 
+	 * @return The time the base was last scouted, in frames.
+	 */
 	public long getLastScouted() {
+		TilePosition tp = location.getTilePosition();
+		if (game.isVisible(tp.getX(), tp.getY())) {
+			lastScouted = game.getFrameCount();
+		}
 		return lastScouted;
 	}
 }

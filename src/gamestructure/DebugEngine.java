@@ -8,9 +8,16 @@ import bwapi.Color;
 import bwapi.Game;
 
 public class DebugEngine {
+	/** The game being acted on **/
 	private Game game;
 	public Map<String, DebugModule> debugModules;
 
+	/**
+	 * Construct a DebugEngine for the specified game.
+	 * 
+	 * @param igame
+	 *            The game to debug for.
+	 */
 	public DebugEngine(Game igame) {
 		game = igame;
 		debugModules = new HashMap<String, DebugModule>();

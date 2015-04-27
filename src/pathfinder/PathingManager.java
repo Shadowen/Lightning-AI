@@ -294,7 +294,7 @@ public class PathingManager implements Debuggable {
 			}
 		});
 		// // Draw path from choke into main
-		// g.registerDebugFunction(new DebugModule() {
+		// debugEngine.registerDebugFunction(new DebugModule() {
 		// @Override
 		// public void draw(DebugEngine engine) throws ShapeOverflowException {
 		// for (Point location : pathIntoMain) {

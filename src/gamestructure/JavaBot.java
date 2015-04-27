@@ -10,9 +10,9 @@ import micromanager.MicroManager;
 import pathfinder.PathingManager;
 import datastructure.Base;
 import datastructure.BaseManager;
-import datastructure.BaseStatus;
 import datastructure.BuildManager;
-import datastructure.MineralResource;
+import datastructure.BuildingPlan;
+import datastructure.Resource;
 import botstate.BotState;
 import botstate.FirstFrameState;
 import bwapi.DefaultBWListener;
@@ -57,9 +57,8 @@ public class JavaBot extends DefaultBWListener {
 		game = new GameHandler(mirror.getGame());
 		debugEngine = new DebugEngine(mirror.getGame());
 		try {
-			game.setTextSize(1);
-			// allow me to manually control units during the game
-			game.enableFlag(1);
+			game = new GameHandler(mirror.getGame());
+			debugEngine = new DebugEngine(mirror.getGame());
 			// Use BWTA to analyze map
 			// This may take a few minutes if the map is processed first time!
 			System.out.println("Analyzing map...");
@@ -79,6 +78,11 @@ public class JavaBot extends DefaultBWListener {
 			botState = new FirstFrameState(game, baseManager, buildManager,
 					microManager, pathingManager);
 			registerDebugFunctions(debugEngine);
+
+			baseManager.registerDebugFunctions(debugEngine);
+			buildManager.registerDebugFunctions(debugEngine);
+			pathingManager.registerDebugFunctions(debugEngine);
+			microManager.registerDebugFunctions(debugEngine);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -93,100 +97,62 @@ public class JavaBot extends DefaultBWListener {
 			// Check if any units have completed
 			unitsUnderConstruction.removeIf(new Predicate<Unit>() {
 				@Override
-				public boolean test(bwapi.Unit unit) {
+				public boolean test(Unit unit) {
 					if (unit.isCompleted()) {
-						botState.unitComplete(unit);
+						onUnitConstructed(unit);
 						return true;
 					}
 					return false;
 				}
 			});
-			// // Base occupation detection
-			// for (Base b : baseManager) {
-			// int bx = b.getX();
-			// int by = b.getY();
-			// // If we can see the base
-			// if (game.isVisible(bx / 32, by / 32)) {
-			// // Find the closest resource depot
-			// Unit closestCC = null;
-			// double closestDistance = Double.MIN_VALUE;
-			// for (Unit u : game.getAllUnits()) {
-			// // Only check resource depots
-			// UnitType type = u.getType();
-			// if (!type.isResourceDepot()) {
-			// continue;
-			// }
-			// // Calculate the distance
-			// double newDistance = Point.distance(bx, by, u.getX(),
-			// u.getY());
-			// if (newDistance < BASE_RADIUS) {
-			// if (closestCC == null
-			// || newDistance < closestDistance) {
-			// closestCC = u;
-			// closestDistance = newDistance;
-			// }
-			// }
-			// }
-			// // Categorize the base
-			// if (closestCC == null) {
-			// b.setStatus(BaseStatus.UNOCCUPIED);
-			// } else {
-			// if (closestCC.getPlayer() == game.self()) {
-			// b.setStatus(BaseStatus.OCCUPIED_SELF);
-			// } else {
-			// b.setStatus(BaseStatus.OCCUPIED_ENEMY);
-			// }
-			// }
-			// }
-			// }
-
 			// Allow the bot to act
 			// Bot state updates
 			botState = botState.act();
 			// BuildManager check build order
-			// buildManager.checkMinimums();
+			buildManager.checkMinimums();
 			// Micro units
 			// microManager.act();
 
 			// Auto economy
+			baseManager.gatherResources();
 			for (Base b : baseManager.getMyBases()) {
 				if (b.commandCenter == null) {
 					continue;
 				}
-
-				b.gatherResources();
-
-				// // Train SCVS if necessary
-				// // This can't go in the build queue since it is specific to a
-				// // command center!
-				// if (game.self().minerals() >= 50
-				// && !b.commandCenter.isTraining()) {
-				// for (Entry<Integer, MineralResource> mineral : b.minerals
-				// .entrySet()) {
-				// if (mineral.getValue().getNumGatherers() < 2) {
-				// // Do training
-				// b.commandCenter.train(UnitType.Terran_SCV);
-				// break;
-				// }
-				// }
-				// }
+				// Train SCVS if necessary
+				// This can't go in the build queue since it is specific to a
+				// command center!
+				if (game.getSelfPlayer().minerals() >= 50
+						&& !b.commandCenter.isTraining()) {
+					for (Resource mineral : b.minerals) {
+						if (mineral.getNumGatherers() < 2) {
+							// Do training
+							b.commandCenter.train(UnitType.Terran_SCV);
+							break;
+						}
+					}
+				}
 			}
 
 			// Auto build
-			// for (BuildingPlan toBuild : buildManager.buildingQueue) {
-			// // If we have the minerals and gas
-			// if (game.self().minerals() > toBuild.getType().mineralPrice()
-			// && game.self().gas() >= toBuild.getType().gasPrice()) {
-			// // If it has a builder, tell them to hurry up!
-			// if (toBuild.hasBuilder()) {
-			// toBuild.builder.build(toBuild);
-			// } else {
-			// // If it isn't being built yet
-			// baseManager.getBuilder().build(toBuild);
-			// }
-			// }
-			// }
-			// Auto train
+			for (BuildingPlan toBuild : buildManager.buildingQueue) {
+				// If we have the minerals and gas
+				if (game.getSelfPlayer().minerals() > toBuild.getType()
+						.mineralPrice()
+						&& game.getSelfPlayer().gas() >= toBuild.getType()
+								.gasPrice()) {
+					// If it has a builder, tell them to hurry up!
+					if (toBuild.hasBuilder()) {
+						if (!toBuild.builder.getUnit().isConstructing()) {
+							toBuild.builder.build(toBuild);
+						}
+					} else {
+						// If it isn't being built yet
+						baseManager.getBuilder().build(toBuild);
+					}
+				}
+			}
+			// //Auto train
 			// for (UnitType toTrain : buildManager.unitQueue)
 			// if (toTrain != null) {
 			// UnitType trainFrom = toTrain.whatBuilds(); // TODO
@@ -230,16 +196,32 @@ public class JavaBot extends DefaultBWListener {
 
 	@Override
 	public void onUnitShow(Unit unit) {
+		try {
+			// Base occupation detection
+			if (unit.getType().isResourceDepot()) {
+				baseManager.resourceDepotShown(unit);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void onUnitHide(Unit unit) {
+		try {
+			// Base occupation detection
+			if (unit.getType().isResourceDepot()) {
+				baseManager.resourceDepotHidden(unit);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void onUnitCreate(Unit unit) {
 		try {
-			if (unit.getPlayer() == game.self()) {
+			if (unit.getPlayer() == game.getSelfPlayer()) {
 				unitsUnderConstruction.add(unit);
 				microManager.unitCreate(unit);
 			}
@@ -256,10 +238,14 @@ public class JavaBot extends DefaultBWListener {
 			// under construction
 			unitsUnderConstruction.remove(unit);
 
+			// Base occupation detection
+			if (unit.getType().isResourceDepot()) {
+				baseManager.resourceDepotDestroyed(unit);
+			}
 			// Remove workers from the baseManager
-			baseManager.removeWorker(unit);
+			baseManager.unitDestroyed(unit);
 			// Deletes units from microManager
-			microManager.unitDestroy(unit);
+			microManager.unitDestroyed(unit);
 
 			// Allow the bot state to act
 			botState = botState.unitDestroy(unit);
@@ -278,42 +264,22 @@ public class JavaBot extends DefaultBWListener {
 
 	}
 
-	@Override
-	public void onSaveGame(String s) {
-
-	}
-
-	@Override
-	public void onUnitComplete(Unit unit) {
+	public void onUnitConstructed(Unit unit) {
 		try {
 			UnitType type = unit.getType();
-			if (unit.getPlayer() == game.self()) {
+			if (unit.getPlayer().equals(game.getSelfPlayer())) {
 				System.out.println("Unit complete: " + type.toString());
 
-				buildManager.doneBuilding(unit);
+				buildManager.buildingComplete(unit);
 
 				if (type == UnitType.Terran_SCV) {
 					// Add new workers to nearest base
 					Base base = baseManager.getClosestBase(unit.getX(),
 							unit.getY());
 					base.addWorker(unit);
-				} else if (type == UnitType.Terran_Command_Center) {
-					// Add command centers to nearest base
-					Base base = baseManager.getClosestBase(unit.getX(),
-							unit.getY());
-					base.commandCenter = unit;
-					base.setStatus(BaseStatus.OCCUPIED_SELF);
 				}
 
 				botState = botState.unitComplete(unit);
-			}
-
-			if (type == UnitType.Resource_Mineral_Field
-					|| type == UnitType.Resource_Mineral_Field_Type_2
-					|| type == UnitType.Resource_Mineral_Field_Type_3) {
-				Base base = baseManager
-						.getClosestBase(unit.getX(), unit.getY());
-				base.minerals.add(new MineralResource(unit));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -369,8 +335,8 @@ public class JavaBot extends DefaultBWListener {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				engine.drawTextScreen(550, 15, "Supply: "
-						+ game.self().supplyUsed() + "/"
-						+ game.self().supplyTotal());
+						+ game.getSelfPlayer().supplyUsed() + "/"
+						+ game.getSelfPlayer().supplyTotal());
 			}
 		});
 	}

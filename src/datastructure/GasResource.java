@@ -10,8 +10,6 @@ public class GasResource extends Resource {
 	}
 
 	public boolean gasTaken() {
-		return unit.getType() == UnitType.Terran_Refinery
-				|| unit.getType() == UnitType.Protoss_Assimilator
-				|| unit.getType() == UnitType.Zerg_Extractor;
+		return unit.getType().isRefinery();
 	}
 }

@@ -30,12 +30,6 @@ public class BuildManager implements Debuggable {
 		baseManager = ibm;
 
 		unitMinimums = new Hashtable<UnitType, Integer>();
-		// TODO fix this
-		/*
-		 * for (UnitType type : UnitType.AllUnits) { unitMinimums.put(type, 0);
-		 * }
-		 */
-
 		buildingQueue = new ArrayDeque<BuildingPlan>();
 		unitQueue = new ArrayDeque<UnitType>();
 
@@ -46,6 +40,7 @@ public class BuildManager implements Debuggable {
 		if (unitType == UnitType.Terran_Refinery) {
 			// Refineries get special treatment!
 			for (Base b : baseManager.getMyBases()) {
+				// Find a gas that isn't taken yet
 				for (GasResource r : b.gas) {
 					if (!r.gasTaken()) {
 						addBuilding(r.getX() / 32 - 2, r.getY() / 32 - 1,
@@ -53,6 +48,7 @@ public class BuildManager implements Debuggable {
 						break;
 					}
 				}
+				game.sendText("Wanted to take another gas, but none left!"); // TODO
 			}
 		} else if (unitType.isBuilding()) {
 			// Otherwise, buildings
@@ -153,29 +149,39 @@ public class BuildManager implements Debuggable {
 		return true;
 	}
 
-	// Call this whenever a unit completes construction
-	public void doneBuilding(Unit u) {
+	/**
+	 * Call this whenever a unit completes construction.
+	 * 
+	 * @param u
+	 *            The unit that has just completed.
+	 * **/
+	public void buildingComplete(Unit u) {
 		UnitType type = u.getType();
-		// Go through planned units
-		unitQueue.remove(type);
-		// Go through planned buildings
-		for (BuildingPlan p : buildingQueue) {
-			// If it's the right building according to the plan
-			if (u.getType() == p.getType() && u.getX() / 32 == p.getTx()
-					&& u.getY() / 32 == p.getTy()) {
-				// It has been completed
-				buildingQueue.remove(p);
+		if (!type.isBuilding()) {
+			// Go through planned units
+			unitQueue.remove(type);
+		} else {
+			// Go through planned buildings
+			for (BuildingPlan p : buildingQueue) {
+				// If it's the right building according to the plan
+				if (u.getType().equals(p.getType())
+						&& u.getTilePosition().equals(p.getTilePosition())) {
+					// It has been completed
+					buildingQueue.remove(p);
 
-				if (u.getType() == UnitType.Terran_Refinery) {
-					// If it's a refinery, the worker will automatically become
-					// a gas miner!
-					p.builder.gather(baseManager.getResource(u));
-				} else {
-					// Otherwise, back to work!
-					p.builder.gather(p.builder.getCurrentResource());
+					if (u.getType().isRefinery()) {
+						// The gas geyser becomes a refinery...
+						baseManager.refineryComplete(u);
+						// If it's a refinery, the worker will automatically
+						// become
+						// a gas miner!
+						p.builder.gather(baseManager.getResource(u));
+					} else {
+						// Otherwise, back to work!
+						p.builder.gather(p.builder.getCurrentResource());
+					}
+					break;
 				}
-
-				break;
 			}
 		}
 	}
@@ -223,6 +229,10 @@ public class BuildManager implements Debuggable {
 		unitMinimums.put(unitType, min);
 	}
 
+	/**
+	 * Check if any buildings or units are below required minimums. If they are,
+	 * put more of them into the building queue!
+	 */
 	public void checkMinimums() {
 		for (Entry<UnitType, Integer> entry : unitMinimums.entrySet()) {
 			UnitType unitType = entry.getKey();
