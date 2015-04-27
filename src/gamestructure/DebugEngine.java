@@ -23,7 +23,7 @@ public class DebugEngine {
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger debugger
-		registerDebugFunction(new DebugModule("shapecount") {
+		registerDebugModule(new DebugModule("shapecount") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				engine.drawTextScreen(400, 100,
@@ -49,12 +49,12 @@ public class DebugEngine {
 	private static final int MAX_SHAPES = 26000;
 
 	/**
-	 * Add a debugModule to the debugEngine. Modules are disabled by default.
+	 * Add a debugModule to the debugEngine.
 	 * 
 	 * @param debugModule
 	 *            The module to be added.
 	 */
-	public void registerDebugFunction(DebugModule debugModule) {
+	public void registerDebugModule(DebugModule debugModule) {
 		debugModules.put(debugModule.getName(), debugModule);
 	}
 
@@ -305,21 +305,18 @@ public class DebugEngine {
 		drawLineMap(x2, y2, a2x, a2y, color);
 	}
 
+	/**
+	 * Process a command meant for a {@link #DebugModule} and search through
+	 * {@link #debugModules} for the correct one to forward it to.
+	 * 
+	 * @param command
+	 *            The command being parsed, split by whitespace.
+	 */
 	public void onReceiveCommand(String[] command) {
 		if (command[0].equalsIgnoreCase("debug")) {
 			if (command[1].equalsIgnoreCase("all")) {
-				if (command.length == 2) {
-					for (DebugModule d : debugModules.values()) {
-						d.setActive(!d.isActive());
-					}
-				} else if (command[2].equalsIgnoreCase("on")) {
-					for (DebugModule d : debugModules.values()) {
-						d.setActive(true);
-					}
-				} else if (command[2].equalsIgnoreCase("off")) {
-					for (DebugModule d : debugModules.values()) {
-						d.setActive(false);
-					}
+				for (DebugModule d : debugModules.values()) {
+					d.onReceiveCommand(command);
 				}
 			} else {
 				debugModules.getOrDefault(command[1],

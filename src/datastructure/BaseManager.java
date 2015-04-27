@@ -171,7 +171,7 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 
 	@Override
 	public void registerDebugFunctions(DebugEngine debugEngine) {
-		debugEngine.registerDebugFunction(new DebugModule("bases") {
+		debugEngine.registerDebugModule(new DebugModule("bases") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				if (main != null) {

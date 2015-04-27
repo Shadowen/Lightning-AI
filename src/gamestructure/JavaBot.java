@@ -302,7 +302,7 @@ public class JavaBot extends DefaultBWListener {
 	 *            debugEngine.
 	 */
 	private void registerDebugFunctions(DebugEngine de) {
-		de.registerDebugFunction(new DebugModule("fps") {
+		de.registerDebugModule(new DebugModule("fps") {
 			private static final int yBottom = 285;
 
 			@Override
@@ -313,14 +313,14 @@ public class JavaBot extends DefaultBWListener {
 				engine.drawTextScreen(10, yBottom, "APM: " + game.getAPM());
 			}
 		});
-		de.registerDebugFunction(new DebugModule("botstate") {
+		de.registerDebugModule(new DebugModule("botstate") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				engine.drawTextScreen(5, 5, "Bot state: "
 						+ botState.getClass().toString());
 			}
 		});
-		de.registerDebugFunction(new DebugModule("construction") {
+		de.registerDebugModule(new DebugModule("construction") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				String uucString = "";
@@ -331,7 +331,7 @@ public class JavaBot extends DefaultBWListener {
 						+ uucString);
 			}
 		});
-		de.registerDebugFunction(new DebugModule("supply") {
+		de.registerDebugModule(new DebugModule("supply") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				engine.drawTextScreen(550, 15, "Supply: "

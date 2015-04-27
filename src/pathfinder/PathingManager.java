@@ -279,7 +279,7 @@ public class PathingManager implements Debuggable {
 
 	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Label all chokes
-		debugEngine.registerDebugFunction(new DebugModule("chokes") {
+		debugEngine.registerDebugModule(new DebugModule("chokes") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				int i = 0;
