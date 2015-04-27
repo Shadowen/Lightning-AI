@@ -2,6 +2,7 @@ package gamestructure;
 
 import java.awt.Point;
 import java.util.List;
+
 import bwapi.Game;
 import bwapi.Player;
 import bwapi.Unit;
@@ -9,11 +10,9 @@ import bwapi.UnitType;
 
 public class GameHandler {
 	private Game game;
-	private DebugEngine debugEngine;
 
 	public GameHandler(Game g) {
 		game = g;
-		debugEngine = new DebugEngine(game);
 	}
 
 	public Unit getClosestUnitOfType(int x, int y, UnitType type) {
@@ -29,14 +28,6 @@ public class GameHandler {
 			}
 		}
 		return closest;
-	}
-
-	public void registerDebugFunction(DebugModule m) {
-		debugEngine.debugModules.add(m);
-	}
-
-	public void drawDebug() {
-		debugEngine.draw();
 	}
 
 	public Unit getClosestEnemy(int x, int y) {
@@ -73,6 +64,14 @@ public class GameHandler {
 		return game.getFrameCount();
 	}
 
+	public int getFPS() {
+		return game.getFPS();
+	}
+	
+	public int getAPM(){
+		return game.getAPM();
+	}
+
 	public Player self() {
 		return game.self();
 	}
@@ -89,7 +88,7 @@ public class GameHandler {
 		return game.isBuildable(tileX, tileY, includeBuildings);
 	}
 
-	public void sendText(String string) {
-		game.sendText(string);
+	public void sendText(String message) {
+		game.sendText(message);
 	}
 }

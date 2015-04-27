@@ -26,6 +26,7 @@ import bwta.BWTA;
 public class JavaBot extends DefaultBWListener {
 	private Mirror mirror = new Mirror();
 	private GameHandler game;
+	private DebugEngine debugEngine;
 	// Only contains my units under construction
 	private List<Unit> unitsUnderConstruction;
 
@@ -54,6 +55,7 @@ public class JavaBot extends DefaultBWListener {
 	@Override
 	public void onStart() {
 		game = new GameHandler(mirror.getGame());
+		debugEngine = new DebugEngine(mirror.getGame());
 		try {
 			game.setTextSize(1);
 			// allow me to manually control units during the game
@@ -69,63 +71,14 @@ public class JavaBot extends DefaultBWListener {
 			unitsUnderConstruction = new ArrayList<Unit>();
 
 			// Start all the modules
-			baseManager = new BaseManager(game);
-			buildManager = new BuildManager(game, baseManager);
-			pathingManager = new PathingManager(game, baseManager);
-			microManager = new MicroManager(game, baseManager, pathingManager);
+			baseManager = new BaseManager(game, debugEngine);
+			buildManager = new BuildManager(game, baseManager, debugEngine);
+			pathingManager = new PathingManager(game, baseManager, debugEngine);
+			microManager = new MicroManager(game, baseManager, pathingManager,
+					debugEngine);
 			botState = new FirstFrameState(game, baseManager, buildManager,
 					microManager, pathingManager);
-
-			baseManager.registerDebugFunctions(game);
-			buildManager.registerDebugFunctions(game);
-			pathingManager.registerDebugFunctions(game);
-			microManager.registerDebugFunctions(game);
-			game.registerDebugFunction(new DebugModule("fps") {
-				private Queue<Long> fpsQueue = new ArrayDeque<Long>();
-
-				@Override
-				public void draw(DebugEngine engine)
-						throws ShapeOverflowException {
-					long currentTime = System.currentTimeMillis();
-					fpsQueue.add(currentTime);
-					while (fpsQueue.peek() < currentTime - 1000) {
-						fpsQueue.remove();
-					}
-
-					engine.drawText(20, 285, "Frame: " + game.getFrameCount(),
-							true);
-					engine.drawText(20, 300, "FPS: " + fpsQueue.size(), true);
-				}
-			});
-			game.registerDebugFunction(new DebugModule("botstate") {
-				@Override
-				public void draw(DebugEngine engine)
-						throws ShapeOverflowException {
-					engine.drawText(5, 5, "Bot state: "
-							+ botState.getClass().toString(), true);
-				}
-			});
-			game.registerDebugFunction(new DebugModule("construction") {
-				@Override
-				public void draw(DebugEngine engine)
-						throws ShapeOverflowException {
-					String uucString = "";
-					for (Unit u : unitsUnderConstruction) {
-						uucString += u.getType().toString() + ", ";
-					}
-					engine.drawText(5, 60, "unitsUnderConstruction: "
-							+ uucString, true);
-				}
-			});
-			game.registerDebugFunction(new DebugModule("supply") {
-				@Override
-				public void draw(DebugEngine engine)
-						throws ShapeOverflowException {
-					engine.drawText(500, 15, "Supply: "
-							+ game.self().supplyUsed() + "/"
-							+ game.self().supplyTotal(), true);
-				}
-			});
+			registerDebugFunctions(debugEngine);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -248,7 +201,7 @@ public class JavaBot extends DefaultBWListener {
 			// }
 
 			// Draw debug information on screen
-			game.drawDebug();
+			debugEngine.draw();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -368,17 +321,58 @@ public class JavaBot extends DefaultBWListener {
 	}
 
 	@Override
-	public void onPlayerDropped(Player player) {
-	}
-
-	public void playerLeft(int id) {
-	}
-
-	@Override
 	public void onSendText(String s) {
+		if (s.startsWith("/")) {
+			String[] command = s.substring(1).split(" ");
+			debugEngine.onReceiveCommand(command);
+		}
 	}
 
-	@Override
-	public void onReceiveText(Player player, String s) {
+	/**
+	 * Register my own debug functions to the debugEngine.
+	 * 
+	 * @param de
+	 *            The debugEngine to be used. Should usually be its own
+	 *            debugEngine.
+	 */
+	private void registerDebugFunctions(DebugEngine de) {
+		de.registerDebugFunction(new DebugModule("fps") {
+			private static final int yBottom = 285;
+
+			@Override
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
+				engine.drawTextScreen(10, yBottom - 15 * 2,
+						"Frame: " + game.getFrameCount());
+				engine.drawTextScreen(10, yBottom - 15, "FPS: " + game.getFPS());
+				engine.drawTextScreen(10, yBottom, "APM: " + game.getAPM());
+			}
+		});
+		de.registerDebugFunction(new DebugModule("botstate") {
+			@Override
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
+				engine.drawTextScreen(5, 5, "Bot state: "
+						+ botState.getClass().toString());
+			}
+		});
+		de.registerDebugFunction(new DebugModule("construction") {
+			@Override
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
+				String uucString = "";
+				for (Unit u : unitsUnderConstruction) {
+					uucString += u.getType().toString() + ", ";
+				}
+				engine.drawTextScreen(5, 60, "unitsUnderConstruction: "
+						+ uucString);
+			}
+		});
+		de.registerDebugFunction(new DebugModule("supply") {
+			@Override
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
+				engine.drawTextScreen(550, 15, "Supply: "
+						+ game.self().supplyUsed() + "/"
+						+ game.self().supplyTotal());
+			}
+		});
 	}
+
 }

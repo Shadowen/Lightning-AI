@@ -17,12 +17,9 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	private Set<Base> bases;
 	public Base main;
 
-	private int selfPlayerID;
-
-	public BaseManager(GameHandler game) {
+	public BaseManager(GameHandler game, DebugEngine debugEngine) {
 		bases = new HashSet<Base>();
-
-		selfPlayerID = game.self().getID();
+		registerDebugFunctions(debugEngine);
 	}
 
 	public void addBase(Base b) {
@@ -111,56 +108,55 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	}
 
 	@Override
-	public void registerDebugFunctions(GameHandler g) {
-		g.registerDebugFunction(new DebugModule("bases") {
+	public void registerDebugFunctions(DebugEngine debugEngine) {
+		debugEngine.registerDebugFunction(new DebugModule("bases") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				if (main != null) {
-					engine.drawText(main.getX(), main.getY(), "Main", false);
+					engine.drawTextMap(main.getX(), main.getY(), "Main");
 				}
 
 				for (Base b : bases) {
 					// Status
-					engine.drawCircle(b.getX(), b.getY(), 100, Color.Teal,
-							false, false);
-					engine.drawText(
+					engine.drawCircleMap(b.getX(), b.getY(), 100, Color.Teal,
+							false);
+					engine.drawTextMap(
 							b.getX() + 5,
 							b.getY() + 5,
 							"Status: " + b.getStatus().toString() + " @ "
-									+ b.getLastScouted(), false);
+									+ b.getLastScouted());
 
 					// Command center
 					if (b.commandCenter != null) {
 						int tx = b.commandCenter.getTilePosition().getX();
 						int ty = b.commandCenter.getTilePosition().getY();
-						engine.drawBox(tx * 32, ty * 32, (tx + 4) * 32,
-								(ty + 3) * 32, Color.Teal, false, false);
+						engine.drawBoxMap(tx * 32, ty * 32, (tx + 4) * 32,
+								(ty + 3) * 32, Color.Teal, false);
 					}
 
 					// Minerals
 					for (MineralResource r : b.minerals) {
-						engine.drawText(r.getX() - 8, r.getY() - 8,
-								String.valueOf(r.getNumGatherers()), false);
+						engine.drawTextMap(r.getX() - 8, r.getY() - 8,
+								String.valueOf(r.getNumGatherers()));
 					}
 
 					// Miner counts
-					engine.drawText(b.getX() + 5, b.getY() + 15,
-							"Mineral Miners: " + b.getMineralWorkerCount(),
-							false);
-					engine.drawText(b.getX() + 5, b.getY() + 25,
-							"Mineral Fields: " + b.minerals.size(), false);
+					engine.drawTextMap(b.getX() + 5, b.getY() + 15,
+							"Mineral Miners: " + b.getMineralWorkerCount());
+					engine.drawTextMap(b.getX() + 5, b.getY() + 25,
+							"Mineral Fields: " + b.minerals.size());
 
 					// Workers
 					for (Worker w : b.workers) {
 						if (w.getTask() == WorkerTask.Mining_Minerals) {
-							engine.drawCircle(w.getX(), w.getY(), 3,
-									Color.Blue, true, false);
+							engine.drawCircleMap(w.getX(), w.getY(), 3,
+									Color.Blue, true);
 						} else if (w.getTask() == WorkerTask.Mining_Gas) {
-							engine.drawCircle(w.getX(), w.getY(), 3,
-									Color.Green, true, false);
+							engine.drawCircleMap(w.getX(), w.getY(), 3,
+									Color.Green, true);
 						} else if (w.getTask() == WorkerTask.Constructing_Building) {
-							engine.drawCircle(w.getX(), w.getY(), 3,
-									Color.Orange, true, false);
+							engine.drawCircleMap(w.getX(), w.getY(), 3,
+									Color.Orange, true);
 						}
 					}
 				}

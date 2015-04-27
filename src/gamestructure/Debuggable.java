@@ -1,5 +1,5 @@
 package gamestructure;
 
 public interface Debuggable {
-	public void registerDebugFunctions(GameHandler g);
+	public void registerDebugFunctions(DebugEngine debugEngine);
 }

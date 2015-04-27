@@ -5,6 +5,7 @@ import pathfinder.PathingManager;
 import datastructure.BaseManager;
 import datastructure.BuildManager;
 import bwapi.Unit;
+import gamestructure.DebugEngine;
 import gamestructure.GameHandler;
 
 public abstract class BotState {

@@ -60,7 +60,7 @@ public class MicroManager implements Debuggable {
 	private HashMap<UnitType, HashMap<Integer, UnitAgent>> units;
 
 	public MicroManager(GameHandler igame, BaseManager ibaseManager,
-			PathingManager ipathingManager) {
+			PathingManager ipathingManager, DebugEngine debugEngine) {
 		game = igame;
 		baseManager = ibaseManager;
 		pathingManager = ipathingManager;
@@ -115,6 +115,8 @@ public class MicroManager implements Debuggable {
 			}
 
 		}, 0, THREAT_MAP_REFRESH_DELAY);
+
+		registerDebugFunctions(debugEngine);
 	}
 
 	public void act() {
@@ -233,7 +235,7 @@ public class MicroManager implements Debuggable {
 	}
 
 	@Override
-	public void registerDebugFunctions(GameHandler g) {
+	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Threat map
 		// g.registerDebugFunction(new DebugModule("threats") {
 		// @Override

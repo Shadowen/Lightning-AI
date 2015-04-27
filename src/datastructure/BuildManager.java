@@ -24,7 +24,8 @@ public class BuildManager implements Debuggable {
 	public Queue<BuildingPlan> buildingQueue;
 	public Queue<UnitType> unitQueue;
 
-	public BuildManager(GameHandler igame, BaseManager ibm) {
+	public BuildManager(GameHandler igame, BaseManager ibm,
+			DebugEngine debugEngine) {
 		game = igame;
 		baseManager = ibm;
 
@@ -37,6 +38,8 @@ public class BuildManager implements Debuggable {
 
 		buildingQueue = new ArrayDeque<BuildingPlan>();
 		unitQueue = new ArrayDeque<UnitType>();
+
+		registerDebugFunctions(debugEngine);
 	}
 
 	public void addToQueue(UnitType unitType) {
@@ -234,8 +237,8 @@ public class BuildManager implements Debuggable {
 	}
 
 	@Override
-	public void registerDebugFunctions(GameHandler g) {
-		g.registerDebugFunction(new DebugModule("buildingqueue") {
+	public void registerDebugFunctions(DebugEngine debugEngine) {
+		debugEngine.registerDebugFunction(new DebugModule("buildingqueue") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				String buildQueueString = "";
@@ -244,38 +247,38 @@ public class BuildManager implements Debuggable {
 					int y = plan.getTy() * 32;
 					int width = plan.getType().tileWidth() * 32;
 					int height = plan.getType().tileHeight() * 32;
-					engine.drawBox(x, y, x + width, y + height, Color.Green,
-							false, false);
-					engine.drawText(x, y, plan.getType().toString(), false);
+					engine.drawBoxMap(x, y, x + width, y + height, Color.Green,
+							false);
+					engine.drawTextMap(x, y, plan.getType().toString());
 					if (plan.builder != null) {
 						int bx = plan.builder.getX();
 						int by = plan.builder.getY();
-						engine.drawLine(bx, by, x + width / 2, y + width / 2,
-								Color.Green, false);
+						engine.drawLineMap(bx, by, x + width / 2,
+								y + width / 2, Color.Green);
 					}
 
 					buildQueueString += plan.toString() + ", ";
 				}
-				engine.drawText(5, 20, "Building Queue: " + buildQueueString,
-						true);
+				engine.drawTextScreen(5, 20, "Building Queue: "
+						+ buildQueueString);
 			}
 		});
-		g.registerDebugFunction(new DebugModule("trainingqueue") {
+		debugEngine.registerDebugFunction(new DebugModule("trainingqueue") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				String trainingQueueString = "";
 				for (UnitType type : unitQueue.toArray(new UnitType[0])) {
 					trainingQueueString += type.toString() + ", ";
 				}
-				engine.drawText(5, 40,
-						"Training Queue: " + trainingQueueString, true);
+				engine.drawTextScreen(5, 40, "Training Queue: "
+						+ trainingQueueString);
 			}
 		});
-		g.registerDebugFunction(new DebugModule("unitminimums") {
+		debugEngine.registerDebugFunction(new DebugModule("unitminimums") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawText(5, 80,
-						"Unit Minimums: current(queued)/required", true);
+				engine.drawTextScreen(5, 80,
+						"Unit Minimums: current(queued)/required");
 				int y = 90;
 				for (Entry<UnitType, Integer> entry : unitMinimums.entrySet()) {
 					UnitType unitType = entry.getKey();
@@ -285,9 +288,9 @@ public class BuildManager implements Debuggable {
 
 					if (inQueueCount != 0 || currentCount != 0
 							|| requiredCount != 0) {
-						engine.drawText(5, y, unitType.toString() + ": "
+						engine.drawTextScreen(5, y, unitType.toString() + ": "
 								+ currentCount + "(" + inQueueCount + ")/"
-								+ requiredCount, true);
+								+ requiredCount);
 						y += 10;
 					}
 				}

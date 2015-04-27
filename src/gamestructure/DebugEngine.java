@@ -1,29 +1,29 @@
 package gamestructure;
 
 import java.awt.Point;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.swing.JFrame;
+import java.util.HashMap;
+import java.util.Map;
 
 import bwapi.Color;
 import bwapi.Game;
 
 public class DebugEngine {
 	private Game game;
-	public List<DebugModule> debugModules;
+	public Map<String, DebugModule> debugModules;
 
 	public DebugEngine(Game igame) {
 		game = igame;
-		debugModules = new ArrayList<DebugModule>();
+		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger debugger
-		debugModules.add(new DebugModule("shapecount") {
+		registerDebugFunction(new DebugModule("shapecount") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawText(400, 100,
+				engine.drawTextScreen(400, 100,
 						"Debug Shapes: " + String.valueOf(shapeCount + 1) + "/"
-								+ MAX_SHAPES, true);
+								+ MAX_SHAPES);
+				// Reset the shapecount
+				shapeCount = 0;
 			}
 		});
 	}
@@ -42,22 +42,53 @@ public class DebugEngine {
 	private static final int MAX_SHAPES = 26000;
 
 	/**
+	 * Add a debugModule to the debugEngine. Modules are disabled by default.
+	 * 
+	 * @param debugModule
+	 *            The module to be added.
+	 */
+	public void registerDebugFunction(DebugModule debugModule) {
+		debugModules.put(debugModule.getName(), debugModule);
+	}
+
+	/**
 	 * Iterate through the {@link #debugModules} and tell each one to
 	 * {@link DebugModule#draw}.
 	 */
 	public void draw() {
 		// Try to draw all of the debugModules. If we are interrupted by too
 		// many objects attempting to draw, then print the stack trace.
-		shapeCount = 0;
 		try {
-			for (DebugModule d : debugModules) {
-				d.draw(this);
+			for (DebugModule d : debugModules.values()) {
+				d.drawIfActive(this);
 			}
 		} catch (ShapeOverflowException soe) {
 			// Someone attempted to draw a lot of shapes!
 			soe.printStackTrace();
 			// TODO get the actual debugModule that caused the overflow and
 			// print it.
+		}
+	}
+
+	/**
+	 * Draws a dot on the map using the {@link Game.drawDotMap} native methods.
+	 * 
+	 * @param x
+	 *            The x coordinate in pixels.
+	 * @param y
+	 *            The y coordinate in pixels.
+	 * @param color
+	 *            The colour as a {@link bwapi.Color}.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugEngine} tries to draw too many
+	 *             shapes.
+	 */
+	public void drawDotMap(int x, int y, Color color)
+			throws ShapeOverflowException {
+		game.drawDotMap(x, y, color);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException();
 		}
 	}
 
@@ -71,17 +102,13 @@ public class DebugEngine {
 	 *            The y coordinate in pixels.
 	 * @param color
 	 *            The colour as a {@link bwapi.Color}.
-	 * @param screenCoords
-	 *            If true, draw in coordinates relative to the screen. If false,
-	 *            draw relative to the map.
 	 * @throws ShapeOverflowException
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawDot(int x, int y, Color color, boolean screenCoords)
+	public void drawDotScreen(int x, int y, Color color)
 			throws ShapeOverflowException {
-		// TODO fix screenCoords
-		game.drawDotMap(x, y, color);
+		game.drawDotScreen(x, y, color);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
 			throw new ShapeOverflowException();
@@ -89,7 +116,7 @@ public class DebugEngine {
 	}
 
 	/**
-	 * Draws a circle on the screen using the {@link javabot.JNIBWAPI} native
+	 * Draws a circle on the map using the {@link javabot.JNIBWAPI} native
 	 * methods.
 	 * 
 	 * @param x
@@ -102,16 +129,12 @@ public class DebugEngine {
 	 *            The color as a {@link BWColor}.
 	 * @param fill
 	 *            If true, fill the circle with the same color.
-	 * @param screenCoords
-	 *            If true, draw in coordinates relative to the screen. If false,
-	 *            draw relative to the map.
 	 * @throws ShapeOverflowException
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawCircle(int x, int y, int radius, Color color, boolean fill,
-			boolean screenCoords) throws ShapeOverflowException {
-		// TODO fix screenCoords
+	public void drawCircleMap(int x, int y, int radius, Color color,
+			boolean fill) throws ShapeOverflowException {
 		game.drawCircleMap(x, y, radius, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -120,7 +143,7 @@ public class DebugEngine {
 	}
 
 	/**
-	 * Draws a line on the screen using the {@link javabot.JNIBWAPI} native
+	 * Draws a line on the map using the {@link javabot.JNIBWAPI} native
 	 * methods.
 	 * 
 	 * @param x1
@@ -133,16 +156,12 @@ public class DebugEngine {
 	 *            The end y coordinate in pixels.
 	 * @param color
 	 *            The colour as a {@link BWColor}.
-	 * @param screenCoords
-	 *            If true, draw in coordinates relative to the screen. If false,
-	 *            draw relative to the map.
 	 * @throws ShapeOverflowException
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawLine(int x1, int y1, int x2, int y2, Color color,
-			boolean screenCoords) throws ShapeOverflowException {
-		// TODO fix screenCoords
+	public void drawLineMap(int x1, int y1, int x2, int y2, Color color)
+			throws ShapeOverflowException {
 		game.drawLineMap(x1, y1, x2, y2, color);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -151,7 +170,7 @@ public class DebugEngine {
 	}
 
 	/**
-	 * Draws a rectangular box on the screen using the {@link javabot.JNIBWAPI}
+	 * Draws a rectangular box on the map using the {@link javabot.JNIBWAPI}
 	 * native methods.
 	 * 
 	 * @param left
@@ -166,17 +185,35 @@ public class DebugEngine {
 	 *            If true, fill the box with the same color.
 	 * @param color
 	 *            The colour as a {@link BWColor}.
-	 * @param screenCoords
-	 *            If true, draw in coordinates relative to the screen. If false,
-	 *            draw relative to the map.
 	 * @throws ShapeOverflowException
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawBox(int left, int top, int right, int bottom,
-			bwapi.Color color, boolean fill, boolean screenCoords)
-			throws ShapeOverflowException {
+	public void drawBoxMap(int left, int top, int right, int bottom,
+			Color color, boolean fill) throws ShapeOverflowException {
 		game.drawBoxMap(left, top, right, bottom, color, fill);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException();
+		}
+	}
+
+	/**
+	 * Draws text on the map using the {@link javabot.JNIBWAPI} native methods.
+	 * 
+	 * @param x
+	 *            The x coordinate to start drawing from in pixels.
+	 * @param y
+	 *            The y coordinate of the bottom of the line of text in pixels.
+	 * @param message
+	 *            The message to be displayed.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugEngine} tries to draw too many
+	 *             shapes.
+	 */
+	public void drawTextMap(int x, int y, String message)
+			throws ShapeOverflowException {
+		game.drawTextMap(x, y, message);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
 			throw new ShapeOverflowException();
@@ -193,22 +230,13 @@ public class DebugEngine {
 	 *            The y coordinate of the bottom of the line of text in pixels.
 	 * @param message
 	 *            The message to be displayed.
-	 * @param fill
-	 *            If true, fill the box with the same color.
-	 * @param screenCoords
-	 *            If true, draw in coordinates relative to the screen. If false,
-	 *            draw relative to the map.
 	 * @throws ShapeOverflowException
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawText(int x, int y, String message, boolean screenCoords)
+	public void drawTextScreen(int x, int y, String message)
 			throws ShapeOverflowException {
-		if (screenCoords) {
-			game.drawTextScreen(x, y, message);
-		} else {
-			game.drawTextMap(x, y, message);
-		}
+		game.drawTextScreen(x, y, message);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
 			throw new ShapeOverflowException();
@@ -216,7 +244,7 @@ public class DebugEngine {
 	}
 
 	/**
-	 * Draws an arrow on the screen using the {@link javabot.JNIBWAPI} native
+	 * Draws an arrow on the map using the {@link javabot.JNIBWAPI} native
 	 * methods. The arrow points from (x1, y1) to (x2, y2).
 	 * 
 	 * @param x1
@@ -229,28 +257,25 @@ public class DebugEngine {
 	 *            The end y coordinate in pixels.
 	 * @param color
 	 *            The colour as a {@link BWColor}.
-	 * @param screenCoords
-	 *            If true, draw in coordinates relative to the screen. If false,
-	 *            draw relative to the map.
 	 * @throws ShapeOverflowException
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawArrow(int x1, int y1, int x2, int y2, bwapi.Color color,
-			boolean screenCoords) throws ShapeOverflowException {
+	public void drawArrowMap(int x1, int y1, int x2, int y2, Color color)
+			throws ShapeOverflowException {
 		// Math at:
 		// http://stackoverflow.com/questions/10316180/how-to-calculate-the-coordinates-of-a-arrowhead-based-on-the-arrow
 
 		double length = Point.distance(x1, y1, x2, y2);
 		// Handle null lines
 		if (length == 0) {
-			drawDot(x1, y1, color, false);
+			drawDotMap(x1, y1, color);
 			return;
 		}
 
 		double arrowheadLength = length / 3;
 		double arrowheadHalfWidth = length / 3;
-		drawLine(x1, y1, x2, y2, color, screenCoords);
+		drawLineMap(x1, y1, x2, y2, color);
 
 		// Calculate the arrowhead
 		// u is collinear
@@ -264,12 +289,35 @@ public class DebugEngine {
 				+ arrowheadHalfWidth * vx);
 		int a1y = (int) Math.round(y2 - arrowheadLength * uy
 				+ arrowheadHalfWidth * vy);
-		drawLine(x2, y2, a1x, a1y, color, screenCoords);
+		drawLineMap(x2, y2, a1x, a1y, color);
 		// The second line
 		int a2x = (int) Math.round(x2 - arrowheadLength * ux
 				- arrowheadHalfWidth * vx);
 		int a2y = (int) Math.round(y2 - arrowheadLength * uy
 				- arrowheadHalfWidth * vy);
-		drawLine(x2, y2, a2x, a2y, color, screenCoords);
+		drawLineMap(x2, y2, a2x, a2y, color);
+	}
+
+	public void onReceiveCommand(String[] command) {
+		if (command[0].equalsIgnoreCase("debug")) {
+			if (command[1].equalsIgnoreCase("all")) {
+				if (command.length == 2) {
+					for (DebugModule d : debugModules.values()) {
+						d.setActive(!d.isActive());
+					}
+				} else if (command[2].equalsIgnoreCase("on")) {
+					for (DebugModule d : debugModules.values()) {
+						d.setActive(true);
+					}
+				} else if (command[2].equalsIgnoreCase("off")) {
+					for (DebugModule d : debugModules.values()) {
+						d.setActive(false);
+					}
+				}
+			} else {
+				debugModules.getOrDefault(command[1],
+						DebugModule.getNullModule()).onReceiveCommand(command);
+			}
+		}
 	}
 }

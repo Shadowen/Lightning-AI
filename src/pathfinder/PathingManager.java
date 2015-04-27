@@ -35,7 +35,7 @@ public class PathingManager implements Debuggable {
 	private Point topOfRamp;
 	private List<Point> chokeRampWalkTiles;
 
-	public PathingManager(GameHandler g, BaseManager bm) {
+	public PathingManager(GameHandler g, BaseManager bm, DebugEngine debugEngine) {
 		game = g;
 		baseManager = bm;
 
@@ -50,6 +50,8 @@ public class PathingManager implements Debuggable {
 				walkableNodes.get(wx).add(new Node(wx, wy));
 			}
 		}
+
+		registerDebugFunctions(debugEngine);
 	}
 
 	// public void findChokeToMain() {
@@ -133,97 +135,98 @@ public class PathingManager implements Debuggable {
 	// Integer.MAX_VALUE);
 	// }
 
-//	public Queue<Point> findGroundPath(int startx, int starty, int endx,
-//			int endy, UnitType type, int length) {
-//		int startWx = startx / 8;
-//		int startWy = starty / 8;
-//		int endWx = endx / 8;
-//		int endWy = endy / 8;
-//
-//		// Initialize
-//		for (int wx = 0; wx < mapWalkWidth; wx++) {
-//			for (int wy = 0; wy < mapWalkHeight; wy++) {
-//				walkableNodes.get(wx).get(wy).walkable = true;
-//			}
-//		}
-//		// Avoid cliffs
-//		for (int wx = 0; wx < game.getMap().getWidth() * 4; wx++) {
-//			for (int wy = 0; wy < game.getMap().getHeight() * 4; wy++) {
-//				if (!game.getMap().isWalkable(wx, wy)) {
-//					for (int iwx = Math.max(wx - 3, 0); iwx < Math.min(wx + 3,
-//							mapWalkWidth); iwx++) {
-//						for (int iwy = Math.max(wy - 3, 0); iwy < Math.min(
-//								wy + 3, mapWalkHeight); iwy++) {
-//							walkableNodes.get(iwx).get(iwy).walkable = false;
-//						}
-//					}
-//				}
-//			}
-//		}
-//		// Avoid buildings
-//		for (Unit u : game.getAllUnits()) {
-//			UnitType utype = game.getUnitType(u.getTypeID());
-//			if (!utype.isCanMove()) {
-//				int uwidth = utype.getTileWidth();
-//				int uheight = utype.getTileHeight();
-//				for (int wx = u.getTileX() * 4; wx < (u.getTileX() + uwidth) * 4; wx++) {
-//					for (int wy = u.getTileY() * 4; wy < (u.getTileY() + uheight) * 4; wy++) {
-//						walkableNodes.get(wx).get(wy).walkable = false;
-//					}
-//				}
-//			}
-//		}
-//
-//		Queue<Node> openSet = new PriorityQueue<Node>(1,
-//				new Comparator<Node>() {
-//					@Override
-//					public int compare(Node n1, Node n2) {
-//						return (int) Math
-//								.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
-//					}
-//				});
-//		walkableNodes.get(startWx).get(startWy).parent = null;
-//		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
-//		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point
-//				.distance(startWx, startWy, endWx, endWy);
-//		openSet.add(walkableNodes.get(startWx).get(startWy));
-//		Set<Node> closedSet = new HashSet<Node>();
-//
-//		// Iterate
-//		while (openSet.size() > 0) {
-//			Node currentNode = openSet.remove();
-//			// Base case
-//			if ((currentNode.x == endWx && currentNode.y == endWy)
-//					|| currentNode.costFromStart > length) {
-//				Deque<Point> path = new ArrayDeque<Point>();
-//				reconstructPath(path, currentNode);
-//				return path;
-//			}
-//			// Move the node from the open set to the closed set
-//			closedSet.add(currentNode);
-//			// Add all neigbors to the open set
-//			for (Node neighbor : getNeighbors(currentNode.x, currentNode.y)) {
-//				if (closedSet.contains(neighbor) || !neighbor.walkable) {
-//					continue;
-//				}
-//
-//				double tentative_g_score = currentNode.costFromStart
-//						+ Point.distance(currentNode.x, currentNode.y,
-//								neighbor.x, neighbor.y);
-//				if (!openSet.contains(neighbor)
-//						|| tentative_g_score < neighbor.costFromStart) {
-//					neighbor.parent = currentNode;
-//					neighbor.costFromStart = tentative_g_score;
-//					neighbor.predictedTotalCost = tentative_g_score
-//							+ Point.distance(neighbor.x, neighbor.y, endWx,
-//									endWy);
-//					openSet.add(neighbor);
-//				}
-//			}
-//		}
-//
-//		throw new NullPointerException();
-//	}
+	// public Queue<Point> findGroundPath(int startx, int starty, int endx,
+	// int endy, UnitType type, int length) {
+	// int startWx = startx / 8;
+	// int startWy = starty / 8;
+	// int endWx = endx / 8;
+	// int endWy = endy / 8;
+	//
+	// // Initialize
+	// for (int wx = 0; wx < mapWalkWidth; wx++) {
+	// for (int wy = 0; wy < mapWalkHeight; wy++) {
+	// walkableNodes.get(wx).get(wy).walkable = true;
+	// }
+	// }
+	// // Avoid cliffs
+	// for (int wx = 0; wx < game.getMap().getWidth() * 4; wx++) {
+	// for (int wy = 0; wy < game.getMap().getHeight() * 4; wy++) {
+	// if (!game.getMap().isWalkable(wx, wy)) {
+	// for (int iwx = Math.max(wx - 3, 0); iwx < Math.min(wx + 3,
+	// mapWalkWidth); iwx++) {
+	// for (int iwy = Math.max(wy - 3, 0); iwy < Math.min(
+	// wy + 3, mapWalkHeight); iwy++) {
+	// walkableNodes.get(iwx).get(iwy).walkable = false;
+	// }
+	// }
+	// }
+	// }
+	// }
+	// // Avoid buildings
+	// for (Unit u : game.getAllUnits()) {
+	// UnitType utype = game.getUnitType(u.getTypeID());
+	// if (!utype.isCanMove()) {
+	// int uwidth = utype.getTileWidth();
+	// int uheight = utype.getTileHeight();
+	// for (int wx = u.getTileX() * 4; wx < (u.getTileX() + uwidth) * 4; wx++) {
+	// for (int wy = u.getTileY() * 4; wy < (u.getTileY() + uheight) * 4; wy++)
+	// {
+	// walkableNodes.get(wx).get(wy).walkable = false;
+	// }
+	// }
+	// }
+	// }
+	//
+	// Queue<Node> openSet = new PriorityQueue<Node>(1,
+	// new Comparator<Node>() {
+	// @Override
+	// public int compare(Node n1, Node n2) {
+	// return (int) Math
+	// .round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
+	// }
+	// });
+	// walkableNodes.get(startWx).get(startWy).parent = null;
+	// walkableNodes.get(startWx).get(startWy).costFromStart = 0;
+	// walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point
+	// .distance(startWx, startWy, endWx, endWy);
+	// openSet.add(walkableNodes.get(startWx).get(startWy));
+	// Set<Node> closedSet = new HashSet<Node>();
+	//
+	// // Iterate
+	// while (openSet.size() > 0) {
+	// Node currentNode = openSet.remove();
+	// // Base case
+	// if ((currentNode.x == endWx && currentNode.y == endWy)
+	// || currentNode.costFromStart > length) {
+	// Deque<Point> path = new ArrayDeque<Point>();
+	// reconstructPath(path, currentNode);
+	// return path;
+	// }
+	// // Move the node from the open set to the closed set
+	// closedSet.add(currentNode);
+	// // Add all neigbors to the open set
+	// for (Node neighbor : getNeighbors(currentNode.x, currentNode.y)) {
+	// if (closedSet.contains(neighbor) || !neighbor.walkable) {
+	// continue;
+	// }
+	//
+	// double tentative_g_score = currentNode.costFromStart
+	// + Point.distance(currentNode.x, currentNode.y,
+	// neighbor.x, neighbor.y);
+	// if (!openSet.contains(neighbor)
+	// || tentative_g_score < neighbor.costFromStart) {
+	// neighbor.parent = currentNode;
+	// neighbor.costFromStart = tentative_g_score;
+	// neighbor.predictedTotalCost = tentative_g_score
+	// + Point.distance(neighbor.x, neighbor.y, endWx,
+	// endWy);
+	// openSet.add(neighbor);
+	// }
+	// }
+	// }
+	//
+	// throw new NullPointerException();
+	// }
 
 	// private List<Node> getNeighbors(int x, int y) {
 	// List<Node> neighbors = new ArrayList<Node>();
@@ -274,18 +277,18 @@ public class PathingManager implements Debuggable {
 		return reconstructPath(path, finalNode.parent);
 	}
 
-	public void registerDebugFunctions(GameHandler g) {
+	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Label all chokes
-		g.registerDebugFunction(new DebugModule("chokes") {
+		debugEngine.registerDebugFunction(new DebugModule("chokes") {
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				int i = 0;
 				for (Chokepoint choke : BWTA.getChokepoints()) {
-					engine.drawText(choke.getCenter().getX() - 10, choke
-							.getCenter().getY() - 20, "Choke " + i, false);
-					engine.drawText(choke.getCenter().getX() - 10, choke
+					engine.drawTextMap(choke.getCenter().getX() - 10, choke
+							.getCenter().getY() - 20, "Choke " + i);
+					engine.drawTextMap(choke.getCenter().getX() - 10, choke
 							.getCenter().getY() - 10,
-							"Radius " + choke.getWidth(), false);
+							"Radius " + choke.getWidth());
 					i++;
 				}
 			}
