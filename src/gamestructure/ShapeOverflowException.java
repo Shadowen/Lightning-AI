@@ -6,4 +6,9 @@ package gamestructure;
  * 
  */
 public class ShapeOverflowException extends Exception {
+	@Override
+	public String getMessage() {
+		return getStackTrace()[1].getClassName()
+				+ " tried to draw too many shapes!";
+	}
 }

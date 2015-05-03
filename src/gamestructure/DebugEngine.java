@@ -72,8 +72,9 @@ public class DebugEngine {
 		} catch (ShapeOverflowException soe) {
 			// Someone attempted to draw a lot of shapes!
 			soe.printStackTrace();
-			// TODO get the actual debugModule that caused the overflow and
+			// Get the actual debugModule that caused the overflow and
 			// print it.
+			game.sendText(soe.getMessage());
 		}
 	}
 
