@@ -65,8 +65,8 @@ public class MicroManager implements Debuggable {
 		baseManager = ibaseManager;
 		pathingManager = ipathingManager;
 
-		mapWidth = 0;// TODO
-		mapHeight = 0; // TODO
+		mapWidth = game.getMapWidth();
+		mapHeight = game.getMapHeight();
 		targetMap = new double[mapWidth + 1][mapHeight + 1];
 		threatMap = new double[mapWidth + 1][mapHeight + 1];
 
@@ -93,12 +93,11 @@ public class MicroManager implements Debuggable {
 					int x = u.getX() / 32;
 					int y = u.getY() / 32;
 
+					// Update target map
 					double targetValue = 0;
 					if (unitType.isWorker()) {
 						targetValue = 1;
 					}
-
-					// Loop through all points in a circle around the unit
 					int radius = 10;
 					int startX = Math.max(x - radius, 0);
 					int endX = Math.min(x + radius, mapWidth);
@@ -108,7 +107,22 @@ public class MicroManager implements Debuggable {
 						int endY = Math.min(y + remainingRadius, mapHeight);
 						for (int cy = startY; cy < endY; cy++) {
 							targetMap[cx][cy] += targetValue
-									/ Point.distance(x, y, cx, cy);
+									/ (Point.distance(x, y, cx, cy) + 1);
+						}
+					}
+
+					// Update threat map
+					double threatValue = 1;
+					radius = u.getType().airWeapon().maxRange() / 32;
+					startX = Math.max(x - radius, 0);
+					endX = Math.min(x + radius, mapWidth);
+					for (int cx = startX; cx < endX; cx++) {
+						int remainingRadius = radius - Math.abs(cx - x);
+						int startY = Math.max(y - remainingRadius, 0);
+						int endY = Math.min(y + remainingRadius, mapHeight);
+						for (int cy = startY; cy < endY; cy++) {
+							threatMap[cx][cy] += threatValue * radius
+									/ (Point.distance(x, y, cx, cy) + 1);
 						}
 					}
 				}
@@ -237,19 +251,19 @@ public class MicroManager implements Debuggable {
 	@Override
 	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Threat map
-		// debugEngine.registerDebugFunction(new DebugModule("threats") {
-		// @Override
-		// public void draw(DebugEngine engine) {
-		// // Actually draw
-		// for (int x = 1; x < mapWidth; x++) {
-		// for (int y = 1; y < mapHeight; y++) {
-		// engine.drawCircle(x * 32, y * 32,
-		// (int) Math.round(threatMap[x][y]), BWColor.RED,
-		// false, false);
-		// }
-		// }
-		// }
-		// });
+		debugEngine.registerDebugModule(new DebugModule("threats") {
+			@Override
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
+				// Actually draw
+				for (int x = 1; x < mapWidth; x++) {
+					for (int y = 1; y < mapHeight; y++) {
+						engine.drawCircleMap(x * 32, y * 32,
+								(int) Math.round(threatMap[x][y]), Color.Red,
+								false);
+					}
+				}
+			}
+		});
 		// Target map
 		// debugEngine.registerDebugFunction(new DebugModule("targets") {
 		// @Override

@@ -22,6 +22,14 @@ public class GameHandler {
 		game.enableFlag(1);
 	}
 
+	public int getMapWidth() {
+		return game.mapWidth();
+	}
+
+	public int getMapHeight() {
+		return game.mapHeight();
+	}
+
 	public Unit getClosestUnitOfType(int x, int y, UnitType type) {
 		Unit closest = null;
 		double closestDistance = Double.MAX_VALUE;

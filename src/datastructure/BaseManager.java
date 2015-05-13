@@ -21,6 +21,11 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	private GameHandler game;
 	private Set<Base> bases;
 	public Base main;
+	/**
+	 * The radius the bot looks around a potential base location to determine if
+	 * it is occupied
+	 **/
+	private int baseRadius = 300;
 
 	public BaseManager(GameHandler g, DebugEngine debugEngine) {
 		game = g;
@@ -32,7 +37,7 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		}
 		for (Unit u : game.getNeutralUnits()) {
 			UnitType type = u.getType();
-			Base closestBase = getClosestBase(u.getPosition());
+			Base closestBase = getClosestBase(u.getPosition(), baseRadius);
 			if (type.isMineralField()) {
 				closestBase.minerals.add(new MineralResource(u));
 			} else if (type.equals(UnitType.Resource_Vespene_Geyser)) {
@@ -58,12 +63,12 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	}
 
 	// Gets the closest base from a given (x, y) position
-	public Base getClosestBase(int x, int y) {
+	public Base getClosestBase(int x, int y, int maxDistance) {
 		Base closest = null;
 		double closestDistance = Double.MAX_VALUE;
 		for (Base b : bases) {
 			double distance = Point.distance(x, y, b.getX(), b.getY());
-			if (distance < closestDistance) {
+			if (distance < closestDistance && distance < maxDistance) {
 				closestDistance = distance;
 				closest = b;
 			}
@@ -71,8 +76,8 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 		return closest;
 	}
 
-	private Base getClosestBase(Position position) {
-		return getClosestBase(position.getX(), position.getY());
+	private Base getClosestBase(Position position, int maxDistance) {
+		return getClosestBase(position.getX(), position.getY(), maxDistance);
 	}
 
 	public Worker getBuilder() {
@@ -133,7 +138,7 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	}
 
 	public void refineryComplete(Unit u) {
-		getClosestBase(u.getPosition()).gas.add(new GasResource(u));
+		getClosestBase(u.getPosition(), baseRadius).gas.add(new GasResource(u));
 	}
 
 	public Resource getResource(Unit u) {
@@ -153,20 +158,24 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 	}
 
 	public void resourceDepotShown(Unit unit) {
-		Base b = getClosestBase(unit.getPosition());
+		Base b = getClosestBase(unit.getPosition(), baseRadius);
 		b.commandCenter = unit;
 		b.setPlayer(unit.getPlayer());
 	}
 
 	public void resourceDepotDestroyed(Unit unit) {
-		Base b = getClosestBase(unit.getPosition());
+		Base b = getClosestBase(unit.getPosition(), baseRadius);
+		// TODO find the next closest building?
 		b.commandCenter = null;
 		b.setPlayer(game.getNeutralPlayer());
 	}
 
 	public void resourceDepotHidden(Unit unit) {
-		Base b = getClosestBase(unit.getPosition());
-		b.setLastScouted();
+		getClosestBase(unit.getPosition(), baseRadius).setLastScouted();
+	}
+
+	public void workerComplete(Unit unit) {
+		getClosestBase(unit.getPosition(), baseRadius).addWorker(unit);
 	}
 
 	@Override

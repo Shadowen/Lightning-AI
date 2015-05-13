@@ -36,10 +36,6 @@ public class JavaBot extends DefaultBWListener {
 	private MicroManager microManager;
 	private PathingManager pathingManager;
 
-	// The radius the bot looks around a potential base location to determine if
-	// it is occupied
-	private static final double BASE_RADIUS = 300;
-
 	public static void main(String[] args) {
 		new JavaBot();
 	}
@@ -77,12 +73,8 @@ public class JavaBot extends DefaultBWListener {
 					debugEngine);
 			botState = new FirstFrameState(game, baseManager, buildManager,
 					microManager, pathingManager);
-			registerDebugFunctions(debugEngine);
 
-			baseManager.registerDebugFunctions(debugEngine);
-			buildManager.registerDebugFunctions(debugEngine);
-			pathingManager.registerDebugFunctions(debugEngine);
-			microManager.registerDebugFunctions(debugEngine);
+			registerDebugFunctions(debugEngine);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -152,7 +144,7 @@ public class JavaBot extends DefaultBWListener {
 					}
 				}
 			}
-			// //Auto train
+			// // Auto train
 			// for (UnitType toTrain : buildManager.unitQueue)
 			// if (toTrain != null) {
 			// UnitType trainFrom = toTrain.whatBuilds(); // TODO
@@ -274,9 +266,7 @@ public class JavaBot extends DefaultBWListener {
 
 				if (type == UnitType.Terran_SCV) {
 					// Add new workers to nearest base
-					Base base = baseManager.getClosestBase(unit.getX(),
-							unit.getY());
-					base.addWorker(unit);
+					baseManager.workerComplete(unit);
 				}
 
 				botState = botState.unitComplete(unit);
