@@ -3,6 +3,7 @@ package datastructure;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import bwapi.Player;
@@ -18,7 +19,7 @@ public class Base {
 	public List<MineralResource> minerals;
 	public List<GasResource> gas;
 	public List<Worker> workers;
-	public Unit commandCenter;
+	public Optional<Unit> commandCenter;
 	private BaseLocation location;
 
 	private Player player;

@@ -87,15 +87,12 @@ public class JavaBot extends DefaultBWListener {
 	public void onFrame() {
 		try {
 			// Check if any units have completed
-			unitsUnderConstruction.removeIf(new Predicate<Unit>() {
-				@Override
-				public boolean test(Unit unit) {
-					if (unit.isCompleted()) {
-						onUnitConstructed(unit);
-						return true;
-					}
-					return false;
+			unitsUnderConstruction.removeIf(unit -> {
+				if (unit.isCompleted()) {
+					onUnitConstructed(unit);
+					return true;
 				}
+				return false;
 			});
 			// Allow the bot to act
 			// Bot state updates
@@ -108,53 +105,51 @@ public class JavaBot extends DefaultBWListener {
 			// Auto economy
 			baseManager.gatherResources();
 			for (Base b : baseManager.getMyBases()) {
-				if (b.commandCenter == null) {
-					continue;
-				}
-				// Train SCVS if necessary
-				// This can't go in the build queue since it is specific to a
-				// command center!
-				if (game.getSelfPlayer().minerals() >= 50
-						&& !b.commandCenter.isTraining()) {
-					for (Resource mineral : b.minerals) {
-						if (mineral.getNumGatherers() < 2) {
-							// Do training
-							b.commandCenter.train(UnitType.Terran_SCV);
-							break;
+				b.commandCenter.ifPresent(c -> {
+					// Train SCVS if necessary
+					// TODO This can't go in the build queue since it is
+					// specific to
+					// a command center!
+						if (game.getSelfPlayer().minerals() >= 50
+								&& !c.isTraining()) {
+							for (Resource mineral : b.minerals) {
+								if (mineral.getNumGatherers() < 2) {
+									// Do training
+									c.train(UnitType.Terran_SCV);
+									break;
+								}
+							}
 						}
-					}
-				}
+					});
 			}
 
 			// Auto build
-			for (BuildingPlan toBuild : buildManager.buildingQueue) {
-				// If we have the minerals and gas
-				if (game.getSelfPlayer().minerals() > toBuild.getType()
-						.mineralPrice()
-						&& game.getSelfPlayer().gas() >= toBuild.getType()
-								.gasPrice()) {
-					// If it has a builder, tell them to hurry up!
-					if (toBuild.hasBuilder()) {
-						if (!toBuild.builder.getUnit().isConstructing()) {
-							toBuild.builder.build(toBuild);
+			buildManager.buildingQueue
+					.stream()
+					.filter(b -> game.getSelfPlayer().minerals() >= b.getType()
+							.mineralPrice())
+					.filter(b -> game.getSelfPlayer().gas() >= b.getType()
+							.gasPrice()).forEach(b -> {
+						if (b.hasBuilder()) {
+							// Has builder already
+							if (!b.builder.getUnit().isConstructing()) {
+								b.builder.build(b);
+							}
+						} else {
+							// If it isn't being built yet
+							baseManager.getBuilder().build(b);
 						}
-					} else {
-						// If it isn't being built yet
-						baseManager.getBuilder().build(toBuild);
-					}
-				}
-			}
+					});
 			// Auto train
-			for (UnitType toTrain : buildManager.unitQueue)
-				if (toTrain != null) {
-					UnitType trainFrom = toTrain.whatBuilds().first;
-					for (Unit u : game.getMyUnits()) {
-						if (u.getType() == trainFrom && !u.isTraining()) {
-							u.train(toTrain);
-							break;
-						}
-					}
-				}
+			buildManager.unitQueue.stream()
+					.forEach(
+							toTrain -> game
+									.getAllUnits()
+									.stream()
+									.filter(u -> u.getType() == toTrain
+											.whatBuilds().first)
+									.filter(u -> !u.isTraining()).findFirst()
+									.ifPresent(u -> u.train(toTrain)));
 
 			// Draw debug information on screen
 			debugEngine.draw();

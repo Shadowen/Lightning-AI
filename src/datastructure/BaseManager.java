@@ -3,6 +3,7 @@ package datastructure;
 import java.awt.Point;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 
 import bwapi.Color;
@@ -159,7 +160,7 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 
 	public void resourceDepotShown(Unit unit) {
 		Base b = getClosestBase(unit.getPosition(), baseRadius);
-		b.commandCenter = unit;
+		b.commandCenter = Optional.of(unit);
 		b.setPlayer(unit.getPlayer());
 	}
 
@@ -188,8 +189,6 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 				}
 
 				for (Base b : bases) {
-					int bx = b.getX() - 60;
-					int by = b.getY() - 48;
 					// Status
 					engine.drawCircleMap(b.getX(), b.getY(), 100, Color.Teal,
 							false);
@@ -200,9 +199,10 @@ public class BaseManager implements Iterable<Base>, Debuggable {
 									+ b.getLastScouted());
 
 					// Command center
-					if (b.commandCenter != null) {
-						int tx = b.commandCenter.getTilePosition().getX();
-						int ty = b.commandCenter.getTilePosition().getY();
+					if (b.commandCenter.isPresent()) {
+						Unit c = b.commandCenter.get();
+						int tx = c.getTilePosition().getX();
+						int ty = c.getTilePosition().getY();
 						engine.drawBoxMap(tx * 32, ty * 32, (tx + 4) * 32,
 								(ty + 3) * 32, Color.Teal, false);
 					}

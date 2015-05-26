@@ -139,13 +139,14 @@ public class GameHandler {
 	 * */
 	public Set<Unit> getMyUnits() {
 		// Recompute my units
-		if (game.getAllUnits().hashCode() != myUnits.hashCode()) {
-			game.getAllUnits().stream()
-					.filter(u -> u.getPlayer() == getSelfPlayer())
+		List<Unit> allUnits = game.getAllUnits();
+		if (allUnits.hashCode() != myUnits.hashCode()) {
+			System.out.println("Recomputing myUnits..."); // TODO
+			allUnits.stream().filter(u -> u.getPlayer() == getSelfPlayer())
 					.collect(Collectors.toSet());
-			System.out.println("Recomputing myUnits...");
+			myUnitsHash = allUnits.hashCode();
 		} else {
-			System.out.println("Retrieving myUnits from cache!");
+			System.out.println("Retrieving myUnits from cache!"); // TODO
 		}
 		return myUnits;
 	}
