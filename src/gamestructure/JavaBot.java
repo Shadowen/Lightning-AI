@@ -144,19 +144,17 @@ public class JavaBot extends DefaultBWListener {
 					}
 				}
 			}
-			// // Auto train
-			// for (UnitType toTrain : buildManager.unitQueue)
-			// if (toTrain != null) {
-			// UnitType trainFrom = toTrain.whatBuilds(); // TODO
-			//
-			// // TODO only go through my units
-			// for (Unit u : game.getAllUnits()) {
-			// if (u.getType() == trainFrom && !u.isTraining()) {
-			// u.train(toTrain);
-			// break;
-			// }
-			// }
-			// }
+			// Auto train
+			for (UnitType toTrain : buildManager.unitQueue)
+				if (toTrain != null) {
+					UnitType trainFrom = toTrain.whatBuilds().first;
+					for (Unit u : game.getMyUnits()) {
+						if (u.getType() == trainFrom && !u.isTraining()) {
+							u.train(toTrain);
+							break;
+						}
+					}
+				}
 
 			// Draw debug information on screen
 			debugEngine.draw();

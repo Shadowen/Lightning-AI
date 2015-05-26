@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import bwapi.Game;
 import bwapi.Player;
@@ -13,11 +14,18 @@ import bwapi.UnitType;
 
 public class GameHandler {
 	private Game game;
+	/**
+	 * A cache keeping track of my units. Recomputed every time allUnits
+	 * changes.
+	 */
+	private Set<Unit> myUnits;
+	/** The hash code of allUnits at the time myUnits was last computed. */
+	private int myUnitsHash = 0;
 
 	public GameHandler(Game g) {
 		game = g;
 
-		game.setTextSize(1);
+		game.setTextSize(bwapi.Text.Size.Enum.Small);
 		// allow me to manually control units during the game
 		game.enableFlag(1);
 	}
@@ -121,6 +129,25 @@ public class GameHandler {
 
 	public List<Unit> getAllUnits() {
 		return game.getAllUnits();
+	}
+
+	/**
+	 * Get the set of units owned by me. Caches myUnits internally and
+	 * recomputes if allUnits has changed since the last invocation.
+	 * 
+	 * @return my units
+	 * */
+	public Set<Unit> getMyUnits() {
+		// Recompute my units
+		if (game.getAllUnits().hashCode() != myUnits.hashCode()) {
+			game.getAllUnits().stream()
+					.filter(u -> u.getPlayer() == getSelfPlayer())
+					.collect(Collectors.toSet());
+			System.out.println("Recomputing myUnits...");
+		} else {
+			System.out.println("Retrieving myUnits from cache!");
+		}
+		return myUnits;
 	}
 
 	public boolean isBuildable(int tileX, int tileY, boolean includeBuildings) {
