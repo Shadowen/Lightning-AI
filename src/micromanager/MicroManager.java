@@ -239,7 +239,7 @@ public class MicroManager implements Debuggable {
 			i.next().getValue().remove(unit);
 		}
 
-		if (scoutingUnit != null && unit == scoutingUnit) {
+		if (unit == scoutingUnit) {
 			scoutingUnit = null;
 			scoutPath = new ArrayDeque<Point>();
 		}

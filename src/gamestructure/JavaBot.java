@@ -1,7 +1,7 @@
 package gamestructure;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import micromanager.MicroManager;
 import pathfinder.PathingManager;
 import datastructure.Base;
@@ -22,7 +22,7 @@ public class JavaBot extends DefaultBWListener {
 	private GameHandler game;
 	private DebugEngine debugEngine;
 	// Only contains my units under construction
-	private List<Unit> unitsUnderConstruction;
+	private Set<Unit> unitsUnderConstruction;
 
 	private BotState botState;
 	private BaseManager baseManager;
@@ -57,7 +57,7 @@ public class JavaBot extends DefaultBWListener {
 			System.out.println("Map data ready");
 
 			// Initialize
-			unitsUnderConstruction = new ArrayList<Unit>();
+			unitsUnderConstruction = new HashSet<Unit>();
 
 			// Start all the modules
 			baseManager = new BaseManager(game, debugEngine);
@@ -266,7 +266,7 @@ public class JavaBot extends DefaultBWListener {
 	@Override
 	public void onSendText(String s) {
 		if (s.startsWith("/")) {
-			String[] command = s.substring(1).split(" ");
+			String[] command = s.toLowerCase().substring(1).split(" ");
 			debugEngine.onReceiveCommand(command);
 		}
 	}

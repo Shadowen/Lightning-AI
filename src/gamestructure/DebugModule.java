@@ -15,7 +15,8 @@ public abstract class DebugModule {
 	/**
 	 * The name of this DebugModule. It must be and can only be set during
 	 * construction. This is used when parsing commands to the
-	 * {@link #DebugEngine}.
+	 * {@link #DebugEngine}. This string must be kept in lower case by all
+	 * accessor methods.
 	 */
 	private final String name;
 	/**
@@ -34,7 +35,7 @@ public abstract class DebugModule {
 	 *            The name to use when referring to the module.
 	 */
 	public DebugModule(String iname) {
-		name = iname;
+		name = iname.toLowerCase();
 	}
 
 	/**

@@ -142,7 +142,7 @@ public class GameHandler {
 	public Set<Unit> getMyUnits() {
 		// Recompute my units
 		List<Unit> allUnits = game.getAllUnits();
-		if (allUnits.hashCode() != myUnits.hashCode()) {
+		if (allUnits.hashCode() != myUnitsHash) {
 			System.out.println("Recomputing myUnits..."); // TODO
 			allUnits.stream().filter(u -> u.getPlayer() == getSelfPlayer())
 					.collect(Collectors.toSet());

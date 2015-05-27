@@ -314,13 +314,13 @@ public class DebugEngine {
 	 *            The command being parsed, split by whitespace.
 	 */
 	public void onReceiveCommand(String[] command) {
-		if (command[0].equalsIgnoreCase("debug")) {
-			if (command[1].equalsIgnoreCase("all")) {
+		if (command[0].equals("debug")) {
+			if (command[1].equals("all")) {
 				for (DebugModule d : debugModules.values()) {
 					d.onReceiveCommand(command);
 				}
 			} else {
-				debugModules.getOrDefault(command[1],
+				debugModules.getOrDefault(command[1].toLowerCase(),
 						DebugModule.getNullModule()).onReceiveCommand(command);
 			}
 		}
