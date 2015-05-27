@@ -9,8 +9,10 @@ import java.util.stream.Collectors;
 
 import bwapi.Game;
 import bwapi.Player;
+import bwapi.TilePosition;
 import bwapi.Unit;
 import bwapi.UnitType;
+import bwapi.WalkPosition;
 
 public class GameHandler {
 	private Game game;
@@ -151,8 +153,20 @@ public class GameHandler {
 		return myUnits;
 	}
 
+	public boolean isBuildable(TilePosition position, boolean includeBuildings) {
+		return game.isBuildable(position, includeBuildings);
+	}
+
 	public boolean isBuildable(int tileX, int tileY, boolean includeBuildings) {
 		return game.isBuildable(tileX, tileY, includeBuildings);
+	}
+
+	public boolean isWalkable(WalkPosition position) {
+		return game.isWalkable(position);
+	}
+
+	public boolean isWalkable(int wx, int wy) {
+		return game.isWalkable(wx, wy);
 	}
 
 	public void sendText(String message) {

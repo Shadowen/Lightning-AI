@@ -1,23 +1,17 @@
 package gamestructure;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.function.Predicate;
-
 import micromanager.MicroManager;
 import pathfinder.PathingManager;
 import datastructure.Base;
 import datastructure.BaseManager;
 import datastructure.BuildManager;
-import datastructure.BuildingPlan;
 import datastructure.Resource;
 import botstate.BotState;
 import botstate.FirstFrameState;
 import bwapi.DefaultBWListener;
 import bwapi.Mirror;
-import bwapi.Player;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;

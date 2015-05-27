@@ -49,13 +49,10 @@ public class MicroManager implements Debuggable {
 	private double[][] targetMap;
 	private double[][] threatMap;
 	private static final long THREAT_MAP_REFRESH_DELAY = 1000;
-	private static final int MAX_ATTACK_RUN_ITERATIONS = 5;
 
 	private Base scoutingTarget;
 	private Queue<Point> scoutPath;
 	private Unit scoutingUnit;
-
-	private ArrayList<Worker> gasBlockers;
 
 	private HashMap<UnitType, HashMap<Integer, UnitAgent>> units;
 
@@ -135,62 +132,62 @@ public class MicroManager implements Debuggable {
 
 	public void act() {
 		// Move scouting unit(s)
-		// scout();
+		scout();
 	}
 
-	// private void scout() {
-	// // If I have no scouting unit assigned, don't scout
-	// if (scoutingUnit == null) {
-	// return;
-	// }
-	//
-	// // Acquire a target if necessary
-	// if (scoutingTarget == null
-	// || game.isVisible(scoutingTarget.getX() / 32,
-	// scoutingTarget.getY() / 32)) {
-	// scoutingTarget = getScoutingTarget();
-	// // Clear previous path
-	// scoutPath.clear();
-	// }
-	//
-	// try {
-	// // Issue commands as appropriate
-	// if (scoutingUnit != null && scoutingTarget != null) {
-	// if (scoutPath.size() < 15) {
-	// // Path planned is short
-	// scoutPath = pathingManager.findGroundPath(
-	// scoutingUnit.getX(), scoutingUnit.getY(),
-	// scoutingTarget.getX(), scoutingTarget.getY(),
-	// scoutingUnit.getType(), 256);
-	// }
-	//
-	// Point moveTarget;
-	// double distanceToCheckPoint;
-	// while (true) {
-	// moveTarget = scoutPath.element();
-	// distanceToCheckPoint = Point.distance(scoutingUnit.getX(),
-	// scoutingUnit.getY(), moveTarget.x, moveTarget.y);
-	//
-	// if (distanceToCheckPoint > 128) {
-	// // Recalculate a path
-	// scoutPath.clear();
-	// return;
-	// } else if (distanceToCheckPoint > 64) {
-	// // Keep following existing path
-	// break;
-	// } else {
-	// // Checkpoint
-	// scoutPath.remove();
-	// }
-	// }
-	//
-	// // Issue a movement command
-	// scoutingUnit.move(new Position(moveTarget.x, moveTarget.y));
-	// }
-	// } catch (NullPointerException e) {
-	// System.out.println("Pathfinder failed to find a path...");
-	// }
-	// }
+	private void scout() {
+		// If I have no scouting unit assigned, don't scout
+		if (scoutingUnit == null) {
+			return;
+		}
+
+		// Acquire a target if necessary
+		if (scoutingTarget == null
+				|| game.isVisible(scoutingTarget.getX() / 32,
+						scoutingTarget.getY() / 32)) {
+			scoutingTarget = getScoutingTarget();
+			// Clear previous path
+			scoutPath.clear();
+		}
+
+		try {
+			// Issue commands as appropriate
+			if (scoutingUnit != null && scoutingTarget != null) {
+				if (scoutPath.size() < 15) {
+					// Path planned is short
+					scoutPath = pathingManager.findGroundPath(
+							scoutingUnit.getX(), scoutingUnit.getY(),
+							scoutingTarget.getX(), scoutingTarget.getY(),
+							scoutingUnit.getType(), 256);
+				}
+
+				Point moveTarget;
+				double distanceToCheckPoint;
+				while (true) {
+					moveTarget = scoutPath.element();
+					distanceToCheckPoint = Point.distance(scoutingUnit.getX(),
+							scoutingUnit.getY(), moveTarget.x, moveTarget.y);
+
+					if (distanceToCheckPoint > 128) {
+						// Recalculate a path
+						scoutPath.clear();
+						return;
+					} else if (distanceToCheckPoint > 64) {
+						// Keep following existing path
+						break;
+					} else {
+						// Checkpoint
+						scoutPath.remove();
+					}
+				}
+
+				// Issue a movement command
+				scoutingUnit.move(new Position(moveTarget.x, moveTarget.y));
+			}
+		} catch (NullPointerException e) {
+			System.out.println("Pathfinder failed to find a path...");
+		}
+	}
 
 	private Base getScoutingTarget() {
 		Base target = null;
