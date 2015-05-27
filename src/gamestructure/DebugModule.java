@@ -18,7 +18,7 @@ public abstract class DebugModule {
 	 * {@link #DebugEngine}. This string must be kept in lower case by all
 	 * accessor methods.
 	 */
-	private final String name;
+	public final String name;
 	/**
 	 * Basic functionality for all DebugModules is activating and deactivating.
 	 * When this is true, the DebugModule will paint. When this is false, it
@@ -39,27 +39,18 @@ public abstract class DebugModule {
 	}
 
 	/**
-	 * Get the name assigned to this DebugModule.
-	 * 
-	 * @return The name of this DebugModule.
-	 */
-	public String getName() {
-		return name;
-	}
-
-	/**
 	 * Draws the DebugModule if and only if it is active by calling
 	 * {@link #draw}.
 	 * 
 	 * @param engine
 	 *            The engine to use to draw.
 	 * @throws ShapeOverflowException
-	 *             If the engine throws a ShapeOverflowException, it propogates
+	 *             If the engine throws a ShapeOverflowException, it propagates
 	 *             outward here.
 	 */
-	void drawIfActive(DebugEngine engine) throws ShapeOverflowException {
+	void drawIfActive(DebugEngine e) throws ShapeOverflowException {
 		if (active) {
-			draw(engine);
+			draw(e);
 		}
 	}
 
@@ -70,11 +61,11 @@ public abstract class DebugModule {
 	 * @param engine
 	 *            The engine to use to draw.
 	 * @throws ShapeOverflowException
-	 *             If the engine throws a ShapeOverflowException, it propogates
+	 *             If the engine throws a ShapeOverflowException, it propagates
 	 *             outward here.
 	 */
-	protected abstract void draw(DebugEngine engine)
-			throws ShapeOverflowException;
+	protected void draw(DebugEngine e) throws ShapeOverflowException {
+	}
 
 	/**
 	 * This function is called when a command prefixed with the module's name is
@@ -82,14 +73,19 @@ public abstract class DebugModule {
 	 * commands.
 	 * 
 	 * @param command
-	 *            The line of commands received. The line is seperated by
+	 *            The line of commands received. The line is separated by
 	 *            whitespace into the array.
 	 *            <ul>
-	 *            <li><b>command[0]</b> is always "debug".</li>
-	 *            <li><b>command[1]</b> is either the module's name or "all".</li>
+	 *            <li><b>command[0]</b> is either the module's name or "all".</li>
 	 *            </ul>
+	 * @param engine
+	 *            The engine to use to draw.
+	 * @throws ShapeOverflowException
+	 *             If the engine throws a ShapeOverflowException, it propagates
+	 *             outward here.
 	 */
-	public void onReceiveCommand(String[] command) {
+	protected void onReceiveCommand(String[] command, DebugEngine engine)
+			throws ShapeOverflowException {
 		active = !active;
 	}
 
@@ -97,10 +93,7 @@ public abstract class DebugModule {
 	 * The null module is a debugModule designed to absorb any function calls
 	 * with no side effects.
 	 */
-	private static DebugModule nullModule = new DebugModule("Null Module") {
-		@Override
-		public void draw(DebugEngine engine) throws ShapeOverflowException {
-		}
+	private static final DebugModule nullModule = new DebugModule("null") {
 	};
 
 	/**
@@ -109,7 +102,7 @@ public abstract class DebugModule {
 	 * 
 	 * @return the null debugModule.
 	 */
-	public static DebugModule getNullModule() {
+	public static final DebugModule getNullModule() {
 		return nullModule;
 	}
 }

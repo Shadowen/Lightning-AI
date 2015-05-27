@@ -1,8 +1,11 @@
 package gamestructure;
 
 import java.awt.Point;
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import bwapi.Color;
 import bwapi.Game;
@@ -10,30 +13,7 @@ import bwapi.Game;
 public class DebugEngine {
 	/** The game being acted on **/
 	private Game game;
-	public Map<String, DebugModule> debugModules;
-
-	/**
-	 * Construct a DebugEngine for the specified game.
-	 * 
-	 * @param igame
-	 *            The game to debug for.
-	 */
-	public DebugEngine(Game igame) {
-		game = igame;
-		debugModules = new HashMap<String, DebugModule>();
-
-		// Debugger debugger
-		registerDebugModule(new DebugModule("shapecount") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawTextScreen(400, 100,
-						"Debug Shapes: " + String.valueOf(shapeCount + 1) + "/"
-								+ MAX_SHAPES);
-				// Reset the shapecount
-				shapeCount = 0;
-			}
-		});
-	}
+	private Map<String, DebugModule> debugModules;
 
 	/***
 	 * The number of shapes drawn so far in the current frame. If
@@ -49,32 +29,77 @@ public class DebugEngine {
 	private static final int MAX_SHAPES = 26000;
 
 	/**
+	 * Construct a DebugEngine for the specified game.
+	 * 
+	 * @param igame
+	 *            The game to debug for.
+	 */
+	protected DebugEngine(Game igame) {
+		game = igame;
+		debugModules = new HashMap<String, DebugModule>();
+
+		// Debugger debugger
+		registerDebugModule(new DebugModule("shapecount") {
+			@Override
+			public void draw(DebugEngine engine) throws ShapeOverflowException {
+				engine.drawTextScreen(400, 100,
+						"Debug Shapes: " + String.valueOf(shapeCount + 1) + "/"
+								+ MAX_SHAPES);
+				// Reset the shapecount
+				shapeCount = 0;
+			}
+		});
+		// Debugger help
+		registerDebugModule(new DebugModule("help") {
+			private final String[] defaultCommand = { "help" };
+
+			@Override
+			public void onReceiveCommand(String[] command, DebugEngine e)
+					throws ShapeOverflowException {
+				if (command.length == 1) {
+					e.sendText("Type \"/help <name>\" for more information on a specific module.");
+					e.sendText("Type \"/help modules\" for a complete list of modules.");
+				} else {
+					switch (command[1]) {
+					case "modules":
+						debugModules.forEach((k, v) -> e.sendText(k));
+					default:
+						e.sendText("Unknown command \"" + command + "\"");
+						onReceiveCommand(defaultCommand, e);
+					}
+				}
+			}
+		});
+	}
+
+	/**
 	 * Add a debugModule to the debugEngine.
 	 * 
 	 * @param debugModule
 	 *            The module to be added.
 	 */
 	public void registerDebugModule(DebugModule debugModule) {
-		debugModules.put(debugModule.getName(), debugModule);
+		debugModules.put(debugModule.name, debugModule);
 	}
 
 	/**
 	 * Iterate through the {@link #debugModules} and tell each one to
 	 * {@link DebugModule#draw}.
 	 */
-	public void draw() {
+	protected void draw() {
 		// Try to draw all of the debugModules. If we are interrupted by too
 		// many objects attempting to draw, then print the stack trace.
-		try {
-			for (DebugModule d : debugModules.values()) {
+		for (DebugModule d : debugModules.values()) {
+			try {
 				d.drawIfActive(this);
+			} catch (ShapeOverflowException soe) {
+				// Someone attempted to draw a lot of shapes!
+				soe.printStackTrace();
+				// Get the actual debugModule that caused the overflow and
+				// print it.
+				game.sendText(d.name);
+				break;
 			}
-		} catch (ShapeOverflowException soe) {
-			// Someone attempted to draw a lot of shapes!
-			soe.printStackTrace();
-			// Get the actual debugModule that caused the overflow and
-			// print it.
-			game.sendText(soe.getMessage());
 		}
 	}
 
@@ -274,36 +299,46 @@ public class DebugEngine {
 		// Math at:
 		// http://stackoverflow.com/questions/10316180/how-to-calculate-the-coordinates-of-a-arrowhead-based-on-the-arrow
 
-		double length = Point.distance(x1, y1, x2, y2);
+		final double length = Point.distance(x1, y1, x2, y2);
 		// Handle null lines
 		if (length == 0) {
 			drawDotMap(x1, y1, color);
 			return;
 		}
 
-		double arrowheadLength = length / 3;
-		double arrowheadHalfWidth = length / 3;
+		final double arrowheadLength = length / 3;
+		final double arrowheadHalfWidth = length / 3;
 		drawLineMap(x1, y1, x2, y2, color);
 
 		// Calculate the arrowhead
 		// u is collinear
-		double ux = (x2 - x1) / length;
-		double uy = (y2 - y1) / length;
+		final double ux = (x2 - x1) / length;
+		final double uy = (y2 - y1) / length;
 		// v is perpendicular
-		double vx = -uy;
-		double vy = ux;
+		final double vx = -uy;
+		final double vy = ux;
 		// The first line
-		int a1x = (int) Math.round(x2 - arrowheadLength * ux
+		final int a1x = (int) Math.round(x2 - arrowheadLength * ux
 				+ arrowheadHalfWidth * vx);
-		int a1y = (int) Math.round(y2 - arrowheadLength * uy
+		final int a1y = (int) Math.round(y2 - arrowheadLength * uy
 				+ arrowheadHalfWidth * vy);
 		drawLineMap(x2, y2, a1x, a1y, color);
 		// The second line
-		int a2x = (int) Math.round(x2 - arrowheadLength * ux
+		final int a2x = (int) Math.round(x2 - arrowheadLength * ux
 				- arrowheadHalfWidth * vx);
-		int a2y = (int) Math.round(y2 - arrowheadLength * uy
+		final int a2y = (int) Math.round(y2 - arrowheadLength * uy
 				- arrowheadHalfWidth * vy);
 		drawLineMap(x2, y2, a2x, a2y, color);
+	}
+
+	/**
+	 * Send the given text in chat.
+	 * 
+	 * @param string
+	 *            the text to send
+	 */
+	public void sendText(String string) {
+		game.sendText(string);
 	}
 
 	/**
@@ -313,15 +348,24 @@ public class DebugEngine {
 	 * @param command
 	 *            The command being parsed, split by whitespace.
 	 */
-	public void onReceiveCommand(String[] command) {
-		if (command[0].equals("debug")) {
-			if (command[1].equals("all")) {
-				for (DebugModule d : debugModules.values()) {
-					d.onReceiveCommand(command);
+	protected void onReceiveCommand(String[] command) {
+		if (command[0].equals("all")) {
+			try {
+				for (DebugModule v : debugModules.values()) {
+					v.onReceiveCommand(command, this);
 				}
-			} else {
-				debugModules.getOrDefault(command[1].toLowerCase(),
-						DebugModule.getNullModule()).onReceiveCommand(command);
+			} catch (ShapeOverflowException e) {
+				e.printStackTrace();
+				// TODO
+			}
+		} else {
+			try {
+				debugModules.getOrDefault(command[0].toLowerCase(),
+						DebugModule.getNullModule()).onReceiveCommand(command,
+						this);
+			} catch (ShapeOverflowException e) {
+				e.printStackTrace();
+				// TODO
 			}
 		}
 	}

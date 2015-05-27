@@ -2,6 +2,7 @@ package gamestructure;
 
 import java.util.HashSet;
 import java.util.Set;
+
 import micromanager.MicroManager;
 import pathfinder.PathingManager;
 import datastructure.Base;
