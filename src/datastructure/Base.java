@@ -14,8 +14,6 @@ import bwta.BaseLocation;
 import gamestructure.GameHandler;
 
 public class Base {
-	private GameHandler game;
-
 	public List<MineralResource> minerals;
 	public List<GasResource> gas;
 	public List<Worker> workers;
@@ -26,16 +24,14 @@ public class Base {
 	// When the base was last scouted, in game frames
 	private long lastScouted;
 
-	public Base(GameHandler g, BaseLocation l) {
-		game = g;
-
+	public Base(BaseLocation l) {
 		workers = new ArrayList<Worker>();
 		location = l;
 
 		minerals = new ArrayList<MineralResource>();
 		gas = new ArrayList<GasResource>();
 
-		setPlayer(g.getNeutralPlayer());
+		setPlayer(GameHandler.getNeutralPlayer());
 		lastScouted = 0;
 	}
 
@@ -121,22 +117,19 @@ public class Base {
 	}
 
 	public void addWorker(Unit unit) {
-		Worker w = new Worker(game, unit);
+		Worker w = new Worker(unit);
 		w.setBase(this);
 		w.setTask(WorkerTask.Mining_Minerals, null);
 		workers.add(w); // TODO figure out what to do with unitID
 	}
 
 	public boolean removeWorker(final Unit unit) {
-		return workers.removeIf(new Predicate<Worker>() {
-			@Override
-			public boolean test(Worker t) {
-				if (t.getUnit() == unit) {
-					t.unitDestroyed();
-					return true;
-				}
-				return false;
+		return workers.removeIf((w) -> {
+			if (w.getUnit() == unit) {
+				w.unitDestroyed();
+				return true;
 			}
+			return false;
 		});
 	}
 
@@ -146,7 +139,7 @@ public class Base {
 
 	public void setPlayer(Player p) {
 		player = p;
-		lastScouted = game.getFrameCount();
+		lastScouted = GameHandler.getFrameCount();
 	}
 
 	public Player getPlayer() {
@@ -157,7 +150,7 @@ public class Base {
 	 * Set the last scouted timer to the current time in frames.
 	 */
 	public void setLastScouted() {
-		lastScouted = game.getFrameCount();
+		lastScouted = GameHandler.getFrameCount();
 	}
 
 	/**
@@ -168,8 +161,8 @@ public class Base {
 	 */
 	public long getLastScouted() {
 		TilePosition tp = location.getTilePosition();
-		if (game.isVisible(tp.getX(), tp.getY())) {
-			lastScouted = game.getFrameCount();
+		if (GameHandler.isVisible(tp.getX(), tp.getY())) {
+			lastScouted = GameHandler.getFrameCount();
 		}
 		return lastScouted;
 	}

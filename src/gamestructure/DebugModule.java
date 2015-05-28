@@ -47,9 +47,9 @@ public abstract class DebugModule {
 	 *             If the engine throws a ShapeOverflowException, it propagates
 	 *             outward here.
 	 */
-	void drawIfActive(DebugEngine e) throws ShapeOverflowException {
+	void drawIfActive() throws ShapeOverflowException {
 		if (active) {
-			draw(e);
+			draw();
 		}
 	}
 
@@ -63,7 +63,7 @@ public abstract class DebugModule {
 	 *             If the engine throws a ShapeOverflowException, it propagates
 	 *             outward here.
 	 */
-	protected void draw(DebugEngine e) throws ShapeOverflowException {
+	protected void draw() throws ShapeOverflowException {
 	}
 
 	/**
@@ -83,7 +83,7 @@ public abstract class DebugModule {
 	 *             If the engine throws a ShapeOverflowException, it propagates
 	 *             outward here.
 	 */
-	protected void onReceiveCommand(String[] command, DebugEngine engine)
+	protected void onReceiveCommand(String[] command)
 			throws ShapeOverflowException {
 		active = !active;
 	}

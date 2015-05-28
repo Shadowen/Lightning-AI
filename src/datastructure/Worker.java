@@ -9,13 +9,11 @@ public class Worker {
 	private Unit unit;
 
 	private Resource currentResource;
-	private GameHandler game;
 
 	private WorkerTask currentTask;
 	private Base base;
 
-	public Worker(GameHandler g, Unit u) {
-		game = g;
+	public Worker(Unit u) {
 		unit = u;
 	}
 
@@ -39,7 +37,7 @@ public class Worker {
 		} else if (r instanceof GasResource) {
 			setTask(WorkerTask.Mining_Gas, r);
 		} else {
-			game.sendText("Error in gathering");
+			GameHandler.sendText("Error in gathering");
 			setTask(WorkerTask.SCOUTING, null);
 		}
 	}

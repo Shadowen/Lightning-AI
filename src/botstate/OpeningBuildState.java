@@ -1,5 +1,7 @@
 package botstate;
 
+import datastructure.BuildManager;
+import gamestructure.GameHandler;
 import bwapi.Unit;
 import bwapi.UnitType;
 
@@ -12,16 +14,17 @@ public class OpeningBuildState extends BotState {
 	@Override
 	public BotState act() {
 		// Add barracks at 11 supply
-		if (game.getSelfPlayer().supplyUsed() / 2 == 11) {
+		if (GameHandler.getSelfPlayer().supplyUsed() / 2 == 11) {
 			// Check that it's not already in the queue
-			if (!buildManager.isInQueue(UnitType.Terran_Barracks)) {
-				buildManager.addToQueue(UnitType.Terran_Barracks);
+			if (!BuildManager.isInQueue(UnitType.Terran_Barracks)) {
+				BuildManager.addToQueue(UnitType.Terran_Barracks);
 			}
 		}
 
 		return this;
 	}
 
+	@Override
 	public BotState unitComplete(Unit unit) {
 		if (unit.getType() == UnitType.Terran_Barracks) {
 			return new MassMarineState(this);

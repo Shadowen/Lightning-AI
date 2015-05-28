@@ -22,28 +22,22 @@ import bwta.BWTA;
 import bwta.Chokepoint;
 import gamestructure.DebugEngine;
 import gamestructure.DebugModule;
-import gamestructure.Debuggable;
 import gamestructure.GameHandler;
 import gamestructure.ShapeOverflowException;
 
-public class PathingManager implements Debuggable {
+public class PathingManager {
 	private static final int MAX_RAMP_WALK_TILES = 500;
-	private GameHandler game;
-	private BaseManager baseManager;
 
-	private ArrayList<ArrayList<Node>> walkableNodes;
-	private int mapWalkWidth;
-	private int mapWalkHeight;
+	private static ArrayList<ArrayList<Node>> walkableNodes;
+	private static int mapWalkWidth;
+	private static int mapWalkHeight;
 
 	// A list of tiles detailing a path into the main from the choke
-	private Queue<Point> pathIntoMain;
-	private Point topOfRamp;
-	private List<Point> chokeRampWalkTiles;
+	private static Queue<Point> pathIntoMain;
+	private static Point topOfRamp;
+	private static List<Point> chokeRampWalkTiles;
 
-	public PathingManager(GameHandler g, BaseManager bm, DebugEngine debugEngine) {
-		game = g;
-		baseManager = bm;
-
+	static {
 		mapWalkWidth = 0; // TODO
 		mapWalkHeight = 0; // TODO
 
@@ -56,19 +50,23 @@ public class PathingManager implements Debuggable {
 			}
 		}
 
-		registerDebugFunctions(debugEngine);
+		registerDebugFunctions();
 	}
 
-	public void findChokeToMain() {
-		Chokepoint choke = BWTA.getNearestChokepoint(baseManager.main
+	/** This constructor should never be used. */
+	private PathingManager() {
+	}
+
+	public static void findChokeToMain() {
+		Chokepoint choke = BWTA.getNearestChokepoint(BaseManager.main
 				.getLocation().getTilePosition());
 		// Find the path into the main
-		pathIntoMain = findGroundPath(choke.getCenter(), baseManager.main
+		pathIntoMain = findGroundPath(choke.getCenter(), BaseManager.main
 				.getLocation().getPosition(), UnitType.Zerg_Zergling);
 
 		// Find top of ramp
 		for (Point p : pathIntoMain) {
-			if (game.isBuildable(p.x / 32, p.y / 32, false)) {
+			if (GameHandler.isBuildable(p.x / 32, p.y / 32, false)) {
 				topOfRamp = p;
 				break;
 			}
@@ -90,9 +88,9 @@ public class PathingManager implements Debuggable {
 				.getCenter().getY() / 8));
 		while (!rampWalkTileOpenSet.isEmpty()) {
 			Point currentNode = rampWalkTileOpenSet.poll();
-			if (game.isWalkable(currentNode.x, currentNode.y)
-					&& !game.isBuildable(currentNode.x / 4, currentNode.y / 4,
-							false)) {
+			if (GameHandler.isWalkable(currentNode.x, currentNode.y)
+					&& !GameHandler.isBuildable(currentNode.x / 4,
+							currentNode.y / 4, false)) {
 				chokeRampWalkTiles.add(new Point(currentNode.x, currentNode.y));
 				Point nextNode;
 				nextNode = new Point(currentNode.x - 1, currentNode.y);
@@ -125,19 +123,19 @@ public class PathingManager implements Debuggable {
 		}
 	}
 
-	private Queue<Point> findGroundPath(Position start, Position end,
+	private static Queue<Point> findGroundPath(Position start, Position end,
 			UnitType unitType) {
 		return findGroundPath(start.getX(), start.getY(), end.getX(),
 				end.getY(), unitType);
 	}
 
-	public Queue<Point> findGroundPath(int startx, int starty, int endx,
+	public static Queue<Point> findGroundPath(int startx, int starty, int endx,
 			int endy, UnitType unitType) {
 		return findGroundPath(startx, starty, endx, endy, unitType,
 				Integer.MAX_VALUE);
 	}
 
-	public Queue<Point> findGroundPath(int startx, int starty, int endx,
+	public static Queue<Point> findGroundPath(int startx, int starty, int endx,
 			int endy, UnitType type, int length) {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
@@ -151,9 +149,9 @@ public class PathingManager implements Debuggable {
 			}
 		}
 		// Avoid cliffs
-		for (int wx = 0; wx < game.getMapWidth() * 4; wx++) {
-			for (int wy = 0; wy < game.getMapHeight() * 4; wy++) {
-				if (!game.isWalkable(wx, wy)) {
+		for (int wx = 0; wx < GameHandler.getMapWidth() * 4; wx++) {
+			for (int wy = 0; wy < GameHandler.getMapHeight() * 4; wy++) {
+				if (!GameHandler.isWalkable(wx, wy)) {
 					for (int iwx = Math.max(wx - 3, 0); iwx < Math.min(wx + 3,
 							mapWalkWidth); iwx++) {
 						for (int iwy = Math.max(wy - 3, 0); iwy < Math.min(
@@ -165,7 +163,7 @@ public class PathingManager implements Debuggable {
 			}
 		}
 		// Avoid buildings
-		for (Unit u : game.getAllUnits()) {
+		for (Unit u : GameHandler.getAllUnits()) {
 			UnitType utype = u.getType();
 			if (!utype.canMove()) {
 				int uwidth = utype.tileWidth();
@@ -231,7 +229,7 @@ public class PathingManager implements Debuggable {
 		throw new NullPointerException();
 	}
 
-	private List<Node> getNeighbors(int x, int y) {
+	private static List<Node> getNeighbors(int x, int y) {
 		List<Node> neighbors = new ArrayList<Node>();
 
 		// NORTH
@@ -270,7 +268,8 @@ public class PathingManager implements Debuggable {
 		return neighbors;
 	}
 
-	private Deque<Point> reconstructPath(Deque<Point> path, Node finalNode) {
+	private static Deque<Point> reconstructPath(Deque<Point> path,
+			Node finalNode) {
 		path.push(new Point(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
 
 		// Base case
@@ -280,50 +279,48 @@ public class PathingManager implements Debuggable {
 		return reconstructPath(path, finalNode.parent);
 	}
 
-	public void registerDebugFunctions(DebugEngine debugEngine) {
+	public static void registerDebugFunctions() {
 		// Label all chokes
-		debugEngine.registerDebugModule(new DebugModule("choke") {
+		DebugEngine.registerDebugModule(new DebugModule("choke") {
 			private boolean draw;
 			private boolean path;
 			private boolean ramp;
 
-			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
 				if (draw) {
 					int i = 0;
 					for (Chokepoint choke : BWTA.getChokepoints()) {
-						engine.drawTextMap(choke.getCenter().getX() - 10, choke
-								.getCenter().getY() - 20, "Choke " + i);
-						engine.drawTextMap(choke.getCenter().getX() - 10, choke
-								.getCenter().getY() - 10,
-								"Radius " + choke.getWidth());
+						DebugEngine.drawTextMap(choke.getCenter().getX() - 10,
+								choke.getCenter().getY() - 20, "Choke " + i);
+						DebugEngine.drawTextMap(choke.getCenter().getX() - 10,
+								choke.getCenter().getY() - 10, "Radius "
+										+ choke.getWidth());
 						i++;
 					}
 				}
 
 				if (path) {
 					for (Point location : pathIntoMain) {
-						engine.drawBoxMap(location.x + 1, location.y + 1,
+						DebugEngine.drawBoxMap(location.x + 1, location.y + 1,
 								location.x + 6, location.y + 6, Color.Grey,
 								false);
 					}
-					engine.drawBoxMap(topOfRamp.x + 1, topOfRamp.y + 1,
+					DebugEngine.drawBoxMap(topOfRamp.x + 1, topOfRamp.y + 1,
 							topOfRamp.x + 6, topOfRamp.y + 6, Color.Red, false);
 				}
 
 				if (ramp) {
 					for (Point location : chokeRampWalkTiles) {
-						engine.drawBoxMap(location.x * 8, location.y * 8,
+						DebugEngine.drawBoxMap(location.x * 8, location.y * 8,
 								location.x * 8 + 8, location.y * 8 + 8,
 								Color.Green, false);
 					}
 				}
 			}
 
-			@Override
 			protected void onReceiveCommand(String[] command, DebugEngine engine)
 					throws ShapeOverflowException {
-				super.onReceiveCommand(command, debugEngine);
+				super.onReceiveCommand(command);
 				if (command[1].equalsIgnoreCase("draw")) {
 					draw = !draw;
 				} else if (command[1].equalsIgnoreCase("path")) {

@@ -1,5 +1,11 @@
 package botstate;
 
+import java.util.Optional;
+
+import micromanager.MicroManager;
+import gamestructure.GameHandler;
+import datastructure.BaseManager;
+import datastructure.BuildManager;
 import datastructure.Worker;
 import datastructure.WorkerTask;
 import bwapi.Unit;
@@ -16,57 +22,55 @@ public class StarportRush extends BotState {
 	@Override
 	public BotState act() {
 		// Check the build order
-		int supply = game.getSelfPlayer().supplyUsed() / 2;
+		int supply = GameHandler.getSelfPlayer().supplyUsed() / 2;
 		if (previousSupply < supply) {
 			switch (supply) {
 			case 9:
-				buildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
+				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
 				break;
 			case 11:
-				buildManager.setMinimum(UnitType.Terran_Barracks, 1);
-				if (!microManager.isScouting()) {
-					Worker w = baseManager.getBuilder();
-					if (w == null) {
-						game.sendText("Can't scout since no workers available!");
+				BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
+				if (!MicroManager.isScouting()) {
+					Optional<Worker> w = BaseManager.getBuilder();
+					if (!w.isPresent()) {
+						GameHandler
+								.sendText("Can't scout since no workers available!");
 					} else {
-						// w.setTask(WorkerTask.SCOUTING, null);
-						// microManager.setScoutingUnit(w.getUnit());
+						// w.get().setTask(WorkerTask.SCOUTING, null);
+						// microManager.setScoutingUnit(w.get().getUnit());
 					}
 				}
 				break;
 			case 12:
-				buildManager.setMinimum(UnitType.Terran_Refinery, 1);
+				BuildManager.setMinimum(UnitType.Terran_Refinery, 1);
 				break;
 			case 13:
-				buildManager.setMinimum(UnitType.Terran_Supply_Depot, 2);
+				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 2);
 				break;
 			case 16:
-				buildManager.setMinimum(UnitType.Terran_Factory, 1);
-				buildManager.addToQueue(UnitType.Terran_Vulture, 2);
+				BuildManager.setMinimum(UnitType.Terran_Factory, 1);
+				BuildManager.addToQueue(UnitType.Terran_Vulture, 2);
 				break;
 			case 22:
-				buildManager.setMinimum(UnitType.Terran_Starport, 2);
-				buildManager.setMinimum(UnitType.Terran_Supply_Depot, 3);
-				buildManager.setMinimum(UnitType.Terran_Wraith, 50);
+				BuildManager.setMinimum(UnitType.Terran_Starport, 2);
+				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 3);
+				BuildManager.setMinimum(UnitType.Terran_Wraith, 50);
 				break;
 			case 30:
-				buildManager.setMinimum(UnitType.Terran_Supply_Depot, 4);
+				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 4);
 				break;
 			}
 		}
 		previousSupply = supply;
 
 		if (supply > 30) {
-			int numSupplyDepots = buildManager
+			int numSupplyDepots = BuildManager
 					.getMyUnitCount(UnitType.Terran_Supply_Depot);
-			buildManager
-					.setMinimum(
-							UnitType.Terran_Supply_Depot,
-							numSupplyDepots
-									+ (supply
-											- game.getSelfPlayer()
-													.supplyTotal() / 2 + 4) > 0 ? 1
-									: 0);
+			BuildManager.setMinimum(UnitType.Terran_Supply_Depot,
+					numSupplyDepots
+							+ (supply
+									- GameHandler.getSelfPlayer().supplyTotal()
+									/ 2 + 4) > 0 ? 1 : 0);
 		}
 		return this;
 	}
@@ -75,11 +79,13 @@ public class StarportRush extends BotState {
 	public BotState unitComplete(Unit unit) {
 		UnitType unitType = unit.getType();
 		if (unitType.isRefinery()) {
+			// TODO put just enough workers on gas immediately according to
+			// strategy
 			for (int i = 0; i < 2; i++) {
-				baseManager.getBuilder().gather(baseManager.getResource(unit));
+				BaseManager.getBuilder().ifPresent(
+						w -> w.gather(BaseManager.getResource(unit)));
 			}
 		}
 		return this;
 	}
-
 }
