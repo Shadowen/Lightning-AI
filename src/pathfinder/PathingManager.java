@@ -20,13 +20,14 @@ import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
 import bwta.Chokepoint;
-import gamestructure.DebugEngine;
-import gamestructure.DebugModule;
-import gamestructure.Debuggable;
 import gamestructure.GameHandler;
-import gamestructure.ShapeOverflowException;
+import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugModule;
+import gamestructure.debug.Debuggable;
+import gamestructure.debug.ShapeOverflowException;
 
 public class PathingManager implements Debuggable {
+
 	private static final int MAX_RAMP_WALK_TILES = 500;
 	private GameHandler game;
 	private BaseManager baseManager;
@@ -282,14 +283,15 @@ public class PathingManager implements Debuggable {
 
 	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Label all chokes
-		debugEngine.registerDebugModule(new DebugModule("choke") {
-			private boolean draw;
-			private boolean path;
-			private boolean ramp;
+		debugEngine.registerDebugModule(new ChokeDebugModule("choke"));
+	}
 
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				if (draw) {
+	private final class ChokeDebugModule extends DebugModule {
+		private ChokeDebugModule(String iname) {
+			super(iname);
+			addSubmodule(new DebugModule("draw") {
+				public void draw(DebugEngine engine)
+						throws ShapeOverflowException {
 					int i = 0;
 					for (Chokepoint choke : BWTA.getChokepoints()) {
 						engine.drawTextMap(choke.getCenter().getX() - 10, choke
@@ -300,8 +302,10 @@ public class PathingManager implements Debuggable {
 						i++;
 					}
 				}
-
-				if (path) {
+			});
+			addSubmodule(new DebugModule("path") {
+				public void draw(DebugEngine engine)
+						throws ShapeOverflowException {
 					for (Point location : pathIntoMain) {
 						engine.drawBoxMap(location.x + 1, location.y + 1,
 								location.x + 6, location.y + 6, Color.Grey,
@@ -310,28 +314,17 @@ public class PathingManager implements Debuggable {
 					engine.drawBoxMap(topOfRamp.x + 1, topOfRamp.y + 1,
 							topOfRamp.x + 6, topOfRamp.y + 6, Color.Red, false);
 				}
-
-				if (ramp) {
+			});
+			subModules.add(new DebugModule("ramp") {
+				public void draw(DebugEngine engine)
+						throws ShapeOverflowException {
 					for (Point location : chokeRampWalkTiles) {
 						engine.drawBoxMap(location.x * 8, location.y * 8,
 								location.x * 8 + 8, location.y * 8 + 8,
 								Color.Green, false);
 					}
 				}
-			}
-
-			@Override
-			protected void onReceiveCommand(String[] command, DebugEngine engine)
-					throws ShapeOverflowException {
-				super.onReceiveCommand(command, debugEngine);
-				if (command[1].equalsIgnoreCase("draw")) {
-					draw = !draw;
-				} else if (command[1].equalsIgnoreCase("path")) {
-					path = !path;
-				} else if (command[1].equalsIgnoreCase("ramp")) {
-					ramp = !ramp;
-				}
-			}
-		});
+			});
+		}
 	}
 }

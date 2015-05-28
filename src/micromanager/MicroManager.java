@@ -32,11 +32,11 @@ import bwapi.Unit;
 import bwapi.UnitType;
 import bwapi.WeaponType;
 import bwta.BWTA;
-import gamestructure.DebugEngine;
-import gamestructure.DebugModule;
-import gamestructure.Debuggable;
 import gamestructure.GameHandler;
-import gamestructure.ShapeOverflowException;
+import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugModule;
+import gamestructure.debug.Debuggable;
+import gamestructure.debug.ShapeOverflowException;
 
 public class MicroManager implements Debuggable {
 

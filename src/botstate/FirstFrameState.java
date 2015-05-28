@@ -7,8 +7,8 @@ import datastructure.BaseManager;
 import datastructure.BuildManager;
 import bwta.BWTA;
 import bwta.BaseLocation;
-import gamestructure.DebugEngine;
 import gamestructure.GameHandler;
+import gamestructure.debug.DebugEngine;
 
 public class FirstFrameState extends BotState {
 

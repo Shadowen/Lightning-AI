@@ -1,6 +1,14 @@
 package gamestructure;
 
+import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugModule;
+import gamestructure.debug.ShapeOverflowException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import micromanager.MicroManager;
@@ -267,7 +275,8 @@ public class JavaBot extends DefaultBWListener {
 	@Override
 	public void onSendText(String s) {
 		if (s.startsWith("/")) {
-			String[] command = s.substring(1).split(" ");
+			List<String> command = new ArrayList<>(Arrays.asList(s.substring(1)
+					.split(" ")));
 			debugEngine.onReceiveCommand(command);
 		}
 	}

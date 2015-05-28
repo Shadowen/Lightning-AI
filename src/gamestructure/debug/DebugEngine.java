@@ -1,12 +1,9 @@
-package gamestructure;
+package gamestructure.debug;
 
 import java.awt.Point;
-import java.lang.reflect.Array;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 import bwapi.Color;
 import bwapi.Game;
 
@@ -34,42 +31,30 @@ public class DebugEngine {
 	 * @param igame
 	 *            The game to debug for.
 	 */
-	protected DebugEngine(Game igame) {
+	public DebugEngine(Game igame) {
 		game = igame;
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger debugger
-		registerDebugModule(new DebugModule("shapecount") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawTextScreen(400, 100,
-						"Debug Shapes: " + String.valueOf(shapeCount + 1) + "/"
-								+ MAX_SHAPES);
-				// Reset the shapecount
-				shapeCount = 0;
-			}
-		});
+		registerDebugModule("shapecount").setDraw(
+				(e) -> {
+					e.drawTextScreen(400, 100,
+							"Debug Shapes: " + String.valueOf(shapeCount + 1)
+									+ "/" + MAX_SHAPES);
+					// Reset the shapecount
+					shapeCount = 0;
+				});
 		// Debugger help
-		registerDebugModule(new DebugModule("help") {
-			private final String[] defaultCommand = { "help" };
-
-			@Override
-			public void onReceiveCommand(String[] command, DebugEngine e)
-					throws ShapeOverflowException {
-				if (command.length == 1) {
-					e.sendText("Type \"/help <name>\" for more information on a specific module.");
-					e.sendText("Type \"/help modules\" for a complete list of modules.");
-				} else {
-					switch (command[1]) {
-					case "modules":
-						debugModules.forEach((k, v) -> e.sendText(k));
-					default:
-						e.sendText("Unknown command \"" + command + "\"");
-						onReceiveCommand(defaultCommand, e);
-					}
-				}
-			}
-		});
+		registerDebugModule("help")
+				.addCommand(
+						null,
+						(c, e) -> {
+							e.sendText("Type \"/help <name>\" for more information on a specific module.");
+							e.sendText("Type \"/help modules\" for a complete list of modules.");
+						})
+				.addAlias("help")
+				.addCommand("modules",
+						(c, e) -> debugModules.forEach((k, v) -> e.sendText(k)));
 	}
 
 	/**
@@ -78,15 +63,17 @@ public class DebugEngine {
 	 * @param debugModule
 	 *            The module to be added.
 	 */
-	public void registerDebugModule(DebugModule debugModule) {
-		debugModules.put(debugModule.name, debugModule);
+	public DebugModule registerDebugModule(String name) {
+		DebugModule dm = new DebugModule(name, this);
+		debugModules.put(name, dm);
+		return dm;
 	}
 
 	/**
 	 * Iterate through the {@link #debugModules} and tell each one to
 	 * {@link DebugModule#draw}.
 	 */
-	protected void draw() {
+	public void draw() {
 		// Try to draw all of the debugModules. If we are interrupted by too
 		// many objects attempting to draw, then print the stack trace.
 		for (DebugModule d : debugModules.values()) {
@@ -347,25 +334,21 @@ public class DebugEngine {
 	 * 
 	 * @param command
 	 *            The command being parsed, split by whitespace.
+	 * @throws InvalidCommandException
+	 *             if the command cannot be parsed
 	 */
-	protected void onReceiveCommand(String[] command) {
-		if (command[0].equalsIgnoreCase("all")) {
-			try {
-				for (DebugModule v : debugModules.values()) {
-					v.onReceiveCommand(command, this);
-				}
-			} catch (ShapeOverflowException e) {
-				e.printStackTrace();
-				// TODO
+	public void onReceiveCommand(List<String> command)
+			throws InvalidCommandException {
+		String first = command.get(0);
+
+		if (first.equalsIgnoreCase("all")) {
+			for (DebugModule v : debugModules.values()) {
+				v.onReceiveCommand(command.subList(1, command.size()), this);
 			}
 		} else {
-			try {
-				debugModules.getOrDefault(command[0],
-						DebugModule.getNullModule()).onReceiveCommand(command,
-						this);
-			} catch (ShapeOverflowException e) {
-				e.printStackTrace();
-				// TODO
+			if (debugModules.containsKey(first)) {
+				debugModules.get(first).onReceiveCommand(
+						command.subList(1, command.size()), this);
 			}
 		}
 	}

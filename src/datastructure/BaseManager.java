@@ -12,11 +12,11 @@ import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
 import bwta.BaseLocation;
-import gamestructure.DebugEngine;
-import gamestructure.DebugModule;
-import gamestructure.Debuggable;
 import gamestructure.GameHandler;
-import gamestructure.ShapeOverflowException;
+import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugModule;
+import gamestructure.debug.Debuggable;
+import gamestructure.debug.ShapeOverflowException;
 
 public class BaseManager implements Iterable<Base>, Debuggable {
 	private GameHandler game;
