@@ -17,7 +17,7 @@ import com.sun.org.apache.xpath.internal.functions.Function2Args;
  * debug for. Each module should independently display one pertinent piece of
  * information from its enclosing class.<br>
  * Modules must ultimately be registered to the DebugEngine using
- * {@link DebugEngine#registerDebugModule(DebugModule)}.
+ * {@link DebugEngine#createDebugModule(DebugModule)}.
  * 
  * @author wesley
  *
@@ -71,7 +71,7 @@ public class DebugModule {
 		commands.put(null, (c, e) -> active = !active);
 	}
 
-	protected DebugModule addCommand(String command, CommandFunction action) {
+	public DebugModule addCommand(String command, CommandFunction action) {
 		if (commands.containsKey(command)) {
 			throw new UnsupportedOperationException();
 		}
@@ -81,14 +81,15 @@ public class DebugModule {
 		return this;
 	}
 
-	protected DebugModule addSubmodule(String name, DebugModule debugModule) {
+	public DebugModule addSubmodule(String name) {
+		DebugModule debugModule = new DebugModule(name, engine);
 		subModules.put(name, debugModule);
 		lastAdded = name;
 		lastAddedTo = LAT_SUBMODULE;
-		return this;
+		return debugModule;
 	}
 
-	protected DebugModule addAlias(String alias) {
+	public DebugModule addAlias(String alias) {
 		return addAlias(lastAdded);
 	}
 
@@ -98,7 +99,7 @@ public class DebugModule {
 			addCommand(alias, commands.get(old));
 			break;
 		case LAT_SUBMODULE:
-			addSubmodule(alias, subModules.get(old));
+			subModules.put(alias, subModules.get(old));
 			break;
 		default:
 		}

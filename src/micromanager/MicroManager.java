@@ -248,10 +248,8 @@ public class MicroManager implements Debuggable {
 	@Override
 	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Threat map
-		debugEngine.registerDebugModule(new DebugModule("threats") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				// Actually draw
+		debugEngine.createDebugModule("threats").setDraw(engine -> {
+			// Actually draw
 				for (int x = 1; x < mapWidth; x++) {
 					for (int y = 1; y < mapHeight; y++) {
 						engine.drawCircleMap(x * 32, y * 32,
@@ -259,8 +257,7 @@ public class MicroManager implements Debuggable {
 								false);
 					}
 				}
-			}
-		});
+			});
 		// Target map
 		// debugEngine.registerDebugFunction(new DebugModule("targets") {
 		// @Override

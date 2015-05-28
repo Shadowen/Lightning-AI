@@ -283,15 +283,9 @@ public class PathingManager implements Debuggable {
 
 	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Label all chokes
-		debugEngine.registerDebugModule(new ChokeDebugModule("choke"));
-	}
-
-	private final class ChokeDebugModule extends DebugModule {
-		private ChokeDebugModule(String iname) {
-			super(iname);
-			addSubmodule(new DebugModule("draw") {
-				public void draw(DebugEngine engine)
-						throws ShapeOverflowException {
+		DebugModule chokeDM = debugEngine.createDebugModule("choke");
+		chokeDM.addSubmodule("draw").setDraw(
+				engine -> {
 					int i = 0;
 					for (Chokepoint choke : BWTA.getChokepoints()) {
 						engine.drawTextMap(choke.getCenter().getX() - 10, choke
@@ -301,30 +295,26 @@ public class PathingManager implements Debuggable {
 								"Radius " + choke.getWidth());
 						i++;
 					}
-				}
-			});
-			addSubmodule(new DebugModule("path") {
-				public void draw(DebugEngine engine)
-						throws ShapeOverflowException {
-					for (Point location : pathIntoMain) {
-						engine.drawBoxMap(location.x + 1, location.y + 1,
-								location.x + 6, location.y + 6, Color.Grey,
-								false);
-					}
-					engine.drawBoxMap(topOfRamp.x + 1, topOfRamp.y + 1,
-							topOfRamp.x + 6, topOfRamp.y + 6, Color.Red, false);
-				}
-			});
-			subModules.add(new DebugModule("ramp") {
-				public void draw(DebugEngine engine)
-						throws ShapeOverflowException {
+				});
+		chokeDM.addSubmodule("path")
+				.setDraw(
+						engine -> {
+							for (Point location : pathIntoMain) {
+								engine.drawBoxMap(location.x + 1,
+										location.y + 1, location.x + 6,
+										location.y + 6, Color.Grey, false);
+							}
+							engine.drawBoxMap(topOfRamp.x + 1, topOfRamp.y + 1,
+									topOfRamp.x + 6, topOfRamp.y + 6,
+									Color.Red, false);
+						});
+		chokeDM.addSubmodule("ramp").setDraw(
+				engine -> {
 					for (Point location : chokeRampWalkTiles) {
 						engine.drawBoxMap(location.x * 8, location.y * 8,
 								location.x * 8 + 8, location.y * 8 + 8,
 								Color.Green, false);
 					}
-				}
-			});
-		}
+				});
 	}
 }

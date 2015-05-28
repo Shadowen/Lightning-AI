@@ -36,7 +36,7 @@ public class DebugEngine {
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger debugger
-		registerDebugModule("shapecount").setDraw(
+		createDebugModule("shapecount").setDraw(
 				(e) -> {
 					e.drawTextScreen(400, 100,
 							"Debug Shapes: " + String.valueOf(shapeCount + 1)
@@ -45,7 +45,7 @@ public class DebugEngine {
 					shapeCount = 0;
 				});
 		// Debugger help
-		registerDebugModule("help")
+		createDebugModule("help")
 				.addCommand(
 						null,
 						(c, e) -> {
@@ -63,7 +63,7 @@ public class DebugEngine {
 	 * @param debugModule
 	 *            The module to be added.
 	 */
-	public DebugModule registerDebugModule(String name) {
+	public DebugModule createDebugModule(String name) {
 		DebugModule dm = new DebugModule(name, this);
 		debugModules.put(name, dm);
 		return dm;

@@ -248,63 +248,58 @@ public class BuildManager implements Debuggable {
 
 	@Override
 	public void registerDebugFunctions(DebugEngine debugEngine) {
-		debugEngine.registerDebugModule(new DebugModule("buildingqueue") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				String buildQueueString = "";
-				for (BuildingPlan plan : buildingQueue) {
-					int x = plan.getTx() * 32;
-					int y = plan.getTy() * 32;
-					int width = plan.getType().tileWidth() * 32;
-					int height = plan.getType().tileHeight() * 32;
-					engine.drawBoxMap(x, y, x + width, y + height, Color.Green,
-							false);
-					engine.drawTextMap(x, y, plan.getType().toString());
-					if (plan.builder != null) {
-						int bx = plan.builder.getX();
-						int by = plan.builder.getY();
-						engine.drawLineMap(bx, by, x + width / 2,
-								y + width / 2, Color.Green);
-					}
+		debugEngine.createDebugModule("buildingqueue").setDraw(
+				engine -> {
+					String buildQueueString = "";
+					for (BuildingPlan plan : buildingQueue) {
+						int x = plan.getTx() * 32;
+						int y = plan.getTy() * 32;
+						int width = plan.getType().tileWidth() * 32;
+						int height = plan.getType().tileHeight() * 32;
+						engine.drawBoxMap(x, y, x + width, y + height,
+								Color.Green, false);
+						engine.drawTextMap(x, y, plan.getType().toString());
+						if (plan.builder != null) {
+							int bx = plan.builder.getX();
+							int by = plan.builder.getY();
+							engine.drawLineMap(bx, by, x + width / 2, y + width
+									/ 2, Color.Green);
+						}
 
-					buildQueueString += plan.toString() + ", ";
-				}
-				engine.drawTextScreen(5, 20, "Building Queue: "
-						+ buildQueueString);
-			}
-		});
-		debugEngine.registerDebugModule(new DebugModule("trainingqueue") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				String trainingQueueString = "";
-				for (UnitType type : unitQueue.toArray(new UnitType[0])) {
-					trainingQueueString += type.toString() + ", ";
-				}
-				engine.drawTextScreen(5, 40, "Training Queue: "
-						+ trainingQueueString);
-			}
-		});
-		debugEngine.registerDebugModule(new DebugModule("unitminimums") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawTextScreen(5, 80,
-						"Unit Minimums: current(queued)/required");
-				int y = 90;
-				for (Entry<UnitType, Integer> entry : unitMinimums.entrySet()) {
-					UnitType unitType = entry.getKey();
-					int inQueueCount = getCountInQueue(unitType);
-					int currentCount = getMyUnitCount(unitType);
-					int requiredCount = entry.getValue();
-
-					if (inQueueCount != 0 || currentCount != 0
-							|| requiredCount != 0) {
-						engine.drawTextScreen(5, y, unitType.toString() + ": "
-								+ currentCount + "(" + inQueueCount + ")/"
-								+ requiredCount);
-						y += 10;
+						buildQueueString += plan.toString() + ", ";
 					}
-				}
-			}
-		});
+					engine.drawTextScreen(5, 20, "Building Queue: "
+							+ buildQueueString);
+				});
+		debugEngine.createDebugModule("trainingqueue").setDraw(
+				engine -> {
+					String trainingQueueString = "";
+					for (UnitType type : unitQueue.toArray(new UnitType[0])) {
+						trainingQueueString += type.toString() + ", ";
+					}
+					engine.drawTextScreen(5, 40, "Training Queue: "
+							+ trainingQueueString);
+				});
+		debugEngine.createDebugModule("unitminimums").setDraw(
+				engine -> {
+					engine.drawTextScreen(5, 80,
+							"Unit Minimums: current(queued)/required");
+					int y = 90;
+					for (Entry<UnitType, Integer> entry : unitMinimums
+							.entrySet()) {
+						UnitType unitType = entry.getKey();
+						int inQueueCount = getCountInQueue(unitType);
+						int currentCount = getMyUnitCount(unitType);
+						int requiredCount = entry.getValue();
+
+						if (inQueueCount != 0 || currentCount != 0
+								|| requiredCount != 0) {
+							engine.drawTextScreen(5, y, unitType.toString()
+									+ ": " + currentCount + "(" + inQueueCount
+									+ ")/" + requiredCount);
+							y += 10;
+						}
+					}
+				});
 	}
 }

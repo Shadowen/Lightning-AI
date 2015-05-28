@@ -2,6 +2,7 @@ package gamestructure;
 
 import gamestructure.debug.DebugEngine;
 import gamestructure.debug.DebugModule;
+import gamestructure.debug.InvalidCommandException;
 import gamestructure.debug.ShapeOverflowException;
 
 import java.util.ArrayList;
@@ -277,7 +278,12 @@ public class JavaBot extends DefaultBWListener {
 		if (s.startsWith("/")) {
 			List<String> command = new ArrayList<>(Arrays.asList(s.substring(1)
 					.split(" ")));
-			debugEngine.onReceiveCommand(command);
+			try {
+				debugEngine.onReceiveCommand(command);
+			} catch (InvalidCommandException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -289,43 +295,36 @@ public class JavaBot extends DefaultBWListener {
 	 *            debugEngine.
 	 */
 	private void registerDebugFunctions(DebugEngine de) {
-		de.registerDebugModule(new DebugModule("fps") {
-			private static final int yBottom = 285;
-
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawTextScreen(10, yBottom - 15 * 2,
-						"Frame: " + game.getFrameCount());
-				engine.drawTextScreen(10, yBottom - 15, "FPS: " + game.getFPS());
-				engine.drawTextScreen(10, yBottom, "APM: " + game.getAPM());
-			}
-		});
-		de.registerDebugModule(new DebugModule("botstate") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawTextScreen(5, 5, "Bot state: "
-						+ botState.getClass().toString());
-			}
-		});
-		de.registerDebugModule(new DebugModule("construction") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				String uucString = "";
-				for (Unit u : unitsUnderConstruction) {
-					uucString += u.getType().toString() + ", ";
-				}
-				engine.drawTextScreen(5, 60, "unitsUnderConstruction: "
-						+ uucString);
-			}
-		});
-		de.registerDebugModule(new DebugModule("supply") {
-			@Override
-			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				engine.drawTextScreen(550, 15, "Supply: "
-						+ game.getSelfPlayer().supplyUsed() + "/"
-						+ game.getSelfPlayer().supplyTotal());
-			}
-		});
+		de.createDebugModule("fps")
+				.setDraw(
+						engine -> {
+							final int yBottom = 285;
+							engine.drawTextScreen(10, yBottom - 15 * 2,
+									"Frame: " + game.getFrameCount());
+							engine.drawTextScreen(10, yBottom - 15, "FPS: "
+									+ game.getFPS());
+							engine.drawTextScreen(10, yBottom,
+									"APM: " + game.getAPM());
+						});
+		de.createDebugModule("botstate").setDraw(
+				engine -> {
+					engine.drawTextScreen(5, 5, "Bot state: "
+							+ botState.getClass().toString());
+				});
+		de.createDebugModule("construction").setDraw(
+				engine -> {
+					String uucString = "";
+					for (Unit u : unitsUnderConstruction) {
+						uucString += u.getType().toString() + ", ";
+					}
+					engine.drawTextScreen(5, 60, "unitsUnderConstruction: "
+							+ uucString);
+				});
+		de.createDebugModule("supply").setDraw(
+				engine -> {
+					engine.drawTextScreen(550, 15, "Supply: "
+							+ game.getSelfPlayer().supplyUsed() + "/"
+							+ game.getSelfPlayer().supplyTotal());
+				});
 	}
-
 }
