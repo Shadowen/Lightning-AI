@@ -267,7 +267,7 @@ public class JavaBot extends DefaultBWListener {
 	@Override
 	public void onSendText(String s) {
 		if (s.startsWith("/")) {
-			String[] command = s.toLowerCase().substring(1).split(" ");
+			String[] command = s.substring(1).split(" ");
 			debugEngine.onReceiveCommand(command);
 		}
 	}

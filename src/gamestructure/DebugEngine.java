@@ -349,7 +349,7 @@ public class DebugEngine {
 	 *            The command being parsed, split by whitespace.
 	 */
 	protected void onReceiveCommand(String[] command) {
-		if (command[0].equals("all")) {
+		if (command[0].equalsIgnoreCase("all")) {
 			try {
 				for (DebugModule v : debugModules.values()) {
 					v.onReceiveCommand(command, this);
@@ -360,7 +360,7 @@ public class DebugEngine {
 			}
 		} else {
 			try {
-				debugModules.getOrDefault(command[0].toLowerCase(),
+				debugModules.getOrDefault(command[0],
 						DebugModule.getNullModule()).onReceiveCommand(command,
 						this);
 			} catch (ShapeOverflowException e) {

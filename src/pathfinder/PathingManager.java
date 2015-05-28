@@ -3,6 +3,7 @@ package pathfinder;
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
@@ -11,7 +12,10 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
+import sun.applet.Main;
 import datastructure.BaseManager;
+import bwapi.Color;
+import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
@@ -32,7 +36,7 @@ public class PathingManager implements Debuggable {
 	private int mapWalkHeight;
 
 	// A list of tiles detailing a path into the main from the choke
-	private List<Point> pathIntoMain;
+	private Queue<Point> pathIntoMain;
 	private Point topOfRamp;
 	private List<Point> chokeRampWalkTiles;
 
@@ -55,84 +59,81 @@ public class PathingManager implements Debuggable {
 		registerDebugFunctions(debugEngine);
 	}
 
-	// public void findChokeToMain() {
-	// for (Chokepoint choke : BWTA.getChokepoints()) {
-	// // Find choke to main base
-	// if (choke.getFirstRegionID() == baseManager.main.getLocation()
-	// .getRegionID()
-	// || choke.getSecondRegionID() == baseManager.main
-	// .getLocation().getRegionID()) {
-	// // Find the path into the main
-	// pathIntoMain = new ArrayList<Point>(findGroundPath(
-	// choke.getCenterX(), choke.getCenterY(),
-	// baseManager.main.getX(), baseManager.main.getY(),
-	// UnitTypes.Zerg_Zergling));
-	//
-	// // Find top of ramp
-	// for (Point p : pathIntoMain) {
-	// if (game.getMap().isBuildable(p.x / 32, p.y / 32)) {
-	// topOfRamp = p;
-	// break;
-	// }
-	// }
-	//
-	// // Mark entire ramp
-	// chokeRampWalkTiles = new ArrayList<Point>();
-	// Queue<Point> rampWalkTileOpenSet = new PriorityQueue<Point>(1,
-	// new Comparator<Point>() {
-	// @Override
-	// public int compare(Point p1, Point p2) {
-	// Point topOfRampWalkTile = new Point(
-	// topOfRamp.x / 8, topOfRamp.y / 8);
-	// return (int) (p1.distanceSq(topOfRampWalkTile) - p2
-	// .distanceSq(topOfRampWalkTile));
-	// }
-	// });
-	// rampWalkTileOpenSet.add(new Point(choke.getCenterX() / 8, choke
-	// .getCenterY() / 8));
-	// while (!rampWalkTileOpenSet.isEmpty()) {
-	// Point currentNode = rampWalkTileOpenSet.poll();
-	// if (game.getMap().isWalkable(currentNode.x, currentNode.y)
-	// && !game.getMap().isBuildable(currentNode.x / 4,
-	// currentNode.y / 4)) {
-	// chokeRampWalkTiles.add(new Point(currentNode.x,
-	// currentNode.y));
-	// Point nextNode;
-	// nextNode = new Point(currentNode.x - 1, currentNode.y);
-	// if (!chokeRampWalkTiles.contains(nextNode)
-	// && !rampWalkTileOpenSet.contains(nextNode)) {
-	// rampWalkTileOpenSet.add(nextNode);
-	// }
-	// nextNode = new Point(currentNode.x + 1, currentNode.y);
-	// if (!chokeRampWalkTiles.contains(nextNode)
-	// && !rampWalkTileOpenSet.contains(nextNode)) {
-	// rampWalkTileOpenSet.add(nextNode);
-	// }
-	// nextNode = new Point(currentNode.x, currentNode.y - 1);
-	// if (!chokeRampWalkTiles.contains(nextNode)
-	// && !rampWalkTileOpenSet.contains(nextNode)) {
-	// rampWalkTileOpenSet.add(nextNode);
-	// }
-	// nextNode = new Point(currentNode.x, currentNode.y + 1);
-	// if (!chokeRampWalkTiles.contains(nextNode)
-	// && !rampWalkTileOpenSet.contains(nextNode)) {
-	// rampWalkTileOpenSet.add(nextNode);
-	// }
-	// }
-	//
-	// // Safety to prevent the whole map from being interpreted as
-	// // a ramp
-	// if (chokeRampWalkTiles.size() >= MAX_RAMP_WALK_TILES) {
-	// break;
-	// }
-	// }
-	// }
-	// }
-	// }
+	public void findChokeToMain() {
+		Chokepoint choke = BWTA.getNearestChokepoint(baseManager.main
+				.getLocation().getTilePosition());
+		// Find the path into the main
+		pathIntoMain = findGroundPath(choke.getCenter(), baseManager.main
+				.getLocation().getPosition(), UnitType.Zerg_Zergling);
+
+		// Find top of ramp
+		for (Point p : pathIntoMain) {
+			if (game.isBuildable(p.x / 32, p.y / 32, false)) {
+				topOfRamp = p;
+				break;
+			}
+		}
+
+		// Mark entire ramp
+		chokeRampWalkTiles = new ArrayList<Point>();
+		Queue<Point> rampWalkTileOpenSet = new PriorityQueue<Point>(1,
+				new Comparator<Point>() {
+					@Override
+					public int compare(Point p1, Point p2) {
+						Point topOfRampWalkTile = new Point(topOfRamp.x / 8,
+								topOfRamp.y / 8);
+						return (int) (p1.distanceSq(topOfRampWalkTile) - p2
+								.distanceSq(topOfRampWalkTile));
+					}
+				});
+		rampWalkTileOpenSet.add(new Point(choke.getCenter().getX() / 8, choke
+				.getCenter().getY() / 8));
+		while (!rampWalkTileOpenSet.isEmpty()) {
+			Point currentNode = rampWalkTileOpenSet.poll();
+			if (game.isWalkable(currentNode.x, currentNode.y)
+					&& !game.isBuildable(currentNode.x / 4, currentNode.y / 4,
+							false)) {
+				chokeRampWalkTiles.add(new Point(currentNode.x, currentNode.y));
+				Point nextNode;
+				nextNode = new Point(currentNode.x - 1, currentNode.y);
+				if (!chokeRampWalkTiles.contains(nextNode)
+						&& !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+				nextNode = new Point(currentNode.x + 1, currentNode.y);
+				if (!chokeRampWalkTiles.contains(nextNode)
+						&& !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+				nextNode = new Point(currentNode.x, currentNode.y - 1);
+				if (!chokeRampWalkTiles.contains(nextNode)
+						&& !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+				nextNode = new Point(currentNode.x, currentNode.y + 1);
+				if (!chokeRampWalkTiles.contains(nextNode)
+						&& !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+			}
+
+			// Safety to prevent the whole map from being interpreted as
+			// a ramp
+			if (chokeRampWalkTiles.size() >= MAX_RAMP_WALK_TILES) {
+				break;
+			}
+		}
+	}
+
+	private Queue<Point> findGroundPath(Position start, Position end,
+			UnitType unitType) {
+		return findGroundPath(start.getX(), start.getY(), end.getX(),
+				end.getY(), unitType);
+	}
 
 	public Queue<Point> findGroundPath(int startx, int starty, int endx,
-			int endy, UnitType type) {
-		return findGroundPath(startx, starty, endx, endy, type,
+			int endy, UnitType unitType) {
+		return findGroundPath(startx, starty, endx, endy, unitType,
 				Integer.MAX_VALUE);
 	}
 
@@ -281,44 +282,56 @@ public class PathingManager implements Debuggable {
 
 	public void registerDebugFunctions(DebugEngine debugEngine) {
 		// Label all chokes
-		debugEngine.registerDebugModule(new DebugModule("chokes") {
+		debugEngine.registerDebugModule(new DebugModule("choke") {
+			private boolean draw;
+			private boolean path;
+			private boolean ramp;
+
 			@Override
 			public void draw(DebugEngine engine) throws ShapeOverflowException {
-				int i = 0;
-				for (Chokepoint choke : BWTA.getChokepoints()) {
-					engine.drawTextMap(choke.getCenter().getX() - 10, choke
-							.getCenter().getY() - 20, "Choke " + i);
-					engine.drawTextMap(choke.getCenter().getX() - 10, choke
-							.getCenter().getY() - 10,
-							"Radius " + choke.getWidth());
-					i++;
+				if (draw) {
+					int i = 0;
+					for (Chokepoint choke : BWTA.getChokepoints()) {
+						engine.drawTextMap(choke.getCenter().getX() - 10, choke
+								.getCenter().getY() - 20, "Choke " + i);
+						engine.drawTextMap(choke.getCenter().getX() - 10, choke
+								.getCenter().getY() - 10,
+								"Radius " + choke.getWidth());
+						i++;
+					}
+				}
+
+				if (path) {
+					for (Point location : pathIntoMain) {
+						engine.drawBoxMap(location.x + 1, location.y + 1,
+								location.x + 6, location.y + 6, Color.Grey,
+								false);
+					}
+					engine.drawBoxMap(topOfRamp.x + 1, topOfRamp.y + 1,
+							topOfRamp.x + 6, topOfRamp.y + 6, Color.Red, false);
+				}
+
+				if (ramp) {
+					for (Point location : chokeRampWalkTiles) {
+						engine.drawBoxMap(location.x * 8, location.y * 8,
+								location.x * 8 + 8, location.y * 8 + 8,
+								Color.Green, false);
+					}
+				}
+			}
+
+			@Override
+			protected void onReceiveCommand(String[] command, DebugEngine engine)
+					throws ShapeOverflowException {
+				super.onReceiveCommand(command, debugEngine);
+				if (command[1].equalsIgnoreCase("draw")) {
+					draw = !draw;
+				} else if (command[1].equalsIgnoreCase("path")) {
+					path = !path;
+				} else if (command[1].equalsIgnoreCase("ramp")) {
+					ramp = !ramp;
 				}
 			}
 		});
-		// // Draw path from choke into main
-		// debugEngine.registerDebugFunction(new DebugModule() {
-		// @Override
-		// public void draw(DebugEngine engine) throws ShapeOverflowException {
-		// for (Point location : pathIntoMain) {
-		// engine.drawBox(location.x + 1, location.y + 1,
-		// location.x + 6, location.y + 6, BWColor.GREY,
-		// false, false);
-		// }
-		// engine.drawBox(topOfRamp.x + 1, topOfRamp.y + 1,
-		// topOfRamp.x + 6, topOfRamp.y + 6, BWColor.RED, false,
-		// false);
-		// }
-		// });
-		// // Highlight ramp walk tiles
-		// g.registerDebugFunction(new DebugModule() {
-		// @Override
-		// public void draw(DebugEngine engine) throws ShapeOverflowException {
-		// for (Point location : chokeRampWalkTiles) {
-		// engine.drawBox(location.x * 8, location.y * 8,
-		// location.x * 8 + 8, location.y * 8 + 8,
-		// BWColor.GREEN, false, false);
-		// }
-		// }
-		// });
 	}
 }
