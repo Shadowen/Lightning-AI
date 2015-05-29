@@ -282,8 +282,8 @@ public class PathingManager implements Debuggable {
 	}
 
 	public void registerDebugFunctions(DebugEngine debugEngine) {
-		// Label all chokes
 		DebugModule chokeDM = debugEngine.createDebugModule("choke");
+		// Label all chokes
 		chokeDM.addSubmodule("draw").setDraw(
 				engine -> {
 					int i = 0;
@@ -296,6 +296,7 @@ public class PathingManager implements Debuggable {
 						i++;
 					}
 				});
+		// Draw the path from the choke point into the main
 		chokeDM.addSubmodule("path")
 				.setDraw(
 						engine -> {
@@ -308,6 +309,7 @@ public class PathingManager implements Debuggable {
 									topOfRamp.x + 6, topOfRamp.y + 6,
 									Color.Red, false);
 						});
+		// Highlight the tiles of the main ramp
 		chokeDM.addSubmodule("ramp").setDraw(
 				engine -> {
 					for (Point location : chokeRampWalkTiles) {
