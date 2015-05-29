@@ -9,15 +9,15 @@ import bwapi.Game;
 
 public class DebugEngine {
 	/** The game being acted on **/
-	private Game game;
-	private Map<String, DebugModule> debugModules;
+	private static Game game;
+	private static Map<String, DebugModule> debugModules;
 
 	/***
 	 * The number of shapes drawn so far in the current frame. If
 	 * {@link #MAX_SHAPES} is exceeded, a {@link ShapeOverflowException} is
 	 * thrown.
 	 ***/
-	private int shapeCount = 0;
+	private static int shapeCount = 0;
 	/**
 	 * The maximum amount of shapes that can be drawn by {@link DebugEngine}
 	 * before errors start occurring. This should be between 26000 and 39000
@@ -36,25 +36,33 @@ public class DebugEngine {
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger debugger
-		createDebugModule("shapecount").setDraw(
-				(e) -> {
-					e.drawTextScreen(400, 100,
-							"Debug Shapes: " + String.valueOf(shapeCount + 1)
-									+ "/" + MAX_SHAPES);
-					// Reset the shapecount
-					shapeCount = 0;
-				});
+		createDebugModule("shapecount")
+				.setDraw(
+						() -> {
+							DebugEngine.drawTextScreen(
+									400,
+									100,
+									"Debug Shapes: "
+											+ String.valueOf(shapeCount + 1)
+											+ "/" + MAX_SHAPES);
+							// Reset the shapecount
+							shapeCount = 0;
+						});
 		// Debugger help
 		createDebugModule("help")
 				.addCommand(
 						null,
-						(c, e) -> {
-							e.sendText("Type \"/help <name>\" for more information on a specific module.");
-							e.sendText("Type \"/help modules\" for a complete list of modules.");
+						(c) -> {
+							DebugEngine
+									.sendText("Type \"/help <name>\" for more information on a specific module.");
+							DebugEngine
+									.sendText("Type \"/help modules\" for a complete list of modules.");
 						})
 				.addAlias("help")
-				.addCommand("modules",
-						(c, e) -> debugModules.forEach((k, v) -> e.sendText(k)));
+				.addCommand(
+						"modules",
+						(c) -> debugModules.forEach((k, v) -> DebugEngine
+								.sendText(k)));
 	}
 
 	/**
@@ -63,8 +71,8 @@ public class DebugEngine {
 	 * @param debugModule
 	 *            The module to be added.
 	 */
-	public DebugModule createDebugModule(String name) {
-		DebugModule dm = new DebugModule(name, this);
+	public static DebugModule createDebugModule(String name) {
+		DebugModule dm = new DebugModule(name);
 		debugModules.put(name, dm);
 		return dm;
 	}
@@ -73,12 +81,12 @@ public class DebugEngine {
 	 * Iterate through the {@link #debugModules} and tell each one to
 	 * {@link DebugModule#draw}.
 	 */
-	public void draw() {
+	public static void draw() {
 		// Try to draw all of the debugModules. If we are interrupted by too
 		// many objects attempting to draw, then print the stack trace.
 		for (DebugModule d : debugModules.values()) {
 			try {
-				d.drawIfActive(this);
+				d.drawIfActive();
 			} catch (ShapeOverflowException soe) {
 				// Someone attempted to draw a lot of shapes!
 				soe.printStackTrace();
@@ -153,7 +161,7 @@ public class DebugEngine {
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawCircleMap(int x, int y, int radius, Color color,
+	public static void drawCircleMap(int x, int y, int radius, Color color,
 			boolean fill) throws ShapeOverflowException {
 		game.drawCircleMap(x, y, radius, color, fill);
 		shapeCount++;
@@ -180,7 +188,7 @@ public class DebugEngine {
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawLineMap(int x1, int y1, int x2, int y2, Color color)
+	public static void drawLineMap(int x1, int y1, int x2, int y2, Color color)
 			throws ShapeOverflowException {
 		game.drawLineMap(x1, y1, x2, y2, color);
 		shapeCount++;
@@ -209,7 +217,7 @@ public class DebugEngine {
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawBoxMap(int left, int top, int right, int bottom,
+	public static void drawBoxMap(int left, int top, int right, int bottom,
 			Color color, boolean fill) throws ShapeOverflowException {
 		game.drawBoxMap(left, top, right, bottom, color, fill);
 		shapeCount++;
@@ -231,7 +239,7 @@ public class DebugEngine {
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawTextMap(int x, int y, String message)
+	public static void drawTextMap(int x, int y, String message)
 			throws ShapeOverflowException {
 		game.drawTextMap(x, y, message);
 		shapeCount++;
@@ -254,7 +262,7 @@ public class DebugEngine {
 	 *             Thrown if the {@link DebugEngine} tries to draw too many
 	 *             shapes.
 	 */
-	public void drawTextScreen(int x, int y, String message)
+	public static void drawTextScreen(int x, int y, String message)
 			throws ShapeOverflowException {
 		game.drawTextScreen(x, y, message);
 		shapeCount++;
@@ -324,7 +332,7 @@ public class DebugEngine {
 	 * @param string
 	 *            the text to send
 	 */
-	public void sendText(String string) {
+	public static void sendText(String string) {
 		game.sendText(string);
 	}
 
@@ -337,18 +345,18 @@ public class DebugEngine {
 	 * @throws InvalidCommandException
 	 *             if the command cannot be parsed
 	 */
-	public void onReceiveCommand(List<String> command)
+	public static void onReceiveCommand(List<String> command)
 			throws InvalidCommandException {
 		String first = command.get(0);
 
 		if (first.equalsIgnoreCase("all")) {
 			for (DebugModule v : debugModules.values()) {
-				v.onReceiveCommand(command.subList(1, command.size()), this);
+				v.onReceiveCommand(command.subList(1, command.size()));
 			}
 		} else {
 			if (debugModules.containsKey(first)) {
 				debugModules.get(first).onReceiveCommand(
-						command.subList(1, command.size()), this);
+						command.subList(1, command.size()));
 			}
 		}
 	}

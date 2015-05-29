@@ -1,15 +1,8 @@
 package gamestructure.debug;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
-import com.sun.org.apache.xpath.internal.functions.Function2Args;
 
 /**
  * A single module to be used in the {@link DebugEngine}. Modules should be
@@ -29,7 +22,6 @@ public class DebugModule {
 	 * {@link #DebugEngine}.
 	 */
 	public final String name;
-	protected final DebugEngine engine;
 	/**
 	 * Basic functionality for all DebugModules is activating and deactivating.
 	 * When this is true, the DebugModule will paint. When this is false, it
@@ -54,7 +46,7 @@ public class DebugModule {
 	private static final int LAT_COMMAND = 1;
 	private static final int LAT_SUBMODULE = 2;
 
-	private DrawFunction draw = (e) -> {
+	private DrawFunction draw = () -> {
 	};
 
 	/**
@@ -62,13 +54,10 @@ public class DebugModule {
 	 * 
 	 * @param iname
 	 *            The name to use when referring to the module.
-	 * @param debugEngine
-	 *            the debugEngine to use when drawing everything
 	 */
-	DebugModule(String iname, DebugEngine debugEngine) {
+	DebugModule(String iname) {
 		name = iname;
-		engine = debugEngine;
-		commands.put(null, (c, e) -> active = !active);
+		commands.put(null, (c) -> active = !active);
 	}
 
 	public DebugModule addCommand(String command, CommandFunction action) {
@@ -82,7 +71,7 @@ public class DebugModule {
 	}
 
 	public DebugModule addSubmodule(String name) {
-		DebugModule debugModule = new DebugModule(name, engine);
+		DebugModule debugModule = new DebugModule(name);
 		subModules.put(name, debugModule);
 		lastAdded = name;
 		lastAddedTo = LAT_SUBMODULE;
@@ -116,18 +105,16 @@ public class DebugModule {
 	 * Draws the DebugModule if and only if it is active by calling
 	 * {@link #draw}.
 	 * 
-	 * @param engine
-	 *            The engine to use to draw.
 	 * @throws ShapeOverflowException
 	 *             If the engine throws a ShapeOverflowException, it propagates
 	 *             outward here.
 	 */
-	final void drawIfActive(DebugEngine engine) throws ShapeOverflowException {
+	final void drawIfActive() throws ShapeOverflowException {
 		if (active) {
 			for (DebugModule s : subModules.values()) {
-				s.drawIfActive(engine);
+				s.drawIfActive();
 			}
-			draw.accept(engine);
+			draw.run();
 		}
 	}
 
@@ -142,22 +129,20 @@ public class DebugModule {
 	 *            <ul>
 	 *            <li><b>command[0]</b> is either the module's name or "all".</li>
 	 *            </ul>
-	 * @param engine
-	 *            The engine to use to draw.
 	 * @throws InvalidCommandException
 	 *             if the command cannot be parsed
 	 */
-	final void onReceiveCommand(List<String> command, DebugEngine engine)
+	final void onReceiveCommand(List<String> command)
 			throws InvalidCommandException {
 		// A command in my list
 		if (commands.containsKey(command.get(0))) {
-			commands.get(command.get(0)).apply(command, engine);
+			commands.get(command.get(0)).apply(command);
 			return;
 		}
 		// A submodule in my list
 		if (subModules.containsKey(command.get(0))) {
 			subModules.get(command.get(0)).onReceiveCommand(
-					command.subList(1, command.size()), engine);
+					command.subList(1, command.size()));
 			return;
 		}
 

@@ -2,14 +2,13 @@ package datastructure;
 
 import bwapi.TilePosition;
 import bwapi.UnitType;
-import gamestructure.GameHandler;
 
 public class BuildingPlan {
 	private UnitType type;
 	private TilePosition tilePosition;
 	public Worker builder;
 
-	public BuildingPlan(GameHandler game, int itx, int ity, UnitType itype) {
+	public BuildingPlan(int itx, int ity, UnitType itype) {
 		type = itype;
 		tilePosition = new TilePosition(itx, ity);
 	}
@@ -38,6 +37,7 @@ public class BuildingPlan {
 		builder = ibuilder;
 	}
 
+	@Override
 	public String toString() {
 		return "[" + type.toString() + "] @ (" + getTx() * 16 + ", " + getTy()
 				* 16 + ")";

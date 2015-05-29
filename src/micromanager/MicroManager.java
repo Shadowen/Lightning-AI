@@ -2,68 +2,40 @@ package micromanager;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map.Entry;
-import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import pathfinder.Node;
 import pathfinder.PathingManager;
 import datastructure.Base;
 import datastructure.BaseManager;
-import datastructure.BaseStatus;
-import datastructure.BuildingPlan;
-import datastructure.GasResource;
-import datastructure.Resource;
 import datastructure.Worker;
-import datastructure.WorkerTask;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
-import bwapi.WeaponType;
-import bwta.BWTA;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugEngine;
-import gamestructure.debug.DebugModule;
-import gamestructure.debug.Debuggable;
-import gamestructure.debug.ShapeOverflowException;
 
-public class MicroManager implements Debuggable {
-
-	private GameHandler game;
-	private BaseManager baseManager;
-	private PathingManager pathingManager;
-
-	private int mapWidth;
-	private int mapHeight;
-	private double[][] targetMap;
-	private double[][] threatMap;
+public class MicroManager {
+	private static int mapWidth;
+	private static int mapHeight;
+	private static double[][] targetMap;
+	private static double[][] threatMap;
 	private static final long THREAT_MAP_REFRESH_DELAY = 1000;
 
-	private Base scoutingTarget;
-	private Queue<Point> scoutPath;
-	private Unit scoutingUnit;
+	private static Base scoutingTarget;
+	private static Queue<Point> scoutPath;
+	private static Unit scoutingUnit;
 
-	private HashMap<UnitType, HashMap<Integer, UnitAgent>> units;
+	private static HashMap<UnitType, HashMap<Integer, UnitAgent>> units;
 
-	public MicroManager(GameHandler igame, BaseManager ibaseManager,
-			PathingManager ipathingManager, DebugEngine debugEngine) {
-		game = igame;
-		baseManager = ibaseManager;
-		pathingManager = ipathingManager;
-
-		mapWidth = game.getMapWidth();
-		mapHeight = game.getMapHeight();
+	static {
+		mapWidth = GameHandler.getMapWidth();
+		mapHeight = GameHandler.getMapHeight();
 		targetMap = new double[mapWidth + 1][mapHeight + 1];
 		threatMap = new double[mapWidth + 1][mapHeight + 1];
 
@@ -84,7 +56,7 @@ public class MicroManager implements Debuggable {
 				}
 
 				// Loop through enemy units
-				for (Unit u : game.getAllUnits()) { // TODO
+				for (Unit u : GameHandler.getAllUnits()) { // TODO
 					UnitType unitType = u.getType();
 					// Get the x and y grid point coordinates
 					int x = u.getX() / 32;
@@ -127,15 +99,19 @@ public class MicroManager implements Debuggable {
 
 		}, 0, THREAT_MAP_REFRESH_DELAY);
 
-		registerDebugFunctions(debugEngine);
+		registerDebugFunctions();
 	}
 
-	public void act() {
+	/** This constructor should never be called. */
+	private MicroManager() {
+	}
+
+	public static void act() {
 		// Move scouting unit(s)
 		scout();
 	}
 
-	private void scout() {
+	private static void scout() {
 		// If I have no scouting unit assigned, don't scout
 		if (scoutingUnit == null) {
 			return;
@@ -143,7 +119,7 @@ public class MicroManager implements Debuggable {
 
 		// Acquire a target if necessary
 		if (scoutingTarget == null
-				|| game.isVisible(scoutingTarget.getX() / 32,
+				|| GameHandler.isVisible(scoutingTarget.getX() / 32,
 						scoutingTarget.getY() / 32)) {
 			scoutingTarget = getScoutingTarget();
 			// Clear previous path
@@ -155,7 +131,7 @@ public class MicroManager implements Debuggable {
 			if (scoutingUnit != null && scoutingTarget != null) {
 				if (scoutPath.size() < 15) {
 					// Path planned is short
-					scoutPath = pathingManager.findGroundPath(
+					scoutPath = PathingManager.findGroundPath(
 							scoutingUnit.getX(), scoutingUnit.getY(),
 							scoutingTarget.getX(), scoutingTarget.getY(),
 							scoutingUnit.getType(), 256);
@@ -189,12 +165,12 @@ public class MicroManager implements Debuggable {
 		}
 	}
 
-	private Base getScoutingTarget() {
+	private static Base getScoutingTarget() {
 		Base target = null;
-		for (Base b : baseManager) {
+		for (Base b : BaseManager.getBases()) {
 			// Scout all mains
 			if (b.getLocation().isStartLocation()) {
-				if (b.getPlayer() == game.getNeutralPlayer()
+				if (b.getPlayer() == GameHandler.getNeutralPlayer()
 						&& (target == null || b.getLastScouted() < target
 								.getLastScouted())) {
 					target = b;
@@ -205,9 +181,9 @@ public class MicroManager implements Debuggable {
 
 		// If there is still no target
 		if (target == null) {
-			for (Base b : baseManager) {
+			for (Base b : BaseManager.getBases()) {
 				// Scout all expos
-				if (b.getPlayer() == game.getNeutralPlayer()
+				if (b.getPlayer() == GameHandler.getNeutralPlayer()
 						&& (target == null || b.getLastScouted() < target
 								.getLastScouted())) {
 					target = b;
@@ -217,22 +193,22 @@ public class MicroManager implements Debuggable {
 		return target;
 	}
 
-	public void setScoutingUnit(Unit unit) {
-		Worker w = baseManager.getWorker(scoutingUnit);
+	public static void setScoutingUnit(Unit unit) {
+		Worker w = BaseManager.getWorker(scoutingUnit);
 		if (w != null) {
-			w.setBase(baseManager.main);
+			w.setBase(BaseManager.main);
 		}
 		scoutingUnit = unit;
 	}
 
-	public boolean isScouting() {
+	public static boolean isScouting() {
 		return scoutingUnit != null;
 	}
 
-	public void unitCreate(Unit unit) {
+	public static void unitCreate(Unit unit) {
 	}
 
-	public void unitDestroyed(Unit unit) {
+	public static void unitDestroyed(Unit unit) {
 		Iterator<Entry<UnitType, HashMap<Integer, UnitAgent>>> i = units
 				.entrySet().iterator();
 		while (i.hasNext()) {
@@ -245,14 +221,13 @@ public class MicroManager implements Debuggable {
 		}
 	}
 
-	@Override
-	public void registerDebugFunctions(DebugEngine debugEngine) {
+	public static void registerDebugFunctions() {
 		// Threat map
-		debugEngine.createDebugModule("threats").setDraw(engine -> {
+		DebugEngine.createDebugModule("threats").setDraw(() -> {
 			// Actually draw
 				for (int x = 1; x < mapWidth; x++) {
 					for (int y = 1; y < mapHeight; y++) {
-						engine.drawCircleMap(x * 32, y * 32,
+						DebugEngine.drawCircleMap(x * 32, y * 32,
 								(int) Math.round(threatMap[x][y]), Color.Red,
 								false);
 					}

@@ -1,7 +1,6 @@
 package datastructure;
 
 import bwapi.Unit;
-import bwapi.UnitType;
 
 public class GasResource extends Resource {
 

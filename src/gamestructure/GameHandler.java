@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,48 +15,32 @@ import bwapi.Unit;
 import bwapi.UnitType;
 import bwapi.WalkPosition;
 
-public class GameHandler {
-	private Game game;
+public final class GameHandler {
+	private static Game game = JavaBot.mirror.getGame();
 	/**
 	 * A cache keeping track of my units. Recomputed every time allUnits
 	 * changes.
 	 */
-	private Set<Unit> myUnits;
+	private static Set<Unit> myUnits;
 	/** The hash code of allUnits at the time myUnits was last computed. */
-	private int myUnitsHash = 0;
+	private static int myUnitsHash = 0;
 
-	public GameHandler(Game g) {
-		game = g;
-
+	static {
 		game.setTextSize(bwapi.Text.Size.Enum.Small);
 		// allow me to manually control units during the game
 		game.enableFlag(1);
 	}
 
-	public int getMapWidth() {
+	public static int getMapWidth() {
 		return game.mapWidth();
 	}
 
-	public int getMapHeight() {
+	public static int getMapHeight() {
 		return game.mapHeight();
 	}
 
-	public Unit getClosestUnitOfType(int x, int y, UnitType type) {
-		Unit closest = null;
-		double closestDistance = Double.MAX_VALUE;
-		for (Unit u : game.getAllUnits()) {
-			if (u.getType() == type) {
-				double distance = Point.distance(x, y, u.getX(), u.getY());
-				if (distance < closestDistance) {
-					closestDistance = distance;
-					closest = u;
-				}
-			}
-		}
-		return closest;
-	}
-
-	public Unit getClosestUnitOfType(int x, int y, UnitType... types) {
+	public static Optional<Unit> getClosestUnitOfType(int x, int y,
+			UnitType... types) {
 		Set<UnitType> typesSet = new HashSet<UnitType>(Arrays.asList(types));
 		Unit closest = null;
 		double closestDistance = Double.MAX_VALUE;
@@ -68,10 +53,10 @@ public class GameHandler {
 				}
 			}
 		}
-		return closest;
+		return Optional.ofNullable(closest);
 	}
 
-	public Unit getClosestEnemy(int x, int y) {
+	public static Optional<Unit> getClosestEnemy(int x, int y) {
 		double closestDistance = Double.MAX_VALUE;
 		Unit closestUnit = null;
 		for (Unit u : game.enemy().getUnits()) {
@@ -85,26 +70,26 @@ public class GameHandler {
 				closestDistance = distance;
 			}
 		}
-		return closestUnit;
+		return Optional.ofNullable(closestUnit);
 	}
 
-	public Unit getClosestEnemy(Unit toWho) {
+	public static Optional<Unit> getClosestEnemy(Unit toWho) {
 		return getClosestEnemy(toWho.getX(), toWho.getY());
 	}
 
-	public int getFrameCount() {
+	public static int getFrameCount() {
 		return game.getFrameCount();
 	}
 
-	public int getFPS() {
+	public static int getFPS() {
 		return game.getFPS();
 	}
 
-	public int getAPM() {
+	public static int getAPM() {
 		return game.getAPM();
 	}
 
-	public Player getSelfPlayer() {
+	public static Player getSelfPlayer() {
 		return game.self();
 	}
 
@@ -113,23 +98,23 @@ public class GameHandler {
 	 * 
 	 * @return The neutral player.
 	 */
-	public Player getNeutralPlayer() {
+	public static Player getNeutralPlayer() {
 		return game.neutral();
 	}
 
-	public List<Unit> getNeutralUnits() {
+	public static List<Unit> getNeutralUnits() {
 		return game.getNeutralUnits();
 	}
 
-	public Player getEnemyPlayer() {
+	public static Player getEnemyPlayer() {
 		return game.enemy();
 	}
 
-	public boolean isVisible(int tileX, int tileY) {
+	public static boolean isVisible(int tileX, int tileY) {
 		return game.isVisible(tileX, tileY);
 	}
 
-	public List<Unit> getAllUnits() {
+	public static List<Unit> getAllUnits() {
 		return game.getAllUnits();
 	}
 
@@ -139,7 +124,7 @@ public class GameHandler {
 	 * 
 	 * @return my units
 	 * */
-	public Set<Unit> getMyUnits() {
+	public static Set<Unit> getMyUnits() {
 		// Recompute my units
 		List<Unit> allUnits = game.getAllUnits();
 		if (allUnits.hashCode() != myUnitsHash) {
@@ -153,23 +138,25 @@ public class GameHandler {
 		return myUnits;
 	}
 
-	public boolean isBuildable(TilePosition position, boolean includeBuildings) {
+	public static boolean isBuildable(TilePosition position,
+			boolean includeBuildings) {
 		return game.isBuildable(position, includeBuildings);
 	}
 
-	public boolean isBuildable(int tileX, int tileY, boolean includeBuildings) {
+	public static boolean isBuildable(int tileX, int tileY,
+			boolean includeBuildings) {
 		return game.isBuildable(tileX, tileY, includeBuildings);
 	}
 
-	public boolean isWalkable(WalkPosition position) {
+	public static boolean isWalkable(WalkPosition position) {
 		return game.isWalkable(position);
 	}
 
-	public boolean isWalkable(int wx, int wy) {
+	public static boolean isWalkable(int wx, int wy) {
 		return game.isWalkable(wx, wy);
 	}
 
-	public void sendText(String message) {
+	public static void sendText(String message) {
 		game.sendText(message);
 	}
 }
