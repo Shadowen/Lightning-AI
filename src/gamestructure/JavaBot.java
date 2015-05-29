@@ -12,8 +12,9 @@ import java.util.Set;
 import micromanager.MicroManager;
 import botstate.BotState;
 import botstate.FirstFrameState;
-import bwapi.DefaultBWListener;
+import bwapi.BWEventListener;
 import bwapi.Mirror;
+import bwapi.Player;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -23,7 +24,7 @@ import datastructure.BaseManager;
 import datastructure.BuildManager;
 import datastructure.Resource;
 
-public class JavaBot extends DefaultBWListener {
+public class JavaBot implements BWEventListener {
 	protected static Mirror mirror = new Mirror();
 
 	private BotState botState;
@@ -87,6 +88,16 @@ public class JavaBot extends DefaultBWListener {
 
 			// Auto economy
 			BaseManager.gatherResources();
+
+			BaseManager.getMyBases().stream()
+					.filter(b -> b.workers.size() < b.minerals.size() * 2)
+					.map(b -> b.commandCenter).filter(o -> o.isPresent())
+					.map(o -> o.get()).filter(c -> !c.isTraining())
+					.forEach(c -> {
+						if (GameHandler.getSelfPlayer().minerals() >= 50)
+							c.train(UnitType.Terran_SCV);
+					});
+			// OLD Implementation
 			for (Base b : BaseManager.getMyBases()) {
 				b.commandCenter.ifPresent(c -> {
 					// Train SCVS if necessary
@@ -233,6 +244,12 @@ public class JavaBot extends DefaultBWListener {
 
 	}
 
+	@Override
+	public void onUnitComplete(Unit unit) {
+		// TODO Auto-generated method stub
+
+	}
+
 	public void onUnitConstructed(Unit unit) {
 		try {
 			UnitType type = unit.getType();
@@ -261,7 +278,7 @@ public class JavaBot extends DefaultBWListener {
 			try {
 				DebugEngine.onReceiveCommand(command);
 			} catch (InvalidCommandException e) {
-				// TODO Auto-generated catch block
+				DebugEngine.sendText(e.getMessage());
 				e.printStackTrace();
 			}
 		}
@@ -301,5 +318,29 @@ public class JavaBot extends DefaultBWListener {
 							+ GameHandler.getSelfPlayer().supplyUsed() + "/"
 							+ GameHandler.getSelfPlayer().supplyTotal());
 				});
+	}
+
+	@Override
+	public void onReceiveText(Player player, String text) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onPlayerLeft(Player player) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onSaveGame(String gameName) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onPlayerDropped(Player player) {
+		// TODO Auto-generated method stub
+
 	}
 }

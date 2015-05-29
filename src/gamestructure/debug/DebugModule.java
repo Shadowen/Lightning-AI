@@ -146,6 +146,6 @@ public class DebugModule {
 			return;
 		}
 
-		throw new InvalidCommandException();
+		throw new InvalidCommandException(name, command);
 	}
 }
