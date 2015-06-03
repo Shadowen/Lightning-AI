@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 import datastructure.BaseManager;
 import bwapi.Color;
@@ -148,6 +151,25 @@ public class PathingManager {
 			}
 		}
 		// Avoid cliffs
+		// TODO New implementation
+		// IntStream
+		// .range(0, GameHandler.getMapWidth() * 4)
+		// .forEach(
+		// wx -> IntStream
+		// .range(0, GameHandler.getMapHeight() * 4)
+		// .forEach(
+		// wy -> {
+		// for (int iwx = Math.max(wx - 3, 0); iwx < Math
+		// .min(wx + 3, mapWalkWidth); iwx++) {
+		// for (int iwy = Math.max(wy - 3,
+		// 0); iwy < Math.min(
+		// wy + 3, mapWalkHeight); iwy++) {
+		// walkableNodes.get(iwx).get(
+		// iwy).walkable = GameHandler
+		// .isWalkable(wx, wy);
+		// }
+		// }
+		// }));
 		for (int wx = 0; wx < GameHandler.getMapWidth() * 4; wx++) {
 			for (int wy = 0; wy < GameHandler.getMapHeight() * 4; wy++) {
 				if (!GameHandler.isWalkable(wx, wy)) {
@@ -164,7 +186,7 @@ public class PathingManager {
 		// Avoid buildings
 		for (Unit u : GameHandler.getAllUnits()) {
 			UnitType utype = u.getType();
-			if (!utype.canMove()) {
+			if (utype.isBuilding()) {
 				int uwidth = utype.tileWidth();
 				int uheight = utype.tileHeight();
 				int tx = u.getTilePosition().getX();

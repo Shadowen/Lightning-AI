@@ -4,8 +4,10 @@ import java.awt.Point;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import bwapi.Color;
 import bwapi.Game;
+import bwapi.Key;
 
 public class DebugEngine {
 	/** The game being acted on **/
@@ -54,9 +56,9 @@ public class DebugEngine {
 						null,
 						(c) -> {
 							DebugEngine
-									.sendText("Type \"/help <name>\" for more information on a specific module.");
-							DebugEngine
 									.sendText("Type \"/help modules\" for a complete list of modules.");
+							DebugEngine
+									.sendText("Type \"/help <name>\" for more information on a specific module.");
 						})
 				.addAlias("help")
 				.addCommand(

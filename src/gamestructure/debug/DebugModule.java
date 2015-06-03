@@ -10,7 +10,7 @@ import java.util.Map;
  * debug for. Each module should independently display one pertinent piece of
  * information from its enclosing class.<br>
  * Modules must ultimately be registered to the DebugEngine using
- * {@link DebugEngine#createDebugModule(DebugModule)}.
+ * {@link DebugEngine#createDebugModule}.
  * 
  * @author wesley
  *
@@ -26,8 +26,6 @@ public class DebugModule {
 	 * Basic functionality for all DebugModules is activating and deactivating.
 	 * When this is true, the DebugModule will paint. When this is false, it
 	 * will not. This is checked in {@link #drawIfActive}.<br>
-	 * This is toggled by {@link #onReceiveCommand} by default. This behaviour
-	 * can be overridden.
 	 */
 	private boolean active = false;
 	/**
@@ -40,12 +38,28 @@ public class DebugModule {
 	 * down the hierarchy.
 	 */
 	private Map<String, DebugModule> subModules = new HashMap<>();
+	/** The name of the last added command or submodule */
 	private String lastAdded;
-	private int lastAddedTo = LAT_NONE;
+	/** No valid last added command or submodule */
 	private static final int LAT_NONE = 0;
+	/** The last thing added was a command */
 	private static final int LAT_COMMAND = 1;
+	/** The last thing added was a submdoule */
 	private static final int LAT_SUBMODULE = 2;
-
+	/**
+	 * Keeps track of the type of the last added thing.<br>
+	 * <b><u>Valid values:</u></b>
+	 * <ul>
+	 * <li>{@link #LAT_NONE} = {@value #LAT_NONE}</li>
+	 * <li>{@link #LAT_COMMAND} = {@value #LAT_COMMAND}</li>
+	 * <li>{@link #LAT_SUBMODULE} = {@value #LAT_SUBMODULE}</li>
+	 * </ul>
+	 */
+	private int lastAddedTo = LAT_NONE;
+	/**
+	 * The function called when {@link #drawIfActive()} is invoked. Should be
+	 * set by {@link #setDraw(DrawFunction)}.
+	 */
 	private DrawFunction draw = () -> {
 	};
 
@@ -62,7 +76,9 @@ public class DebugModule {
 
 	public DebugModule addCommand(String command, CommandFunction action) {
 		if (commands.containsKey(command)) {
-			throw new UnsupportedOperationException();
+			// Tried to overwrite a command!
+			throw new UnsupportedOperationException("Command " + command
+					+ " already exists!");
 		}
 		commands.put(command, action);
 		lastAdded = command;
@@ -98,6 +114,7 @@ public class DebugModule {
 
 	public DebugModule setDraw(DrawFunction c) {
 		draw = c;
+		lastAddedTo = LAT_NONE;
 		return this;
 	}
 
