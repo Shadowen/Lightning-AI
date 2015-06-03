@@ -83,7 +83,8 @@ public class StarportRush extends BotState {
 			// strategy
 			for (int i = 0; i < 2; i++) {
 				BaseManager.getBuilder().ifPresent(
-						w -> w.gather(BaseManager.getResource(unit)));
+						w -> BaseManager.getResource(unit).ifPresent(
+								r -> w.gather(r)));
 			}
 		}
 		return this;

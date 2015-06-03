@@ -171,7 +171,8 @@ public class BuildManager {
 						// If it's a refinery, the worker will automatically
 						// become
 						// a gas miner!
-						p.builder.gather(BaseManager.getResource(u));
+						BaseManager.getResource(u).ifPresent(
+								r -> p.builder.gather(r));
 					} else {
 						// Otherwise, back to work!
 						p.builder.gather(p.builder.getCurrentResource());
@@ -183,42 +184,25 @@ public class BuildManager {
 	}
 
 	public static boolean isInQueue(UnitType unitType) {
-		for (BuildingPlan plan : buildingQueue) {
-			if (plan.getType() == unitType) {
-				return true;
-			}
+		if (unitType.isBuilding()) {
+			return buildingQueue.stream().anyMatch(
+					bp -> bp.getType() == unitType);
 		}
-		for (UnitType unitInQueue : unitQueue) {
-			if (unitInQueue == unitType) {
-				return true;
-			}
-		}
-		return false;
+		return unitQueue.stream().anyMatch(u -> u == unitType);
 	}
 
 	public static int getCountInQueue(UnitType unitType) {
-		int count = 0;
-		for (BuildingPlan plan : buildingQueue) {
-			if (plan.getType() == unitType) {
-				count++;
-			}
+		if (unitType.isBuilding()) {
+			return (int) buildingQueue.stream().map(bp -> bp.getType())
+					.filter(ut -> ut == unitType).count();
 		}
-		for (UnitType type : unitQueue) {
-			if (type == unitType) {
-				count++;
-			}
-		}
-		return count;
+		return (int) unitQueue.stream().filter(ut -> ut == unitType).count();
 	}
 
 	public static int getMyUnitCount(UnitType type) {
-		int count = 0;
-		for (Unit u : GameHandler.getAllUnits()) {
-			if (!u.isBeingConstructed() && u.getType() == type) {
-				count++;
-			}
-		}
-		return count;
+		return (int) GameHandler.getAllUnits().stream()
+				.filter(u -> !u.isBeingConstructed())
+				.filter(u -> u.getType() == type).count();
 	}
 
 	public static void setMinimum(UnitType unitType, int min) {

@@ -7,7 +7,6 @@ import java.util.Map;
 
 import bwapi.Color;
 import bwapi.Game;
-import bwapi.Key;
 
 public class DebugEngine {
 	/** The game being acted on **/

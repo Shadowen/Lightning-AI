@@ -109,7 +109,6 @@ public class DebugModule {
 		default:
 		}
 		return this;
-
 	}
 
 	public DebugModule setDraw(DrawFunction c) {

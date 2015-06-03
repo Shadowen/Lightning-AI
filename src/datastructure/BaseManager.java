@@ -2,6 +2,7 @@ package datastructure;
 
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugModule;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -123,21 +124,16 @@ public final class BaseManager {
 		return bases.values();
 	}
 
-	public static Worker getWorker(Unit u) {
-		// Null check
-		if (u == null) {
-			return null;
-		}
-
+	public static Optional<Worker> getWorker(Unit u) {
 		// Find the right worker
 		int uid = u.getID();
 		for (Base b : bases.values()) {
 			Worker w = b.workers.get(uid);
 			if (w != null) {
-				return w;
+				return Optional.of(w);
 			}
 		}
-		return null;
+		return Optional.empty();
 	}
 
 	public static void refineryComplete(Unit u) {
@@ -145,20 +141,17 @@ public final class BaseManager {
 				b -> b.gas.add(new GasResource(u)));
 	}
 
-	public static Resource getResource(Unit u) {
-		for (Base b : bases.values()) {
-			for (MineralResource mineral : b.minerals) {
-				if (mineral.getUnit() == u) {
-					return mineral;
-				}
-			}
-			for (GasResource gas : b.gas) {
-				if (gas.getUnit() == u) {
-					return gas;
-				}
-			}
+	public static Optional<Resource> getResource(Unit u) {
+		if (u.getType().isMineralField()) {
+			return bases.values().stream().flatMap(b -> b.minerals.stream())
+					.filter(m -> m.getUnit() == u).findAny().map(m -> m);
+		} else if (u.getType().isRefinery()) {
+			return bases.values().stream().flatMap(b -> b.gas.stream())
+					.filter(g -> g.getUnit() == u).findAny().map(g -> g);
 		}
-		return null;
+		System.err
+				.println("Searching for a resource corresponding to a unit that is not a resource...");
+		return Optional.empty();
 	}
 
 	public static void resourceDepotShown(Unit unit) {
@@ -186,16 +179,16 @@ public final class BaseManager {
 	}
 
 	public static void registerDebugFunctions() {
-		DebugEngine
-				.createDebugModule("bases")
+		DebugModule bases = DebugEngine.createDebugModule("bases");
+		bases.addSubmodule("main").setDraw(() -> {
+			if (main != null) {
+				DebugEngine.drawTextMap(main.getX(), main.getY(), "Main");
+			}
+		});
+		bases.addSubmodule("status")
 				.setDraw(
 						() -> {
-							if (main != null) {
-								DebugEngine.drawTextMap(main.getX(),
-										main.getY(), "Main");
-							}
-
-							for (Base b : bases.values()) {
+							for (Base b : BaseManager.bases.values()) {
 								// Status
 								DebugEngine.drawCircleMap(b.getX(), b.getY(),
 										100, Color.Teal, false);
@@ -203,57 +196,65 @@ public final class BaseManager {
 										b.getY() + 5, "Status: "
 												+ b.getPlayer().toString()
 												+ " @ " + b.getLastScouted());
-
-								// Command center
-								if (b.commandCenter.isPresent()) {
-									Unit c = b.commandCenter.get();
-									int tx = c.getTilePosition().getX();
-									int ty = c.getTilePosition().getY();
-									DebugEngine.drawBoxMap(tx * 32, ty * 32,
-											(tx + 4) * 32, (ty + 3) * 32,
-											Color.Teal, false);
-								}
-
-								// Minerals
-								for (MineralResource r : b.minerals) {
-									DebugEngine.drawTextMap(r.getX() - 8,
-											r.getY() - 8,
-											String.valueOf(r.getNumGatherers()));
-								}
-								// Gas
-								for (GasResource r : b.gas) {
-									if (!r.gasTaken()) {
-										DebugEngine.drawTextMap(r.getX(),
-												r.getY(), "Geyser");
-									} else {
-										DebugEngine.drawTextMap(r.getX(),
-												r.getY(), "Refinery");
-									}
-								}
-								// Miner counts
-								DebugEngine.drawTextMap(
-										b.getX() + 5,
-										b.getY() + 15,
-										"Mineral Miners: "
-												+ b.getMineralWorkerCount());
-								DebugEngine.drawTextMap(b.getX() + 5,
-										b.getY() + 25, "Mineral Fields: "
-												+ b.minerals.size());
-
-								// Workers
-								for (Worker w : b.workers) {
-									if (w.getTask() == WorkerTask.Mining_Minerals) {
-										DebugEngine.drawCircleMap(w.getX(),
-												w.getY(), 3, Color.Blue, true);
-									} else if (w.getTask() == WorkerTask.Mining_Gas) {
-										DebugEngine.drawCircleMap(w.getX(),
-												w.getY(), 3, Color.Green, true);
-									} else if (w.getTask() == WorkerTask.Constructing_Building) {
-										DebugEngine.drawCircleMap(w.getX(),
-												w.getY(), 3, Color.Orange, true);
-									}
-								}
 							}
 						});
+		bases.addSubmodule("commandcenter")
+				.setDraw(() -> {
+					for (Base b : BaseManager.bases.values()) {
+						// Command center
+						if (b.commandCenter.isPresent()) {
+							Unit c = b.commandCenter.get();
+							int tx = c.getTilePosition().getX();
+							int ty = c.getTilePosition().getY();
+							DebugEngine.drawBoxMap(tx * 32, ty * 32,
+									(tx + 4) * 32, (ty + 3) * 32, Color.Teal,
+									false);
+						}
+					}
+				}).addAlias("cc");
+		bases.addSubmodule("resources")
+				.setDraw(() -> {
+					for (Base b : BaseManager.bases.values()) {
+						// Minerals
+						for (MineralResource r : b.minerals) {
+							DebugEngine.drawTextMap(r.getX() - 8, r.getY() - 8,
+									String.valueOf(r.getNumGatherers()));
+						}
+						// Gas
+						for (GasResource r : b.gas) {
+							if (!r.gasTaken()) {
+								DebugEngine.drawTextMap(r.getX(), r.getY(),
+										"Geyser");
+							} else {
+								DebugEngine.drawTextMap(r.getX(), r.getY(),
+										"Refinery");
+							}
+						}
+					}
+				});
+		bases.addSubmodule("workers")
+				.setDraw(() -> {
+					for (Base b : BaseManager.bases.values()) {
+						// Miner counts
+						DebugEngine.drawTextMap(b.getX() + 5, b.getY() + 15,
+								"Mineral Miners: " + b.getMineralWorkerCount());
+						DebugEngine.drawTextMap(b.getX() + 5, b.getY() + 25,
+								"Mineral Fields: " + b.minerals.size());
+
+						// Workers
+						for (Worker w : b.workers) {
+							if (w.getTask() == WorkerTask.Mining_Minerals) {
+								DebugEngine.drawCircleMap(w.getX(), w.getY(),
+										3, Color.Blue, true);
+							} else if (w.getTask() == WorkerTask.Mining_Gas) {
+								DebugEngine.drawCircleMap(w.getX(), w.getY(),
+										3, Color.Green, true);
+							} else if (w.getTask() == WorkerTask.Constructing_Building) {
+								DebugEngine.drawCircleMap(w.getX(), w.getY(),
+										3, Color.Orange, true);
+							}
+						}
+					}
+				}).addAlias("miners");
 	}
 }
