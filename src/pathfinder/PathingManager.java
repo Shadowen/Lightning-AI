@@ -22,8 +22,9 @@ import bwapi.UnitType;
 import bwta.BWTA;
 import bwta.Chokepoint;
 import gamestructure.GameHandler;
-import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
+import gamestructure.debug.DrawEngine;
 
 public class PathingManager {
 
@@ -301,15 +302,15 @@ public class PathingManager {
 	}
 
 	public static void registerDebugFunctions() {
-		DebugModule chokeDM = DebugEngine.createDebugModule("choke");
+		DebugModule chokeDM = DebugManager.createDebugModule("choke");
 		// Label all chokes
 		chokeDM.addSubmodule("draw").setDraw(
 				() -> {
 					int i = 0;
 					for (Chokepoint choke : BWTA.getChokepoints()) {
-						DebugEngine.drawTextMap(choke.getCenter().getX() - 10,
+						DrawEngine.drawTextMap(choke.getCenter().getX() - 10,
 								choke.getCenter().getY() - 20, "Choke " + i);
-						DebugEngine.drawTextMap(choke.getCenter().getX() - 10,
+						DrawEngine.drawTextMap(choke.getCenter().getX() - 10,
 								choke.getCenter().getY() - 10, "Radius "
 										+ choke.getWidth());
 						i++;
@@ -320,11 +321,11 @@ public class PathingManager {
 				.setDraw(
 						() -> {
 							for (Point location : pathIntoMain) {
-								DebugEngine.drawBoxMap(location.x + 1,
+								DrawEngine.drawBoxMap(location.x + 1,
 										location.y + 1, location.x + 6,
 										location.y + 6, Color.Grey, false);
 							}
-							DebugEngine.drawBoxMap(topOfRamp.x + 1,
+							DrawEngine.drawBoxMap(topOfRamp.x + 1,
 									topOfRamp.y + 1, topOfRamp.x + 6,
 									topOfRamp.y + 6, Color.Red, false);
 						});
@@ -332,7 +333,7 @@ public class PathingManager {
 		chokeDM.addSubmodule("ramp").setDraw(
 				() -> {
 					for (Point location : chokeRampWalkTiles) {
-						DebugEngine.drawBoxMap(location.x * 8, location.y * 8,
+						DrawEngine.drawBoxMap(location.x * 8, location.y * 8,
 								location.x * 8 + 8, location.y * 8 + 8,
 								Color.Green, false);
 					}

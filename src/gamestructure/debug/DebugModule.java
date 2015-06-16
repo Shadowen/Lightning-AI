@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A single module to be used in the {@link DebugEngine}. Modules should be
+ * A single module to be used in the {@link DebugManager}. Modules should be
  * instantiated as abstract inner classes within the class it is intended to
  * debug for. Each module should independently display one pertinent piece of
  * information from its enclosing class.<br>
  * Modules must ultimately be registered to the DebugEngine using
- * {@link DebugEngine#createDebugModule}.
+ * {@link DebugManager#createDebugModule}.
  * 
  * @author wesley
  *

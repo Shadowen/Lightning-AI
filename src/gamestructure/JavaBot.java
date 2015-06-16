@@ -1,6 +1,7 @@
 package gamestructure;
 
-import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugManager;
+import gamestructure.debug.DrawEngine;
 import gamestructure.debug.InvalidCommandException;
 
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ import datastructure.BuildManager;
 import datastructure.Resource;
 
 public class JavaBot implements BWEventListener {
-	protected static Mirror mirror = new Mirror();
+	public static Mirror mirror = new Mirror();
 
 	private BotState botState;
 	// Only contains my units under construction
@@ -147,7 +148,7 @@ public class JavaBot implements BWEventListener {
 									.ifPresent(u -> u.train(toTrain)));
 
 			// Draw debug information on screen
-			DebugEngine.draw();
+			DebugManager.draw();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -276,9 +277,9 @@ public class JavaBot implements BWEventListener {
 			List<String> command = new ArrayList<>(Arrays.asList(s.substring(1)
 					.split(" ")));
 			try {
-				DebugEngine.onReceiveCommand(command);
+				DebugManager.onReceiveCommand(command);
 			} catch (InvalidCommandException e) {
-				DebugEngine.sendText(e.getMessage());
+				DrawEngine.sendText(e.getMessage());
 				e.printStackTrace();
 			}
 		}
@@ -288,33 +289,33 @@ public class JavaBot implements BWEventListener {
 	 * Register my own debug functions to the debugEngine.
 	 */
 	private void registerDebugFunctions() {
-		DebugEngine.createDebugModule("fps").setDraw(
+		DebugManager.createDebugModule("fps").setDraw(
 				() -> {
 					final int yBottom = 285;
-					DebugEngine.drawTextScreen(10, yBottom - 15 * 2, "Frame: "
+					DrawEngine.drawTextScreen(10, yBottom - 15 * 2, "Frame: "
 							+ GameHandler.getFrameCount());
-					DebugEngine.drawTextScreen(10, yBottom - 15, "FPS: "
+					DrawEngine.drawTextScreen(10, yBottom - 15, "FPS: "
 							+ GameHandler.getFPS());
-					DebugEngine.drawTextScreen(10, yBottom, "APM: "
+					DrawEngine.drawTextScreen(10, yBottom, "APM: "
 							+ GameHandler.getAPM());
 				});
-		DebugEngine.createDebugModule("botstate").setDraw(
+		DebugManager.createDebugModule("botstate").setDraw(
 				() -> {
-					DebugEngine.drawTextScreen(5, 5, "Bot state: "
+					DrawEngine.drawTextScreen(5, 5, "Bot state: "
 							+ botState.getClass().toString());
 				});
-		DebugEngine.createDebugModule("construction").setDraw(
+		DebugManager.createDebugModule("construction").setDraw(
 				() -> {
 					String uucString = "";
 					for (Unit u : unitsUnderConstruction) {
 						uucString += u.getType().toString() + ", ";
 					}
-					DebugEngine.drawTextScreen(5, 60,
-							"unitsUnderConstruction: " + uucString);
+					DrawEngine.drawTextScreen(5, 60, "unitsUnderConstruction: "
+							+ uucString);
 				});
-		DebugEngine.createDebugModule("supply").setDraw(
+		DebugManager.createDebugModule("supply").setDraw(
 				() -> {
-					DebugEngine.drawTextScreen(550, 15, "Supply: "
+					DrawEngine.drawTextScreen(550, 15, "Supply: "
 							+ GameHandler.getSelfPlayer().supplyUsed() + "/"
 							+ GameHandler.getSelfPlayer().supplyTotal());
 				});

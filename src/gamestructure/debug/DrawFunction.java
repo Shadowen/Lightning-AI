@@ -16,7 +16,7 @@ public interface DrawFunction {
 	/**
 	 * 
 	 * @throws ShapeOverflowException
-	 *             Calls to {@link DebugEngine}'s drawing methods may throw an
+	 *             Calls to {@link DebugManager}'s drawing methods may throw an
 	 *             exception. If so, it should be passed through here.
 	 */
 	public void run() throws ShapeOverflowException;

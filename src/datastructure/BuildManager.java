@@ -1,7 +1,8 @@
 package datastructure;
 
 import gamestructure.GameHandler;
-import gamestructure.debug.DebugEngine;
+import gamestructure.debug.DebugManager;
+import gamestructure.debug.DrawEngine;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
@@ -228,42 +229,43 @@ public class BuildManager {
 	}
 
 	public static void registerDebugFunctions() {
-		DebugEngine.createDebugModule("buildingqueue").setDraw(
-				() -> {
-					String buildQueueString = "";
-					for (BuildingPlan plan : buildingQueue) {
-						int x = plan.getTx() * 32;
-						int y = plan.getTy() * 32;
-						int width = plan.getType().tileWidth() * 32;
-						int height = plan.getType().tileHeight() * 32;
-						DebugEngine.drawBoxMap(x, y, x + width, y + height,
-								Color.Green, false);
-						DebugEngine
-								.drawTextMap(x, y, plan.getType().toString());
-						if (plan.builder != null) {
-							int bx = plan.builder.getX();
-							int by = plan.builder.getY();
-							DebugEngine.drawLineMap(bx, by, x + width / 2, y
-									+ width / 2, Color.Green);
-						}
+		DebugManager.createDebugModule("buildingqueue")
+				.setDraw(
+						() -> {
+							String buildQueueString = "";
+							for (BuildingPlan plan : buildingQueue) {
+								int x = plan.getTx() * 32;
+								int y = plan.getTy() * 32;
+								int width = plan.getType().tileWidth() * 32;
+								int height = plan.getType().tileHeight() * 32;
+								DrawEngine.drawBoxMap(x, y, x + width, y
+										+ height, Color.Green, false);
+								DrawEngine.drawTextMap(x, y, plan.getType()
+										.toString());
+								if (plan.builder != null) {
+									int bx = plan.builder.getX();
+									int by = plan.builder.getY();
+									DrawEngine.drawLineMap(bx, by, x + width
+											/ 2, y + width / 2, Color.Green);
+								}
 
-						buildQueueString += plan.toString() + ", ";
-					}
-					DebugEngine.drawTextScreen(5, 20, "Building Queue: "
-							+ buildQueueString);
-				});
-		DebugEngine.createDebugModule("trainingqueue").setDraw(
+								buildQueueString += plan.toString() + ", ";
+							}
+							DrawEngine.drawTextScreen(5, 20, "Building Queue: "
+									+ buildQueueString);
+						});
+		DebugManager.createDebugModule("trainingqueue").setDraw(
 				() -> {
 					String trainingQueueString = "";
 					for (UnitType type : unitQueue.toArray(new UnitType[0])) {
 						trainingQueueString += type.toString() + ", ";
 					}
-					DebugEngine.drawTextScreen(5, 40, "Training Queue: "
+					DrawEngine.drawTextScreen(5, 40, "Training Queue: "
 							+ trainingQueueString);
 				});
-		DebugEngine.createDebugModule("unitminimums").setDraw(() -> {
+		DebugManager.createDebugModule("unitminimums").setDraw(() -> {
 			// Unit minimums
-				DebugEngine.drawTextScreen(5, 80,
+				DrawEngine.drawTextScreen(5, 80,
 						"Unit Minimums: current(queued)/required");
 				int y = 90;
 				for (Entry<UnitType, Integer> entry : unitMinimums.entrySet()) {
@@ -274,7 +276,7 @@ public class BuildManager {
 
 					if (inQueueCount != 0 || currentCount != 0
 							|| requiredCount != 0) {
-						DebugEngine.drawTextScreen(5, y, unitType.toString()
+						DrawEngine.drawTextScreen(5, y, unitType.toString()
 								+ ": " + currentCount + "(" + inQueueCount
 								+ ")/" + requiredCount);
 						y += 10;
