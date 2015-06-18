@@ -8,8 +8,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import bwapi.Bullet;
 import bwapi.Game;
 import bwapi.Player;
+import bwapi.Region;
+import bwapi.TechType;
 import bwapi.TilePosition;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -17,13 +20,6 @@ import bwapi.WalkPosition;
 
 public final class GameHandler {
 	private static Game game = JavaBot.mirror.getGame();
-	/**
-	 * A cache keeping track of my units. Recomputed every time allUnits
-	 * changes.
-	 */
-	private static Set<Unit> myUnits;
-	/** The hash code of allUnits at the time myUnits was last computed. */
-	private static int myUnitsHash = 0;
 
 	static {
 		game.setTextSize(bwapi.Text.Size.Enum.Small);
@@ -39,7 +35,7 @@ public final class GameHandler {
 		return game.mapHeight();
 	}
 
-	public static Optional<Unit> getClosestUnitOfType(int x, int y,
+	public static Optional<Unit> getClosestUnit(int x, int y,
 			UnitType... types) {
 		Set<UnitType> typesSet = new HashSet<UnitType>(Arrays.asList(types));
 		Unit closest = null;
@@ -56,7 +52,7 @@ public final class GameHandler {
 		return Optional.ofNullable(closest);
 	}
 
-	public static Optional<Unit> getClosestEnemy(int x, int y) {
+	public static Optional<Unit> getClosestEnemyUnit(int x, int y) {
 		double closestDistance = Double.MAX_VALUE;
 		Unit closestUnit = null;
 		for (Unit u : game.enemy().getUnits()) {
@@ -74,7 +70,7 @@ public final class GameHandler {
 	}
 
 	public static Optional<Unit> getClosestEnemy(Unit toWho) {
-		return getClosestEnemy(toWho.getX(), toWho.getY());
+		return getClosestEnemyUnit(toWho.getX(), toWho.getY());
 	}
 
 	public static int getFrameCount() {
@@ -85,8 +81,24 @@ public final class GameHandler {
 		return game.getFPS();
 	}
 
+	public static double getAverageFPS() {
+		return game.getAverageFPS();
+	}
+
 	public static int getAPM() {
 		return game.getAPM();
+	}
+
+	public static int getAPM(boolean includeSelects) {
+		return game.getAPM(includeSelects);
+	}
+
+	public static int countdownTimer() {
+		return game.countdownTimer();
+	}
+
+	public static int elapsedTime() {
+		return game.elapsedTime();
 	}
 
 	public static Player getSelfPlayer() {
@@ -102,21 +114,21 @@ public final class GameHandler {
 		return game.neutral();
 	}
 
-	public static List<Unit> getNeutralUnits() {
-		return game.getNeutralUnits();
-	}
-
 	public static Player getEnemyPlayer() {
 		return game.enemy();
-	}
-
-	public static boolean isVisible(int tileX, int tileY) {
-		return game.isVisible(tileX, tileY);
 	}
 
 	public static List<Unit> getAllUnits() {
 		return game.getAllUnits();
 	}
+
+	/**
+	 * A cache keeping track of my units. Recomputed every time allUnits
+	 * changes.
+	 */
+	private static Set<Unit> myUnits;
+	/** The hash code of allUnits at the time myUnits was last computed. */
+	private static int myUnitsHash;
 
 	/**
 	 * Get the set of units owned by me. Caches myUnits internally and
@@ -125,17 +137,86 @@ public final class GameHandler {
 	 * @return my units
 	 * */
 	public static Set<Unit> getMyUnits() {
-		// Recompute my units
-		List<Unit> allUnits = game.getAllUnits();
-		if (allUnits.hashCode() != myUnitsHash) {
+		final List<Unit> allUnits = game.getAllUnits();
+		final int hashCode = allUnits.hashCode();
+		if (hashCode != myUnitsHash) {
 			System.out.println("Recomputing myUnits..."); // TODO
 			allUnits.stream().filter(u -> u.getPlayer() == getSelfPlayer())
 					.collect(Collectors.toSet());
-			myUnitsHash = allUnits.hashCode();
+			myUnitsHash = hashCode;
 		} else {
 			System.out.println("Retrieving myUnits from cache!"); // TODO
 		}
 		return myUnits;
+	}
+
+	public static List<Unit> getNeutralUnits() {
+		return game.getNeutralUnits();
+	}
+
+	private static List<Unit> enemyUnitsList;
+	private static int enemyUnitsHash;
+
+	public static List<Unit> getEnemyUnits() {
+		final List<Unit> allUnits = game.getAllUnits();
+		final int hashCode = allUnits.hashCode();
+		if (enemyUnitsHash != hashCode) {
+			System.out.println("Recomputing enemyUnits..."); // TODO
+			enemyUnitsList = allUnits.stream()
+					.filter(u -> u.getPlayer() == getEnemyPlayer())
+					.collect(Collectors.toList());
+			enemyUnitsHash = hashCode;
+		} else {
+			System.out.println("Retrieving enemyUnits from cache!"); // TODO
+		}
+		return enemyUnitsList;
+	}
+
+	public List<Unit> getMinerals() {
+		return game.getMinerals();
+	}
+
+	public List<Unit> getGeysers() {
+		return game.getGeysers();
+	}
+
+	public static boolean isVisible(int tileX, int tileY) {
+		return game.isVisible(tileX, tileY);
+	}
+
+	public static boolean canBuildHere(TilePosition position, UnitType type) {
+		return game.canBuildHere(position, type);
+	}
+
+	public static boolean canBuildHere(TilePosition position, UnitType type,
+			Unit builder) {
+		return game.canBuildHere(position, type, builder);
+	}
+
+	public static boolean canBuildHere(TilePosition position, UnitType type,
+			Unit builder, boolean checkExplored) {
+		return game.canBuildHere(position, type, builder, checkExplored);
+	}
+
+	public static boolean canMake(UnitType type) {
+		return game.canMake(type);
+	}
+
+	public static boolean canMake(UnitType type, Unit builder) {
+		return game.canMake(type, builder);
+	}
+
+	public static boolean canResearch(TechType type) {
+		return game.canResearch(type);
+	}
+
+	public static boolean canResearch(TechType type, Unit unit) {
+		return game.canResearch(type, unit);
+	}
+
+	public static boolean canResearch(TechType type, Unit unit,
+			boolean checkCanIssueCommandType) {
+		return game.canResearch(type, unit, checkCanIssueCommandType);
 	}
 
 	public static boolean isBuildable(TilePosition position,
@@ -154,6 +235,60 @@ public final class GameHandler {
 
 	public static boolean isWalkable(int wx, int wy) {
 		return game.isWalkable(wx, wy);
+	}
+
+	public static TilePosition getBuildLocation(UnitType type,
+			TilePosition desiredPosition) {
+		return game.getBuildLocation(type, desiredPosition);
+	}
+
+	public static TilePosition getBuildLocation(UnitType type,
+			TilePosition desiredPosition, int maxRange) {
+		return game.getBuildLocation(type, desiredPosition, maxRange);
+	}
+
+	public static List<Bullet> getBullets() {
+		return game.getBullets();
+	}
+
+	public static int getDamageFrom(UnitType fromType, UnitType toType) {
+		return game.getDamageFrom(fromType, toType);
+	}
+
+	public static int getDamageFrom(UnitType fromType, UnitType toType,
+			Player fromPlayer) {
+		return game.getDamageFrom(fromType, toType, fromPlayer);
+	}
+
+	public static int getDamageFrom(UnitType fromType, UnitType toType,
+			Player fromPlayer, Player toPlayer) {
+		return game.getDamageFrom(fromType, toType, fromPlayer, toPlayer);
+	}
+
+	public static int getDamageTo(UnitType toType, UnitType fromType) {
+		return game.getDamageTo(toType, fromType);
+	}
+
+	public static int getDamageTo(UnitType toType, UnitType fromType,
+			Player toPlayer) {
+		return game.getDamageTo(toType, fromType, toPlayer);
+	}
+
+	public static int getDamageTo(UnitType toType, UnitType fromType,
+			Player toPlayer, Player fromPlayer) {
+		return game.getDamageTo(toType, fromType, toPlayer, fromPlayer);
+	}
+
+	public static boolean hasCreep(int tileX, int tileY) {
+		return game.hasCreep(tileX, tileY);
+	}
+
+	public static boolean hasCreep(TilePosition position) {
+		return game.hasCreep(position);
+	}
+
+	public static List<Region> getAllRegions() {
+		return game.getAllRegions();
 	}
 
 	public static void sendText(String message) {

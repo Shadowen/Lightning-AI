@@ -81,13 +81,6 @@ public final class BaseManager {
 	}
 
 	public static Optional<Worker> getBuilder() {
-		// TODO Java 8 stream style implementation?
-		// bases.values()
-		// .stream()
-		// .flatMap(
-		// b -> b.workers.stream().filter(
-		// w -> w.getTask() == WorkerTask.Mining_Minerals))
-		// .findAny();
 		for (Base b : bases.values()) {
 			Worker u = b.getBuilder();
 			if (u != null) {

@@ -19,6 +19,7 @@ import bwapi.Player;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
+import bwapi.Utils;
 import bwta.BWTA;
 import datastructure.Base;
 import datastructure.BaseManager;
@@ -49,7 +50,8 @@ public class JavaBot implements BWEventListener {
 		try {
 			// Use BWTA to analyze map
 			// This may take a few minutes if the map is processed first time!
-			System.out.println("Analyzing map...");
+			System.out.println(Utils.formatText("Analyzing map...",
+					Utils.Pinkish));
 			BWTA.readMap();
 			BWTA.analyze();
 			System.out.println("Map data ready");
@@ -247,15 +249,14 @@ public class JavaBot implements BWEventListener {
 
 	@Override
 	public void onUnitComplete(Unit unit) {
-		// TODO Auto-generated method stub
-
+		GameHandler.sendText("Unit complete: " + unit.getType());
 	}
 
 	public void onUnitConstructed(Unit unit) {
 		try {
 			UnitType type = unit.getType();
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
-				System.out.println("Unit complete: " + type.toString());
+				GameHandler.sendText("Unit constructed: " + type.toString());
 
 				BuildManager.buildingComplete(unit);
 

@@ -62,7 +62,7 @@ public class MassMarineState extends BotState {
 
 							if (GameHandler.isVisible(x / 32, y / 32)) {
 								Optional<Unit> closestEnemy = GameHandler
-										.getClosestEnemy(x, y);
+										.getClosestEnemyUnit(x, y);
 								if (!closestEnemy.isPresent()
 										|| Point.distance(x, y, closestEnemy
 												.get().getX(), closestEnemy

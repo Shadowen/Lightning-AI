@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import pathfinder.PathingManager;
 import bwapi.Color;
@@ -27,7 +25,6 @@ public class MicroManager {
 	private static int mapHeight;
 	private static double[][] targetMap;
 	private static double[][] threatMap;
-	private static final long THREAT_MAP_REFRESH_DELAY = 1000;
 
 	private static Optional<Base> scoutingTarget;
 	private static Queue<Point> scoutPath;
@@ -45,62 +42,6 @@ public class MicroManager {
 
 		scoutPath = new ArrayDeque<Point>();
 
-		// Update threat map
-		new Timer().scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				// Reset target and threat counter
-				for (int x = 0; x < mapWidth; x++) {
-					for (int y = 0; y < mapHeight; y++) {
-						targetMap[x][y] = 0;
-						threatMap[x][y] = 0;
-					}
-				}
-
-				// Loop through enemy units
-				for (Unit u : GameHandler.getAllUnits()) { // TODO
-					UnitType unitType = u.getType();
-					// Get the x and y grid point coordinates
-					int x = u.getX() / 32;
-					int y = u.getY() / 32;
-
-					// Update target map
-					double targetValue = 0;
-					if (unitType.isWorker()) {
-						targetValue = 1;
-					}
-					int radius = 10;
-					int startX = Math.max(x - radius, 0);
-					int endX = Math.min(x + radius, mapWidth);
-					for (int cx = startX; cx < endX; cx++) {
-						int remainingRadius = radius - Math.abs(cx - x);
-						int startY = Math.max(y - remainingRadius, 0);
-						int endY = Math.min(y + remainingRadius, mapHeight);
-						for (int cy = startY; cy < endY; cy++) {
-							targetMap[cx][cy] += targetValue
-									/ (Point.distance(x, y, cx, cy) + 1);
-						}
-					}
-
-					// Update threat map
-					double threatValue = 1;
-					radius = u.getType().airWeapon().maxRange() / 32;
-					startX = Math.max(x - radius, 0);
-					endX = Math.min(x + radius, mapWidth);
-					for (int cx = startX; cx < endX; cx++) {
-						int remainingRadius = radius - Math.abs(cx - x);
-						int startY = Math.max(y - remainingRadius, 0);
-						int endY = Math.min(y + remainingRadius, mapHeight);
-						for (int cy = startY; cy < endY; cy++) {
-							threatMap[cx][cy] += threatValue * radius
-									/ (Point.distance(x, y, cx, cy) + 1);
-						}
-					}
-				}
-			}
-
-		}, 0, THREAT_MAP_REFRESH_DELAY);
-
 		registerDebugFunctions();
 	}
 
@@ -109,10 +50,63 @@ public class MicroManager {
 	}
 
 	public static void act() {
+		updateMap();
 		// Move attacking units
 		micro();
 		// Move scouting unit(s)
 		scout();
+	}
+
+	private static void updateMap() {
+		// Update threat map
+		// Reset target and threat counter
+		for (int x = 0; x < mapWidth; x++) {
+			for (int y = 0; y < mapHeight; y++) {
+				targetMap[x][y] = 0;
+				threatMap[x][y] = 0;
+			}
+		}
+
+		// Loop through enemy units
+		for (Unit u : GameHandler.getEnemyUnits()) {
+			UnitType unitType = u.getType();
+			// Get the x and y grid point coordinates
+			int x = u.getX() / 32;
+			int y = u.getY() / 32;
+
+			// Update target map
+			double targetValue = 0;
+			if (unitType.isWorker()) {
+				targetValue = 1;
+			}
+			int radius = 10;
+			int startX = Math.max(x - radius, 0);
+			int endX = Math.min(x + radius, mapWidth);
+			for (int cx = startX; cx < endX; cx++) {
+				int remainingRadius = radius - Math.abs(cx - x);
+				int startY = Math.max(y - remainingRadius, 0);
+				int endY = Math.min(y + remainingRadius, mapHeight);
+				for (int cy = startY; cy < endY; cy++) {
+					targetMap[cx][cy] += targetValue
+							/ (Point.distance(x, y, cx, cy) + 1);
+				}
+			}
+
+			// Update threat map
+			double threatValue = 1;
+			radius = u.getType().airWeapon().maxRange() / 32;
+			startX = Math.max(x - radius, 0);
+			endX = Math.min(x + radius, mapWidth);
+			for (int cx = startX; cx < endX; cx++) {
+				int remainingRadius = radius - Math.abs(cx - x);
+				int startY = Math.max(y - remainingRadius, 0);
+				int endY = Math.min(y + remainingRadius, mapHeight);
+				for (int cy = startY; cy < endY; cy++) {
+					threatMap[cx][cy] += threatValue * radius
+							/ (Point.distance(x, y, cx, cy) + 1);
+				}
+			}
+		}
 	}
 
 	private static void micro() {
