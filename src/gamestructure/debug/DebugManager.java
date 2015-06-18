@@ -1,5 +1,6 @@
 package gamestructure.debug;
 
+import gamestructure.GameHandler;
 import gamestructure.JavaBot;
 
 import java.awt.Point;
@@ -28,15 +29,15 @@ public class DebugManager {
 				.addCommand(
 						null,
 						(c) -> {
-							DrawEngine
+							GameHandler
 									.sendText("Type \"/help modules\" for a complete list of modules.");
-							DrawEngine
+							GameHandler
 									.sendText("Type \"/help <name>\" for more information on a specific module.");
 						})
 				.addAlias("help")
 				.addCommand(
 						"modules",
-						(c) -> debugModules.forEach((k, v) -> DrawEngine
+						(c) -> debugModules.forEach((k, v) -> GameHandler
 								.sendText(k)));
 	}
 
@@ -67,7 +68,7 @@ public class DebugManager {
 				soe.printStackTrace();
 				// Get the actual debugModule that caused the overflow and
 				// print it.
-				DrawEngine.sendText(d.name);
+				GameHandler.sendText(d.name);
 				break;
 			}
 		}

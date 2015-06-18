@@ -46,107 +46,9 @@ public class DrawEngine {
 	}
 
 	/**
-	 * Draws a dot on the map using the {@link Game.drawDotMap} native methods.
-	 * 
-	 * @param x
-	 *            The x coordinate in pixels.
-	 * @param y
-	 *            The y coordinate in pixels.
-	 * @param color
-	 *            The colour as a {@link bwapi.Color}.
-	 * @throws ShapeOverflowException
-	 *             Thrown if the {@link DebugManager} tries to draw too many
-	 *             shapes.
-	 */
-	public static void drawDotMap(int x, int y, Color color)
-			throws ShapeOverflowException {
-		game.drawDotMap(x, y, color);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException();
-		}
-	}
-
-	/**
-	 * Draws a dot on the screen using the {@link Game.drawDotMap} native
-	 * methods.
-	 * 
-	 * @param x
-	 *            The x coordinate in pixels.
-	 * @param y
-	 *            The y coordinate in pixels.
-	 * @param color
-	 *            The colour as a {@link bwapi.Color}.
-	 * @throws ShapeOverflowException
-	 *             Thrown if the {@link DebugManager} tries to draw too many
-	 *             shapes.
-	 */
-	public static void drawDotScreen(int x, int y, Color color)
-			throws ShapeOverflowException {
-		game.drawDotScreen(x, y, color);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException();
-		}
-	}
-
-	/**
-	 * Draws a circle on the map using the {@link javabot.JNIBWAPI} native
-	 * methods.
-	 * 
-	 * @param x
-	 *            The x coordinate of the center of the circle in pixels.
-	 * @param y
-	 *            The y coordinate of the center of the circle in pixels.
-	 * @param radius
-	 *            The radius of the circle in pixels.
-	 * @param color
-	 *            The color as a {@link BWColor}.
-	 * @param fill
-	 *            If true, fill the circle with the same color.
-	 * @throws ShapeOverflowException
-	 *             Thrown if the {@link DebugManager} tries to draw too many
-	 *             shapes.
-	 */
-	public static void drawCircleMap(int x, int y, int radius, Color color,
-			boolean fill) throws ShapeOverflowException {
-		game.drawCircleMap(x, y, radius, color, fill);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException();
-		}
-	}
-
-	/**
-	 * Draws a line on the map using the {@link javabot.JNIBWAPI} native
-	 * methods.
-	 * 
-	 * @param x1
-	 *            The start x coordinate in pixels.
-	 * @param y1
-	 *            The start y coordinate in pixels.
-	 * @param x2
-	 *            The end x coordinate in pixels.
-	 * @param y2
-	 *            The end y coordinate in pixels.
-	 * @param color
-	 *            The colour as a {@link BWColor}.
-	 * @throws ShapeOverflowException
-	 *             Thrown if the {@link DebugManager} tries to draw too many
-	 *             shapes.
-	 */
-	public static void drawLineMap(int x1, int y1, int x2, int y2, Color color)
-			throws ShapeOverflowException {
-		game.drawLineMap(x1, y1, x2, y2, color);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException();
-		}
-	}
-
-	/**
 	 * Draws a rectangular box on the map using the {@link javabot.JNIBWAPI}
-	 * native methods.
+	 * native methods. Coordinates are relative to the top left corner of the
+	 * map.
 	 * 
 	 * @param left
 	 *            The x coordinate of the left side in pixels.
@@ -169,7 +71,248 @@ public class DrawEngine {
 		game.drawBoxMap(left, top, right, bottom, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException();
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws a rectangular box on the screen using the {@link javabot.JNIBWAPI}
+	 * native methods. Coordinates are relative to the top left corner of the
+	 * screen.
+	 * 
+	 * @param left
+	 *            The x coordinate of the left side in pixels.
+	 * @param top
+	 *            The y coordinate of the top side in pixels.
+	 * @param right
+	 *            The x coordinate of the right side in pixels.
+	 * @param bottom
+	 *            The y coordinate of the bottom side in pixels.
+	 * @param fill
+	 *            If true, fill the box with the same color.
+	 * @param color
+	 *            The colour as a {@link BWColor}.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawBoxScreen(int left, int top, int right, int bottom,
+			Color color, boolean fill) throws ShapeOverflowException {
+		game.drawBoxScreen(left, top, right, bottom, color, fill);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws a circle on the map using the {@link javabot.JNIBWAPI} native
+	 * methods. Coordinates are relative to the top left corner of the map.
+	 * 
+	 * @param x
+	 *            The x coordinate of the center of the circle in pixels.
+	 * @param y
+	 *            The y coordinate of the center of the circle in pixels.
+	 * @param radius
+	 *            The radius of the circle in pixels.
+	 * @param color
+	 *            The color as a {@link BWColor}.
+	 * @param fill
+	 *            If true, fill the circle with the same color.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawCircleMap(int x, int y, int radius, Color color,
+			boolean fill) throws ShapeOverflowException {
+		game.drawCircleMap(x, y, radius, color, fill);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws a circle on the screen using the {@link javabot.JNIBWAPI} native
+	 * methods. Coordinates are relative to the top left corner of the screen.
+	 * 
+	 * @param x
+	 *            The x coordinate of the center of the circle in pixels.
+	 * @param y
+	 *            The y coordinate of the center of the circle in pixels.
+	 * @param radius
+	 *            The radius of the circle in pixels.
+	 * @param color
+	 *            The color as a {@link BWColor}.
+	 * @param fill
+	 *            If true, fill the circle with the same color.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawCircleScreen(int x, int y, int radius, Color color,
+			boolean fill) throws ShapeOverflowException {
+		game.drawCircleScreen(x, y, radius, color, fill);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws a dot on the map using the {@link Game.drawDotMap} native methods.
+	 * 
+	 * @param x
+	 *            The x coordinate in pixels.
+	 * @param y
+	 *            The y coordinate in pixels.
+	 * @param color
+	 *            The colour as a {@link bwapi.Color}.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawDotMap(int x, int y, Color color)
+			throws ShapeOverflowException {
+		game.drawDotMap(x, y, color);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws a dot on the screen using the {@link Game.drawDotMap} native
+	 * methods.
+	 * 
+	 * @param x
+	 *            The x coordinate in pixels.
+	 * @param y
+	 *            The y coordinate in pixels.
+	 * @param color
+	 *            The colour as a {@link bwapi.Color}.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawDotScreen(int x, int y, Color color)
+			throws ShapeOverflowException {
+		game.drawDotScreen(x, y, color);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws an ellipse on the map using the {@link javabot.JNIBWAPI} native
+	 * methods. Coordinates are relative to the top left corner of the map.
+	 * 
+	 * @param x
+	 *            The x coordinate of the center of the ellipse in pixels.
+	 * @param y
+	 *            The y coordinate of the center of the ellipse in pixels.
+	 * @param xrad
+	 *            The horizontal radius of the ellipse in pixels.
+	 * @param yrad
+	 *            The vertical radius of the ellipse in pixels.
+	 * @param color
+	 *            The color as a {@link BWColor}.
+	 * @param fill
+	 *            If true, fill the ellipse with the same color.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawEllipseMap(int x, int y, int xrad, int yrad,
+			Color color, boolean fill) throws ShapeOverflowException {
+		game.drawEllipseMap(x, y, xrad, yrad, color, fill);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws an ellipse on the screen using the {@link javabot.JNIBWAPI} native
+	 * methods. Coordinates are relative to the top left corner of the screen.
+	 * 
+	 * @param x
+	 *            The x coordinate of the center of the ellipse in pixels.
+	 * @param y
+	 *            The y coordinate of the center of the ellipse in pixels.
+	 * @param xrad
+	 *            The horizontal radius of the ellipse.
+	 * @param yrad
+	 *            The vertical radius of the ellipse.
+	 * @param color
+	 *            The color as a {@link BWColor}.
+	 * @param fill
+	 *            If true, fill the ellipse with the same color.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawEllipseScreen(int x, int y, int xrad, int yrad,
+			Color color, boolean fill) throws ShapeOverflowException {
+		game.drawEllipseScreen(x, y, xrad, yrad, color, fill);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws a line on the map using the {@link javabot.JNIBWAPI} native
+	 * methods. Coordinates are relative to the top left corner of the map.
+	 * 
+	 * @param x1
+	 *            The start x coordinate in pixels.
+	 * @param y1
+	 *            The start y coordinate in pixels.
+	 * @param x2
+	 *            The end x coordinate in pixels.
+	 * @param y2
+	 *            The end y coordinate in pixels.
+	 * @param color
+	 *            The colour as a {@link BWColor}.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawLineMap(int x1, int y1, int x2, int y2, Color color)
+			throws ShapeOverflowException {
+		game.drawLineMap(x1, y1, x2, y2, color);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws a line on the screen using the {@link javabot.JNIBWAPI} native
+	 * methods. Coordinates are relative to the top left corner of the screen.
+	 * 
+	 * @param x1
+	 *            The start x coordinate in pixels.
+	 * @param y1
+	 *            The start y coordinate in pixels.
+	 * @param x2
+	 *            The end x coordinate in pixels.
+	 * @param y2
+	 *            The end y coordinate in pixels.
+	 * @param color
+	 *            The colour as a {@link BWColor}.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawLineScreen(int x1, int y1, int x2, int y2,
+			Color color) throws ShapeOverflowException {
+		game.drawLineScreen(x1, y1, x2, y2, color);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
 		}
 	}
 
@@ -191,7 +334,7 @@ public class DrawEngine {
 		game.drawTextMap(x, y, message);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException();
+			throw new ShapeOverflowException(shapeCount);
 		}
 	}
 
@@ -214,7 +357,7 @@ public class DrawEngine {
 		game.drawTextScreen(x, y, message);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException();
+			throw new ShapeOverflowException(shapeCount);
 		}
 	}
 
@@ -271,15 +414,5 @@ public class DrawEngine {
 		final int a2y = (int) Math.round(y2 - arrowheadLength * uy
 				- arrowheadHalfWidth * vy);
 		drawLineMap(x2, y2, a2x, a2y, color);
-	}
-
-	/**
-	 * Send the given text in chat.
-	 * 
-	 * @param string
-	 *            the text to send
-	 */
-	public static void sendText(String string) {
-		game.sendText(string);
 	}
 }

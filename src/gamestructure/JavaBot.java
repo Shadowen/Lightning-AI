@@ -1,6 +1,7 @@
 package gamestructure;
 
 import gamestructure.debug.DebugManager;
+import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.InvalidCommandException;
 
@@ -280,7 +281,7 @@ public class JavaBot implements BWEventListener {
 			try {
 				DebugManager.onReceiveCommand(command);
 			} catch (InvalidCommandException e) {
-				DrawEngine.sendText(e.getMessage());
+				GameHandler.sendText(e.getMessage());
 				e.printStackTrace();
 			}
 		}
@@ -290,15 +291,23 @@ public class JavaBot implements BWEventListener {
 	 * Register my own debug functions to the debugEngine.
 	 */
 	private void registerDebugFunctions() {
-		DebugManager.createDebugModule("fps").setDraw(
+		DebugModule stats = DebugManager.createDebugModule("stats");
+		final int yBottom = 285;
+		stats.addSubmodule("apm").setDraw(
 				() -> {
-					final int yBottom = 285;
-					DrawEngine.drawTextScreen(10, yBottom - 15 * 2, "Frame: "
-							+ GameHandler.getFrameCount());
-					DrawEngine.drawTextScreen(10, yBottom - 15, "FPS: "
-							+ GameHandler.getFPS());
 					DrawEngine.drawTextScreen(10, yBottom, "APM: "
 							+ GameHandler.getAPM());
+					DrawEngine.drawTextScreen(10, yBottom - 15, "APMs: "
+							+ GameHandler.getAPM(true));
+				});
+		stats.addSubmodule("fps").setDraw(
+				() -> {
+					DrawEngine.drawTextScreen(10, yBottom - 15 * 4, "Frame: "
+							+ GameHandler.getFrameCount());
+					DrawEngine.drawTextScreen(10, yBottom - 15 * 3, "aFPS: "
+							+ GameHandler.getAverageFPS());
+					DrawEngine.drawTextScreen(10, yBottom - 15 * 2, "FPS: "
+							+ GameHandler.getFPS());
 				});
 		DebugManager.createDebugModule("botstate").setDraw(
 				() -> {
