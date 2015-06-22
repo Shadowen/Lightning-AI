@@ -22,10 +22,12 @@ public final class GameHandler {
 	private static Game game;
 
 	public static void init(Game igame) {
+		System.out.print("Starting GameHandler... ");
 		game = igame;
 		game.setTextSize(bwapi.Text.Size.Enum.Small);
 		// allow me to manually control units during the game
 		game.enableFlag(1);
+		System.out.println("Success!");
 	}
 
 	public static int getMapWidth() {

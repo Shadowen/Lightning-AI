@@ -22,6 +22,7 @@ public class DrawEngine {
 	private static final int MAX_SHAPES = 26000;
 
 	public static void init(Game igame) {
+		System.out.print("Starting DrawEngine... ");
 		game = igame;
 		// Debugger debugger
 		DebugManager.createDebugModule("shapecount")
@@ -36,6 +37,7 @@ public class DrawEngine {
 							// Reset the shapecount
 							shapeCount = 0;
 						});
+		System.out.println("Success!");
 	}
 
 	/**

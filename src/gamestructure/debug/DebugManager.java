@@ -17,6 +17,7 @@ public class DebugManager {
 	 *            The game to debug for.
 	 */
 	public static void init() {
+		System.out.print("Starting DebugManager... ");
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger help
@@ -34,6 +35,7 @@ public class DebugManager {
 						"modules",
 						(c) -> debugModules.forEach((k, v) -> GameHandler
 								.sendText(k)));
+		System.out.println("Success!");
 	}
 
 	/**

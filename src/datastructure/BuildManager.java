@@ -20,11 +20,13 @@ public final class BuildManager {
 	public static Queue<UnitType> unitQueue;
 
 	public static void init() {
+		System.out.print("Starting BuildManager... ");
 		unitMinimums = new Hashtable<UnitType, Integer>();
 		buildingQueue = new ArrayDeque<BuildingPlan>();
 		unitQueue = new ArrayDeque<UnitType>();
 
 		registerDebugFunctions();
+		System.out.println("Success!");
 	}
 
 	/** This constructor should never be called */

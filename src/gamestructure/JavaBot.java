@@ -52,15 +52,14 @@ public class JavaBot implements BWEventListener {
 		try {
 			// Use BWTA to analyze map
 			// This may take a few minutes if the map is processed first time!
-			System.out.println(Utils.formatText("Analyzing map...",
-					Utils.Pinkish));
+			System.out.println("Analyzing map...");
 			BWTA.readMap();
 			BWTA.analyze();
 			System.out.println("Map data ready");
 
-			DrawEngine.init(mirror.getGame());
-			DebugManager.init();
 			GameHandler.init(mirror.getGame());
+			DebugManager.init();
+			DrawEngine.init(mirror.getGame());
 			BaseManager.init();
 			BuildManager.init();
 			MicroManager.init();
@@ -71,6 +70,8 @@ public class JavaBot implements BWEventListener {
 
 			// Start all the modules
 			registerDebugFunctions();
+
+			System.out.println("Init complete!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

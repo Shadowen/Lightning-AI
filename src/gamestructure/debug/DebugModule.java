@@ -75,11 +75,6 @@ public class DebugModule {
 	}
 
 	public DebugModule addCommand(String command, CommandFunction action) {
-		if (commands.containsKey(command)) {
-			// Tried to overwrite a command!
-			throw new UnsupportedOperationException("Command " + command
-					+ " already exists!");
-		}
 		commands.put(command, action);
 		lastAdded = command;
 		lastAddedTo = LAT_COMMAND;
@@ -95,7 +90,7 @@ public class DebugModule {
 	}
 
 	public DebugModule addAlias(String alias) {
-		return addAlias(lastAdded);
+		return addAlias(alias, lastAdded);
 	}
 
 	protected DebugModule addAlias(String alias, String old) {

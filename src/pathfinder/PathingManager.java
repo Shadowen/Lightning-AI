@@ -38,6 +38,7 @@ public final class PathingManager {
 	private static List<Point> chokeRampWalkTiles;
 
 	public static void init() {
+		System.out.print("Starting PathingManager... ");
 		mapWalkWidth = 0; // TODO
 		mapWalkHeight = 0; // TODO
 
@@ -51,6 +52,7 @@ public final class PathingManager {
 		}
 
 		registerDebugFunctions();
+		System.out.println("Success!");
 	}
 
 	/** This constructor should never be used. */

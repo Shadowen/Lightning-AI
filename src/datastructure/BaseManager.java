@@ -29,6 +29,7 @@ public final class BaseManager {
 	private static int baseRadius = 300;
 
 	public static void init() {
+		System.out.print("Starting BaseManager... ");
 		bases = new HashMap<>();
 		// Add bases
 		for (BaseLocation location : BWTA.getBaseLocations()) {
@@ -36,22 +37,29 @@ public final class BaseManager {
 			bases.put(location, b);
 		}
 		// Sort resources
-		for (Unit u : GameHandler.getNeutralUnits()) {
+		for (Unit u : GameHandler.getAllUnits()) {
 			UnitType type = u.getType();
-			Optional<Base> closestBase = getClosestBase(u.getPosition(),
-					baseRadius);
+			Optional<Base> closestBase = getClosestBase(u.getPosition());
+			System.out.println(type.isResourceDepot());
 			if (closestBase.isPresent()) {
 				if (type.isMineralField()) {
 					closestBase.get().minerals.add(new MineralResource(u));
 				} else if (type.equals(UnitType.Resource_Vespene_Geyser)) {
 					closestBase.get().gas.add(new GasResource(u));
+				} else if (type.isResourceDepot()) {
+					System.out.println("Found resource depot!");
+
+					closestBase.get().setPlayer(u.getPlayer());
+					System.out.println("Found a base for " + u.getPlayer());
 				}
 			}
 		}
+		System.out.print("Searching for main... ");
 		// First base is main
-		BaseManager.main = BaseManager.getMyBases().iterator().next();
+		BaseManager.main = BaseManager.getMyBases().stream().findAny().get();
 
 		registerDebugFunctions();
+		System.out.println("Success!");
 	}
 
 	/** This constructor should never be called. */
@@ -74,10 +82,19 @@ public final class BaseManager {
 		return myBases;
 	}
 
-	private static Optional<Base> getClosestBase(Position position,
-			int maxDistance) {
-		return Optional.ofNullable(bases.get(BWTA
-				.getNearestBaseLocation(position)));
+	public static Optional<Base> getClosestBase(Position position) {
+		int closestDistance = Integer.MAX_VALUE;
+		Base closestBase = null;
+		for (Base b : bases.values()) {
+			int distance = b.getLocation().getPosition()
+					.getApproxDistance(position);
+			if (distance < closestDistance) {
+				closestBase = b;
+				closestDistance = distance;
+			}
+		}
+
+		return Optional.ofNullable(closestBase);
 	}
 
 	public static Optional<Worker> getBuilder() {
@@ -131,7 +148,7 @@ public final class BaseManager {
 	}
 
 	public static void refineryComplete(Unit u) {
-		getClosestBase(u.getPosition(), baseRadius).ifPresent(
+		getClosestBase(u.getPosition()).ifPresent(
 				b -> b.gas.add(new GasResource(u)));
 	}
 
@@ -149,27 +166,25 @@ public final class BaseManager {
 	}
 
 	public static void resourceDepotShown(Unit unit) {
-		getClosestBase(unit.getPosition(), baseRadius).ifPresent(b -> {
+		getClosestBase(unit.getPosition()).ifPresent(b -> {
 			b.commandCenter = Optional.of(unit);
 			b.setPlayer(unit.getPlayer());
 		});
 	}
 
 	public static void resourceDepotDestroyed(Unit unit) {
-		getClosestBase(unit.getPosition(), baseRadius).ifPresent(b -> {
+		getClosestBase(unit.getPosition()).ifPresent(b -> {
 			b.commandCenter = Optional.empty();
 			b.setPlayer(GameHandler.getNeutralPlayer());
 		});
 	}
 
 	public static void resourceDepotHidden(Unit unit) {
-		getClosestBase(unit.getPosition(), baseRadius).ifPresent(
-				b -> b.setLastScouted());
+		getClosestBase(unit.getPosition()).ifPresent(b -> b.setLastScouted());
 	}
 
 	public static void workerComplete(Unit unit) {
-		getClosestBase(unit.getPosition(), baseRadius).ifPresent(
-				b -> b.addWorker(unit));
+		getClosestBase(unit.getPosition()).ifPresent(b -> b.addWorker(unit));
 	}
 
 	public static void registerDebugFunctions() {

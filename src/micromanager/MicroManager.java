@@ -33,6 +33,7 @@ public final class MicroManager {
 	private static HashMap<UnitType, HashMap<Unit, UnitAgent>> units;
 
 	public static void init() {
+		System.out.print("Starting MicroManager... ");
 		mapWidth = GameHandler.getMapWidth();
 		mapHeight = GameHandler.getMapHeight();
 		targetMap = new double[mapWidth + 1][mapHeight + 1];
@@ -43,6 +44,7 @@ public final class MicroManager {
 		scoutPath = new ArrayDeque<Point>();
 
 		registerDebugFunctions();
+		System.out.println("Success!");
 	}
 
 	/** This constructor should never be called. */
