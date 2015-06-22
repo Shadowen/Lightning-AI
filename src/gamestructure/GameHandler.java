@@ -19,9 +19,10 @@ import bwapi.UnitType;
 import bwapi.WalkPosition;
 
 public final class GameHandler {
-	private static Game game = JavaBot.mirror.getGame();
+	private static Game game;
 
-	static {
+	public static void init(Game igame) {
+		game = igame;
 		game.setTextSize(bwapi.Text.Size.Enum.Small);
 		// allow me to manually control units during the game
 		game.enableFlag(1);
@@ -35,8 +36,7 @@ public final class GameHandler {
 		return game.mapHeight();
 	}
 
-	public static Optional<Unit> getClosestUnit(int x, int y,
-			UnitType... types) {
+	public static Optional<Unit> getClosestUnit(int x, int y, UnitType... types) {
 		Set<UnitType> typesSet = new HashSet<UnitType>(Arrays.asList(types));
 		Unit closest = null;
 		double closestDistance = Double.MAX_VALUE;

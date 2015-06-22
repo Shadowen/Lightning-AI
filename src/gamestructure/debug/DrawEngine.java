@@ -1,7 +1,5 @@
 package gamestructure.debug;
 
-import gamestructure.JavaBot;
-
 import java.awt.Point;
 
 import bwapi.Color;
@@ -9,7 +7,7 @@ import bwapi.Game;
 
 public class DrawEngine {
 	/** The game being acted on **/
-	private static Game game = JavaBot.mirror.getGame();
+	private static Game game;
 	/***
 	 * The number of shapes drawn so far in the current frame. If
 	 * {@link #MAX_SHAPES} is exceeded, a {@link ShapeOverflowException} is
@@ -23,7 +21,8 @@ public class DrawEngine {
 	 **/
 	private static final int MAX_SHAPES = 26000;
 
-	static {
+	public static void init(Game igame) {
+		game = igame;
 		// Debugger debugger
 		DebugManager.createDebugModule("shapecount")
 				.setDraw(

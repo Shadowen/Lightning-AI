@@ -14,12 +14,12 @@ import bwapi.Color;
 import bwapi.Unit;
 import bwapi.UnitType;
 
-public class BuildManager {
+public final class BuildManager {
 	public static Hashtable<UnitType, Integer> unitMinimums;
 	public static Queue<BuildingPlan> buildingQueue;
 	public static Queue<UnitType> unitQueue;
 
-	static {
+	public static void init() {
 		unitMinimums = new Hashtable<UnitType, Integer>();
 		buildingQueue = new ArrayDeque<BuildingPlan>();
 		unitQueue = new ArrayDeque<UnitType>();
@@ -28,6 +28,7 @@ public class BuildManager {
 	}
 
 	/** This constructor should never be called */
+	@Deprecated
 	private BuildManager() {
 	}
 

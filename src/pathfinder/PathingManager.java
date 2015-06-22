@@ -1,5 +1,10 @@
 package pathfinder;
 
+import gamestructure.GameHandler;
+import gamestructure.debug.DebugManager;
+import gamestructure.debug.DebugModule;
+import gamestructure.debug.DrawEngine;
+
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -10,23 +15,16 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 
-import datastructure.BaseManager;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
 import bwta.Chokepoint;
-import gamestructure.GameHandler;
-import gamestructure.debug.DebugManager;
-import gamestructure.debug.DebugModule;
-import gamestructure.debug.DrawEngine;
+import datastructure.BaseManager;
 
-public class PathingManager {
+public final class PathingManager {
 
 	private static final int MAX_RAMP_WALK_TILES = 500;
 
@@ -39,15 +37,15 @@ public class PathingManager {
 	private static Point topOfRamp;
 	private static List<Point> chokeRampWalkTiles;
 
-	static {
+	public static void init() {
 		mapWalkWidth = 0; // TODO
 		mapWalkHeight = 0; // TODO
 
 		// Init walkable map
 		walkableNodes = new ArrayList<ArrayList<Node>>();
-		for (int wx = 0; wx < 0 * 4; wx++) { // TODO
+		for (int wx = 0; wx < mapWalkWidth; wx++) { // TODO
 			walkableNodes.add(new ArrayList<Node>());
-			for (int wy = 0; wy < 0 * 4; wy++) { // TODO
+			for (int wy = 0; wy < mapWalkHeight; wy++) { // TODO
 				walkableNodes.get(wx).add(new Node(wx, wy));
 			}
 		}
@@ -56,7 +54,6 @@ public class PathingManager {
 	}
 
 	/** This constructor should never be used. */
-	@Deprecated
 	private PathingManager() {
 	}
 

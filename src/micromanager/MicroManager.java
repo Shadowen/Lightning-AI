@@ -20,7 +20,7 @@ import datastructure.Base;
 import datastructure.BaseManager;
 import datastructure.Worker;
 
-public class MicroManager {
+public final class MicroManager {
 	private static int mapWidth;
 	private static int mapHeight;
 	private static double[][] targetMap;
@@ -32,7 +32,7 @@ public class MicroManager {
 
 	private static HashMap<UnitType, HashMap<Unit, UnitAgent>> units;
 
-	static {
+	public static void init() {
 		mapWidth = GameHandler.getMapWidth();
 		mapHeight = GameHandler.getMapHeight();
 		targetMap = new double[mapWidth + 1][mapHeight + 1];

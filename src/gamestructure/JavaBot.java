@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import pathfinder.PathingManager;
 import micromanager.MicroManager;
 import botstate.BotState;
 import botstate.FirstFrameState;
@@ -28,7 +29,7 @@ import datastructure.BuildManager;
 import datastructure.Resource;
 
 public class JavaBot implements BWEventListener {
-	public static Mirror mirror = new Mirror();
+	public Mirror mirror = new Mirror();
 
 	private BotState botState;
 	// Only contains my units under construction
@@ -57,6 +58,13 @@ public class JavaBot implements BWEventListener {
 			BWTA.analyze();
 			System.out.println("Map data ready");
 
+			DrawEngine.init(mirror.getGame());
+			DebugManager.init();
+			GameHandler.init(mirror.getGame());
+			BaseManager.init();
+			BuildManager.init();
+			MicroManager.init();
+			PathingManager.init();
 			botState = new FirstFrameState();
 			// Initialize
 			unitsUnderConstruction = new HashSet<Unit>();

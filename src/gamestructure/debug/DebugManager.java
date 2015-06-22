@@ -1,15 +1,10 @@
 package gamestructure.debug;
 
 import gamestructure.GameHandler;
-import gamestructure.JavaBot;
 
-import java.awt.Point;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import bwapi.Color;
-import bwapi.Game;
 
 public class DebugManager {
 	/** The game being acted on **/
@@ -21,7 +16,7 @@ public class DebugManager {
 	 * @param igame
 	 *            The game to debug for.
 	 */
-	static {
+	public static void init() {
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger help

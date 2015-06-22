@@ -28,7 +28,7 @@ public final class BaseManager {
 	 **/
 	private static int baseRadius = 300;
 
-	static {
+	public static void init() {
 		bases = new HashMap<>();
 		// Add bases
 		for (BaseLocation location : BWTA.getBaseLocations()) {
