@@ -6,7 +6,7 @@ import java.awt.Point;
 import java.util.List;
 import java.util.Optional;
 
-import datastructure.BuildManager;
+import static datastructure.BuildManager.buildManager;
 import bwapi.PositionOrUnit;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -25,16 +25,16 @@ public class MassMarineState extends BotState {
 	@Override
 	public BotState act() {
 		// Build marines
-		if (BuildManager.unitQueue.size() == 0) {
-			BuildManager.addToQueue(UnitType.Terran_Marine);
+		if (buildManager().unitQueue.size() == 0) {
+			buildManager().addToQueue(UnitType.Terran_Marine);
 		}
 
 		if (GameHandler.getSelfPlayer().minerals() > 200
-				&& BuildManager.getMyUnitCount(UnitType.Terran_Barracks)
-						+ BuildManager
-								.getCountInQueue(UnitType.Terran_Barracks) < 4) {
+				&& buildManager().getMyUnitCount(UnitType.Terran_Barracks)
+						+ buildManager().getCountInQueue(
+								UnitType.Terran_Barracks) < 4) {
 			// Add more barracks
-			BuildManager.addToQueue(UnitType.Terran_Barracks);
+			buildManager().addToQueue(UnitType.Terran_Barracks);
 		}
 
 		// Attack
@@ -48,8 +48,8 @@ public class MassMarineState extends BotState {
 									.get().getX(), enemyUnit.get().getY()) < 500) {
 						// Attack
 						u.attack(new PositionOrUnit(enemyUnit.get()));
-					} else if (BuildManager
-							.getMyUnitCount(UnitType.Terran_Marine) > armySize) {
+					} else if (buildManager().getMyUnitCount(
+							UnitType.Terran_Marine) > armySize) {
 						{
 							// Scout all bases
 							List<BaseLocation> baseLocations = BWTA

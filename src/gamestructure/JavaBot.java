@@ -1,6 +1,7 @@
 package gamestructure;
 
-import gamestructure.debug.DebugManager;
+import static gamestructure.debug.DebugManager.debugManager;
+import static datastructure.BaseManager.baseManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.InvalidCommandException;
@@ -8,6 +9,7 @@ import gamestructure.debug.InvalidCommandException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -20,12 +22,10 @@ import bwapi.Player;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
-import bwapi.Utils;
 import bwta.BWTA;
 import datastructure.Base;
-import datastructure.BaseManager;
-import datastructure.BuildManager;
 import datastructure.Resource;
+import static datastructure.BuildManager.buildManager;
 
 public class JavaBot implements BWEventListener {
 	public static Mirror mirror = new Mirror();
@@ -51,8 +51,7 @@ public class JavaBot implements BWEventListener {
 		try {
 			// Use BWTA to analyze map
 			// This may take a few minutes if the map is processed first time!
-			System.out.println(Utils.formatText("Analyzing map...",
-					Utils.Pinkish));
+			System.out.println("Analyzing map...");
 			BWTA.readMap();
 			BWTA.analyze();
 			System.out.println("Map data ready");
@@ -75,25 +74,27 @@ public class JavaBot implements BWEventListener {
 	public void onFrame() {
 		try {
 			// Check if any units have completed
-			unitsUnderConstruction.removeIf(unit -> {
+
+			for (Iterator<Unit> it = unitsUnderConstruction.iterator(); it
+					.hasNext();) {
+				Unit unit = it.next();
 				if (unit.isCompleted()) {
+					it.remove();
 					onUnitConstructed(unit);
-					return true;
 				}
-				return false;
-			});
+			}
 			// Allow the bot to act
 			// Bot state updates
 			botState = botState.act();
 			// BuildManager check build order
-			BuildManager.checkMinimums();
+			buildManager().checkMinimums();
 			// Micro units
 			// microManager.act();
 
 			// Auto economy
-			BaseManager.gatherResources();
+			baseManager().gatherResources();
 
-			BaseManager.getMyBases().stream()
+			baseManager().getMyBases().stream()
 					.filter(b -> b.workers.size() < b.minerals.size() * 2)
 					.map(b -> b.commandCenter).filter(o -> o.isPresent())
 					.map(o -> o.get()).filter(c -> !c.isTraining())
@@ -101,13 +102,11 @@ public class JavaBot implements BWEventListener {
 						if (GameHandler.getSelfPlayer().minerals() >= 50)
 							c.train(UnitType.Terran_SCV);
 					});
-			// OLD Implementation
-			for (Base b : BaseManager.getMyBases()) {
+			for (Base b : baseManager().getMyBases()) {
 				b.commandCenter.ifPresent(c -> {
 					// Train SCVS if necessary
 					// TODO This can't go in the build queue since it is
-					// specific to
-					// a command center!
+					// specific to a command center!
 						if (GameHandler.getSelfPlayer().minerals() >= 50
 								&& !c.isTraining()) {
 							for (Resource mineral : b.minerals) {
@@ -122,7 +121,7 @@ public class JavaBot implements BWEventListener {
 			}
 
 			// Auto build
-			BuildManager.buildingQueue
+			buildManager().buildingQueue
 					.stream()
 					.filter(b -> GameHandler.getSelfPlayer().minerals() >= b
 							.getType().mineralPrice())
@@ -136,11 +135,12 @@ public class JavaBot implements BWEventListener {
 							}
 						} else {
 							// If it isn't being built yet
-							BaseManager.getBuilder().ifPresent(w -> w.build(b));
+							baseManager().getBuilder().ifPresent(
+									w -> w.build(b));
 						}
 					});
 			// Auto train
-			BuildManager.unitQueue.stream()
+			buildManager().unitQueue.stream()
 					.forEach(
 							toTrain -> GameHandler
 									.getAllUnits()
@@ -151,7 +151,7 @@ public class JavaBot implements BWEventListener {
 									.ifPresent(u -> u.train(toTrain)));
 
 			// Draw debug information on screen
-			DebugManager.draw();
+			debugManager().draw();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -183,7 +183,7 @@ public class JavaBot implements BWEventListener {
 		try {
 			// Base occupation detection
 			if (unit.getType().isResourceDepot()) {
-				BaseManager.resourceDepotShown(unit);
+				baseManager().resourceDepotShown(unit);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -195,7 +195,7 @@ public class JavaBot implements BWEventListener {
 		try {
 			// Base occupation detection
 			if (unit.getType().isResourceDepot()) {
-				BaseManager.resourceDepotHidden(unit);
+				baseManager().resourceDepotHidden(unit);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -224,10 +224,10 @@ public class JavaBot implements BWEventListener {
 
 			// Base occupation detection
 			if (unit.getType().isResourceDepot()) {
-				BaseManager.resourceDepotDestroyed(unit);
+				baseManager().resourceDepotDestroyed(unit);
 			}
 			// Remove workers from the BaseManager
-			BaseManager.unitDestroyed(unit);
+			baseManager().unitDestroyed(unit);
 			// Deletes units from microManager
 			MicroManager.unitDestroyed(unit);
 
@@ -250,20 +250,19 @@ public class JavaBot implements BWEventListener {
 
 	@Override
 	public void onUnitComplete(Unit unit) {
-		GameHandler.sendText("Unit complete: " + unit.getType());
+		// GameHandler.sendText("Unit complete: " + unit.getType());
 	}
 
 	public void onUnitConstructed(Unit unit) {
 		try {
 			UnitType type = unit.getType();
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
-				GameHandler.sendText("Unit constructed: " + type.toString());
-
-				BuildManager.buildingComplete(unit);
+				// GameHandler.sendText("Unit constructed: " + type.toString());
+				buildManager().buildingComplete(unit);
 
 				if (type == UnitType.Terran_SCV) {
 					// Add new workers to nearest base
-					BaseManager.workerComplete(unit);
+					baseManager().workerComplete(unit);
 				}
 
 				botState = botState.unitComplete(unit);
@@ -279,7 +278,7 @@ public class JavaBot implements BWEventListener {
 			List<String> command = new ArrayList<>(Arrays.asList(s.substring(1)
 					.split(" ")));
 			try {
-				DebugManager.onReceiveCommand(command);
+				debugManager().onReceiveCommand(command);
 			} catch (InvalidCommandException e) {
 				GameHandler.sendText(e.getMessage());
 				e.printStackTrace();
@@ -291,7 +290,7 @@ public class JavaBot implements BWEventListener {
 	 * Register my own debug functions to the debugEngine.
 	 */
 	private void registerDebugFunctions() {
-		DebugModule stats = DebugManager.createDebugModule("stats");
+		DebugModule stats = debugManager().createDebugModule("stats");
 		final int yBottom = 285;
 		stats.addSubmodule("apm").setDraw(
 				() -> {
@@ -309,12 +308,12 @@ public class JavaBot implements BWEventListener {
 					DrawEngine.drawTextScreen(10, yBottom - 15 * 2, "FPS: "
 							+ GameHandler.getFPS());
 				});
-		DebugManager.createDebugModule("botstate").setDraw(
+		debugManager().createDebugModule("botstate").setDraw(
 				() -> {
 					DrawEngine.drawTextScreen(5, 5, "Bot state: "
 							+ botState.getClass().toString());
 				});
-		DebugManager.createDebugModule("construction").setDraw(
+		debugManager().createDebugModule("construction").setDraw(
 				() -> {
 					String uucString = "";
 					for (Unit u : unitsUnderConstruction) {
@@ -323,7 +322,7 @@ public class JavaBot implements BWEventListener {
 					DrawEngine.drawTextScreen(5, 60, "unitsUnderConstruction: "
 							+ uucString);
 				});
-		DebugManager.createDebugModule("supply").setDraw(
+		debugManager().createDebugModule("supply").setDraw(
 				() -> {
 					DrawEngine.drawTextScreen(550, 15, "Supply: "
 							+ GameHandler.getSelfPlayer().supplyUsed() + "/"

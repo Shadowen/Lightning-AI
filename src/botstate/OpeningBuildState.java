@@ -1,6 +1,6 @@
 package botstate;
 
-import datastructure.BuildManager;
+import static datastructure.BuildManager.buildManager;
 import gamestructure.GameHandler;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -16,8 +16,8 @@ public class OpeningBuildState extends BotState {
 		// Add barracks at 11 supply
 		if (GameHandler.getSelfPlayer().supplyUsed() / 2 == 11) {
 			// Check that it's not already in the queue
-			if (!BuildManager.isInQueue(UnitType.Terran_Barracks)) {
-				BuildManager.addToQueue(UnitType.Terran_Barracks);
+			if (!buildManager().isInQueue(UnitType.Terran_Barracks)) {
+				buildManager().addToQueue(UnitType.Terran_Barracks);
 			}
 		}
 

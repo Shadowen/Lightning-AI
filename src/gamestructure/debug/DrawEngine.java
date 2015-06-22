@@ -1,5 +1,6 @@
 package gamestructure.debug;
 
+import static gamestructure.debug.DebugManager.debugManager;
 import gamestructure.JavaBot;
 
 import java.awt.Point;
@@ -25,7 +26,7 @@ public class DrawEngine {
 
 	static {
 		// Debugger debugger
-		DebugManager.createDebugModule("shapecount")
+		debugManager().createDebugModule("shapecount")
 				.setDraw(
 						() -> {
 							DrawEngine.drawTextScreen(

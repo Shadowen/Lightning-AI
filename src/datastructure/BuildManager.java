@@ -1,7 +1,8 @@
 package datastructure;
 
+import static datastructure.BaseManager.baseManager;
 import gamestructure.GameHandler;
-import gamestructure.debug.DebugManager;
+import static gamestructure.debug.DebugManager.debugManager;
 import gamestructure.debug.DrawEngine;
 
 import java.awt.Point;
@@ -15,11 +16,20 @@ import bwapi.Unit;
 import bwapi.UnitType;
 
 public class BuildManager {
-	public static Hashtable<UnitType, Integer> unitMinimums;
-	public static Queue<BuildingPlan> buildingQueue;
-	public static Queue<UnitType> unitQueue;
+	public Hashtable<UnitType, Integer> unitMinimums;
+	public Queue<BuildingPlan> buildingQueue;
+	public Queue<UnitType> unitQueue;
 
-	static {
+	private static BuildManager buildManager;
+
+	public static BuildManager buildManager() {
+		if (buildManager == null) {
+			buildManager = new BuildManager();
+		}
+		return buildManager;
+	}
+
+	private BuildManager() {
 		unitMinimums = new Hashtable<UnitType, Integer>();
 		buildingQueue = new ArrayDeque<BuildingPlan>();
 		unitQueue = new ArrayDeque<UnitType>();
@@ -27,14 +37,10 @@ public class BuildManager {
 		registerDebugFunctions();
 	}
 
-	/** This constructor should never be called */
-	private BuildManager() {
-	}
-
-	public static void addToQueue(UnitType unitType) {
+	public void addToQueue(UnitType unitType) {
 		if (unitType == UnitType.Terran_Refinery) {
 			// Refineries get special treatment!
-			for (Base b : BaseManager.getMyBases()) {
+			for (Base b : baseManager().getMyBases()) {
 				// Find a gas that isn't taken yet
 				for (GasResource r : b.gas) {
 					if (!r.gasTaken()) {
@@ -48,9 +54,9 @@ public class BuildManager {
 			}
 		} else if (unitType.isBuilding()) {
 			// Otherwise, buildings
-			if (BaseManager.main != null) {
-				Point location = getBuildLocation(BaseManager.main.getX(),
-						BaseManager.main.getY(), unitType);
+			if (baseManager().main != null) {
+				Point location = getBuildLocation(baseManager().main.getX(),
+						baseManager().main.getY(), unitType);
 				addBuilding(location.x, location.y, unitType);
 			}
 		} else {
@@ -60,19 +66,19 @@ public class BuildManager {
 	}
 
 	// Add multiple units at once
-	public static void addToQueue(UnitType unitType, int count) {
+	public void addToQueue(UnitType unitType, int count) {
 		for (int i = 0; i < count; i++) {
 			addToQueue(unitType);
 		}
 	}
 
 	// Build a building at a specific location
-	public static void addBuilding(Point buildLocation, UnitType type) {
+	public void addBuilding(Point buildLocation, UnitType type) {
 		addBuilding(buildLocation.x, buildLocation.y, type);
 	}
 
 	// Build a building at a specific location
-	public static void addBuilding(int tx, int ty, UnitType type) {
+	public void addBuilding(int tx, int ty, UnitType type) {
 		buildingQueue.add(new BuildingPlan(tx, ty, type));
 	}
 
@@ -82,7 +88,7 @@ public class BuildManager {
 	// position
 	// for a given building type near specified pixel position (or
 	// Point(-1,-1) if not found)
-	private static Point getBuildLocation(int x, int y, UnitType toBuild) {
+	private Point getBuildLocation(int x, int y, UnitType toBuild) {
 		Point ret = new Point(-1, -1);
 		int maxDist = 3;
 		int stopDist = 40;
@@ -121,7 +127,7 @@ public class BuildManager {
 
 	// Checks if the building type specified can be built at the coordinates
 	// given
-	private static boolean canBuildHere(int left, int top, UnitType type) {
+	private boolean canBuildHere(int left, int top, UnitType type) {
 		int width = type.tileWidth();
 		int height = type.tileHeight();
 
@@ -152,7 +158,7 @@ public class BuildManager {
 	 * @param u
 	 *            The unit that has just completed.
 	 * **/
-	public static void buildingComplete(Unit u) {
+	public void buildingComplete(Unit u) {
 		UnitType type = u.getType();
 		if (!type.isBuilding()) {
 			// Go through planned units
@@ -168,11 +174,11 @@ public class BuildManager {
 
 					if (u.getType().isRefinery()) {
 						// The gas geyser becomes a refinery...
-						BaseManager.refineryComplete(u);
+						baseManager().refineryComplete(u);
 						// If it's a refinery, the worker will automatically
 						// become
 						// a gas miner!
-						BaseManager.getResource(u).ifPresent(
+						baseManager().getResource(u).ifPresent(
 								r -> p.builder.gather(r));
 					} else {
 						// Otherwise, back to work!
@@ -184,7 +190,7 @@ public class BuildManager {
 		}
 	}
 
-	public static boolean isInQueue(UnitType unitType) {
+	public boolean isInQueue(UnitType unitType) {
 		if (unitType.isBuilding()) {
 			return buildingQueue.stream().anyMatch(
 					bp -> bp.getType() == unitType);
@@ -192,7 +198,7 @@ public class BuildManager {
 		return unitQueue.stream().anyMatch(u -> u == unitType);
 	}
 
-	public static int getCountInQueue(UnitType unitType) {
+	public int getCountInQueue(UnitType unitType) {
 		if (unitType.isBuilding()) {
 			return (int) buildingQueue.stream().map(bp -> bp.getType())
 					.filter(ut -> ut == unitType).count();
@@ -200,13 +206,13 @@ public class BuildManager {
 		return (int) unitQueue.stream().filter(ut -> ut == unitType).count();
 	}
 
-	public static int getMyUnitCount(UnitType type) {
+	public int getMyUnitCount(UnitType type) {
 		return (int) GameHandler.getAllUnits().stream()
 				.filter(u -> !u.isBeingConstructed())
 				.filter(u -> u.getType() == type).count();
 	}
 
-	public static void setMinimum(UnitType unitType, int min) {
+	public void setMinimum(UnitType unitType, int min) {
 		unitMinimums.put(unitType, min);
 	}
 
@@ -214,7 +220,7 @@ public class BuildManager {
 	 * Check if any buildings or units are below required minimums. If they are,
 	 * put more of them into the building queue!
 	 */
-	public static void checkMinimums() {
+	public void checkMinimums() {
 		for (Entry<UnitType, Integer> entry : unitMinimums.entrySet()) {
 			UnitType unitType = entry.getKey();
 			int currentCount = getMyUnitCount(unitType);
@@ -228,8 +234,8 @@ public class BuildManager {
 		}
 	}
 
-	public static void registerDebugFunctions() {
-		DebugManager.createDebugModule("buildingqueue")
+	public void registerDebugFunctions() {
+		debugManager().createDebugModule("buildingqueue")
 				.setDraw(
 						() -> {
 							String buildQueueString = "";
@@ -254,7 +260,7 @@ public class BuildManager {
 							DrawEngine.drawTextScreen(5, 20, "Building Queue: "
 									+ buildQueueString);
 						});
-		DebugManager.createDebugModule("trainingqueue").setDraw(
+		debugManager().createDebugModule("trainingqueue").setDraw(
 				() -> {
 					String trainingQueueString = "";
 					for (UnitType type : unitQueue.toArray(new UnitType[0])) {
@@ -263,7 +269,7 @@ public class BuildManager {
 					DrawEngine.drawTextScreen(5, 40, "Training Queue: "
 							+ trainingQueueString);
 				});
-		DebugManager.createDebugModule("unitminimums").setDraw(() -> {
+		debugManager().createDebugModule("unitminimums").setDraw(() -> {
 			// Unit minimums
 				DrawEngine.drawTextScreen(5, 80,
 						"Unit Minimums: current(queued)/required");

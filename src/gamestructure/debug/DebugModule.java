@@ -1,5 +1,7 @@
 package gamestructure.debug;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,11 +77,6 @@ public class DebugModule {
 	}
 
 	public DebugModule addCommand(String command, CommandFunction action) {
-		if (commands.containsKey(command)) {
-			// Tried to overwrite a command!
-			throw new UnsupportedOperationException("Command " + command
-					+ " already exists!");
-		}
 		commands.put(command, action);
 		lastAdded = command;
 		lastAddedTo = LAT_COMMAND;
@@ -94,19 +91,15 @@ public class DebugModule {
 		return debugModule;
 	}
 
-	public DebugModule addAlias(String alias) {
-		return addAlias(lastAdded);
-	}
-
-	protected DebugModule addAlias(String alias, String old) {
-		switch (lastAddedTo) {
-		case LAT_COMMAND:
-			addCommand(alias, commands.get(old));
-			break;
-		case LAT_SUBMODULE:
-			subModules.put(alias, subModules.get(old));
-			break;
-		default:
+	final public DebugModule addAlias(String alias)
+			throws InvalidCommandException {
+		if (lastAddedTo == LAT_COMMAND) {
+			addCommand(alias, commands.get(lastAdded));
+		} else if (lastAddedTo == LAT_SUBMODULE) {
+			subModules.put(alias, subModules.get(lastAdded));
+		} else {
+			throw new InvalidCommandException(name, Arrays.asList("alias "
+					+ alias)); // TODO custom exception for this?
 		}
 		return this;
 	}

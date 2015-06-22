@@ -1,7 +1,9 @@
 package micromanager;
 
+import static datastructure.BaseManager.baseManager;
+import static gamestructure.debug.DebugManager.debugManager;
+import static pathfinder.PathingManager.pathingManager;
 import gamestructure.GameHandler;
-import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
 
 import java.awt.Point;
@@ -11,13 +13,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Queue;
 
-import pathfinder.PathingManager;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
 import datastructure.Base;
-import datastructure.BaseManager;
 import datastructure.Worker;
 
 public class MicroManager {
@@ -147,10 +147,12 @@ public class MicroManager {
 			if (scoutingUnit.isPresent() && scoutingTarget.isPresent()) {
 				if (scoutPath.size() < 15) {
 					// Path planned is short
-					scoutPath = PathingManager.findGroundPath(scoutingUnit
-							.get().getX(), scoutingUnit.get().getY(),
-							scoutingTarget.get().getX(), scoutingTarget.get()
-									.getY(), scoutingUnit.get().getType(), 256);
+					scoutPath = pathingManager().findGroundPath(
+							scoutingUnit.get().getX(),
+							scoutingUnit.get().getY(),
+							scoutingTarget.get().getX(),
+							scoutingTarget.get().getY(),
+							scoutingUnit.get().getType(), 256);
 				}
 
 				Point moveTarget;
@@ -185,7 +187,7 @@ public class MicroManager {
 
 	private static Optional<Base> getScoutingTarget() {
 		Optional<Base> target = Optional.empty();
-		for (Base b : BaseManager.getBases()) {
+		for (Base b : baseManager().getBases()) {
 			// Scout all mains
 			if (b.getLocation().isStartLocation()) {
 				if (b.getPlayer() == GameHandler.getNeutralPlayer()
@@ -200,7 +202,7 @@ public class MicroManager {
 		}
 
 		// If there is still no target
-		for (Base b : BaseManager.getBases()) {
+		for (Base b : baseManager().getBases()) {
 			// Scout all expos
 			if (b.getPlayer() == GameHandler.getNeutralPlayer()
 					&& (!target.isPresent() || b.getLastScouted() < target
@@ -212,8 +214,8 @@ public class MicroManager {
 	}
 
 	public static void setScoutingUnit(Unit unit) {
-		Optional<Worker> ow = BaseManager.getWorker(scoutingUnit.get());
-		ow.ifPresent(w -> w.setBase(BaseManager.main));
+		Optional<Worker> ow = baseManager().getWorker(scoutingUnit.get());
+		ow.ifPresent(w -> w.setBase(baseManager().main));
 		scoutingUnit = Optional.of(unit);
 	}
 
@@ -234,7 +236,7 @@ public class MicroManager {
 
 	public static void registerDebugFunctions() {
 		// Threat map
-		DebugManager.createDebugModule("threats").setDraw(() -> {
+		debugManager().createDebugModule("threats").setDraw(() -> {
 			// Actually draw
 				for (int x = 1; x < mapWidth; x++) {
 					for (int y = 1; y < mapHeight; y++) {
@@ -245,7 +247,7 @@ public class MicroManager {
 				}
 			});
 		// Movement map
-		DebugManager.createDebugModule("movement").setDraw(() -> {
+		debugManager().createDebugModule("movement").setDraw(() -> {
 			// Actually draw
 				for (int x = 1; x < mapWidth; x++) {
 					for (int y = 1; y < mapHeight; y++) {
@@ -274,7 +276,7 @@ public class MicroManager {
 		// }
 		// });
 		// Weapon cooldown bars
-		DebugManager
+		debugManager()
 				.createDebugModule("cooldowns")
 				.setDraw(
 						() -> {
@@ -302,7 +304,7 @@ public class MicroManager {
 							}
 						});
 		// Scouting Target
-		DebugManager.createDebugModule("scouting").setDraw(
+		debugManager().createDebugModule("scouting").setDraw(
 				() -> {
 					if (scoutingTarget.isPresent()) {
 						int x = scoutingTarget.get().getX();

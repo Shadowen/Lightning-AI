@@ -1,5 +1,11 @@
 package pathfinder;
 
+import static datastructure.BaseManager.baseManager;
+import static gamestructure.debug.DebugManager.debugManager;
+import gamestructure.GameHandler;
+import gamestructure.debug.DebugModule;
+import gamestructure.debug.DrawEngine;
+
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -10,36 +16,37 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 
-import datastructure.BaseManager;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
 import bwta.Chokepoint;
-import gamestructure.GameHandler;
-import gamestructure.debug.DebugManager;
-import gamestructure.debug.DebugModule;
-import gamestructure.debug.DrawEngine;
 
 public class PathingManager {
 
-	private static final int MAX_RAMP_WALK_TILES = 500;
+	private final int MAX_RAMP_WALK_TILES = 500;
 
-	private static ArrayList<ArrayList<Node>> walkableNodes;
-	private static int mapWalkWidth;
-	private static int mapWalkHeight;
+	private ArrayList<ArrayList<Node>> walkableNodes;
+	private int mapWalkWidth;
+	private int mapWalkHeight;
 
 	// A list of tiles detailing a path into the main from the choke
-	private static Queue<Point> pathIntoMain;
-	private static Point topOfRamp;
-	private static List<Point> chokeRampWalkTiles;
+	private Queue<Point> pathIntoMain;
+	private Point topOfRamp;
+	private List<Point> chokeRampWalkTiles;
 
-	static {
+	private static PathingManager theInstance;
+
+	public static PathingManager pathingManager() {
+		if (theInstance == null) {
+			theInstance = new PathingManager();
+		}
+		return theInstance;
+	}
+
+	private PathingManager() {
 		mapWalkWidth = 0; // TODO
 		mapWalkHeight = 0; // TODO
 
@@ -55,16 +62,11 @@ public class PathingManager {
 		registerDebugFunctions();
 	}
 
-	/** This constructor should never be used. */
-	@Deprecated
-	private PathingManager() {
-	}
-
-	public static void findChokeToMain() {
-		Chokepoint choke = BWTA.getNearestChokepoint(BaseManager.main
+	public void findChokeToMain() {
+		Chokepoint choke = BWTA.getNearestChokepoint(baseManager().main
 				.getLocation().getTilePosition());
 		// Find the path into the main
-		pathIntoMain = findGroundPath(choke.getCenter(), BaseManager.main
+		pathIntoMain = findGroundPath(choke.getCenter(), baseManager().main
 				.getLocation().getPosition(), UnitType.Zerg_Zergling);
 
 		// Find top of ramp
@@ -126,19 +128,19 @@ public class PathingManager {
 		}
 	}
 
-	private static Queue<Point> findGroundPath(Position start, Position end,
+	private Queue<Point> findGroundPath(Position start, Position end,
 			UnitType unitType) {
 		return findGroundPath(start.getX(), start.getY(), end.getX(),
 				end.getY(), unitType);
 	}
 
-	public static Queue<Point> findGroundPath(int startx, int starty, int endx,
+	public Queue<Point> findGroundPath(int startx, int starty, int endx,
 			int endy, UnitType unitType) {
 		return findGroundPath(startx, starty, endx, endy, unitType,
 				Integer.MAX_VALUE);
 	}
 
-	public static Queue<Point> findGroundPath(int startx, int starty, int endx,
+	public Queue<Point> findGroundPath(int startx, int starty, int endx,
 			int endy, UnitType type, int length) {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
@@ -251,7 +253,7 @@ public class PathingManager {
 		throw new NullPointerException();
 	}
 
-	private static List<Node> getNeighbors(int x, int y) {
+	private List<Node> getNeighbors(int x, int y) {
 		List<Node> neighbors = new ArrayList<Node>();
 
 		// NORTH
@@ -290,8 +292,7 @@ public class PathingManager {
 		return neighbors;
 	}
 
-	private static Deque<Point> reconstructPath(Deque<Point> path,
-			Node finalNode) {
+	private Deque<Point> reconstructPath(Deque<Point> path, Node finalNode) {
 		path.push(new Point(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
 
 		// Base case
@@ -301,8 +302,8 @@ public class PathingManager {
 		return reconstructPath(path, finalNode.parent);
 	}
 
-	public static void registerDebugFunctions() {
-		DebugModule chokeDM = DebugManager.createDebugModule("choke");
+	public void registerDebugFunctions() {
+		DebugModule chokeDM = debugManager().createDebugModule("choke");
 		// Label all chokes
 		chokeDM.addSubmodule("draw").setDraw(
 				() -> {

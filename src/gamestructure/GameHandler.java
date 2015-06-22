@@ -35,7 +35,7 @@ public final class GameHandler {
 		return game.mapHeight();
 	}
 
-	public static Optional<Unit> getClosestUnit(int x, int y,
+	public static Optional<Unit> getClosestUnit(int x, int y, int maxDistance,
 			UnitType... types) {
 		Set<UnitType> typesSet = new HashSet<UnitType>(Arrays.asList(types));
 		Unit closest = null;
@@ -43,7 +43,7 @@ public final class GameHandler {
 		for (Unit u : game.getAllUnits()) {
 			if (typesSet.contains(u.getType())) {
 				double distance = Point.distance(x, y, u.getX(), u.getY());
-				if (distance < closestDistance) {
+				if (distance < closestDistance && distance < maxDistance) {
 					closestDistance = distance;
 					closest = u;
 				}

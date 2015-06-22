@@ -1,27 +1,24 @@
 package gamestructure.debug;
 
 import gamestructure.GameHandler;
-import gamestructure.JavaBot;
-
-import java.awt.Point;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import bwapi.Color;
-import bwapi.Game;
-
 public class DebugManager {
 	/** The game being acted on **/
-	private static Map<String, DebugModule> debugModules;
+	private Map<String, DebugModule> debugModules;
 
-	/**
-	 * Construct a DebugEngine for the specified game.
-	 * 
-	 * @param igame
-	 *            The game to debug for.
-	 */
-	static {
+	private static DebugManager theInstance;
+
+	public static DebugManager debugManager() {
+		if (theInstance == null) {
+			theInstance = new DebugManager();
+		}
+		return theInstance;
+	}
+
+	private DebugManager() {
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger help
@@ -33,9 +30,7 @@ public class DebugManager {
 									.sendText("Type \"/help modules\" for a complete list of modules.");
 							GameHandler
 									.sendText("Type \"/help <name>\" for more information on a specific module.");
-						})
-				.addAlias("help")
-				.addCommand(
+						}).addCommand(
 						"modules",
 						(c) -> debugModules.forEach((k, v) -> GameHandler
 								.sendText(k)));
@@ -47,7 +42,7 @@ public class DebugManager {
 	 * @param debugModule
 	 *            The module to be added.
 	 */
-	public static DebugModule createDebugModule(String name) {
+	public DebugModule createDebugModule(String name) {
 		DebugModule dm = new DebugModule(name);
 		debugModules.put(name, dm);
 		return dm;
@@ -57,7 +52,7 @@ public class DebugManager {
 	 * Iterate through the {@link #debugModules} and tell each one to
 	 * {@link DebugModule#draw}.
 	 */
-	public static void draw() {
+	public void draw() {
 		// Try to draw all of the debugModules. If we are interrupted by too
 		// many objects attempting to draw, then print the stack trace.
 		for (DebugModule d : debugModules.values()) {
@@ -83,7 +78,7 @@ public class DebugManager {
 	 * @throws InvalidCommandException
 	 *             if the command cannot be parsed
 	 */
-	public static void onReceiveCommand(List<String> command)
+	public void onReceiveCommand(List<String> command)
 			throws InvalidCommandException {
 		String first = command.get(0);
 
