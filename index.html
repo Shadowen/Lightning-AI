@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Eagles-wings : A JNIBWAPI bot for playing StarCraft: Brood War">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Eagles-wings</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/Shadowen/Eagles-Wings">View on GitHub</a>
+
+          <h1 id="project_title">Eagles-wings</h1>
+          <h2 id="project_tagline">A JNIBWAPI bot for playing StarCraft: Brood War</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/Shadowen/Eagles-Wings/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/Shadowen/Eagles-Wings/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>Strategy game AI has been in development for a long time. Perhaps most famously, the AI Deep Blue was known for defeating chess champion Garry Kasparov in 1997. Deep Blue used opening and closing tables extensively, but achieved its strength mainly through brute force searching of the game space. However, modern video games - including the real-time strategy genre - involve continuous positions and simulatenous gameplay, making any sort of tree traversal search infeasible. This calls for a vastly different AI structure to play the modern strategy game.</p>
+
+<p> is a finite state automata designed to play Blizzard's iconic real-time strategy game StarCraft: Brood War. It makes use of the third-party libraries BWAPI and BWMirror to interface with the game as a player.</p>
+
+<h1>
+<a id="design-principles" class="anchor" href="#design-principles" aria-hidden="true"><span class="octicon octicon-link"></span></a>Design Principles</h1>
+
+<h2>
+<a id="non-cheating" class="anchor" href="#non-cheating" aria-hidden="true"><span class="octicon octicon-link"></span></a>Non-Cheating</h2>
+
+<p>Because of the challenges involved in making a strong AI player, most developers tend to only ship a mediocre opponent and rely on giving the AI information and resources that are normally unavailable to a player in order to present a challenge. For example, the AI opponent may be able to see into the fog of war, or receive free resources and units.
+BWAPI restricts the information that the AI can obtain to the same information that would be available to a player in the game. The AI may not see units and buildings that have passed into the fog of war. BWAPI also restricts the commands that may be issued by the AI. The AI may only build units and otherwise issue commands that a player would be allowed to.</p>
+
+<h2>
+<a id="competitive" class="anchor" href="#competitive" aria-hidden="true"><span class="octicon octicon-link"></span></a>Competitive</h2>
+
+<p>The primary purpose of  is to compete against other AIs of the same type. Tournaments hosted by various organizations such as  pit AI against AI. The goal of  is to achieve a high ranking on the tournament ladder.</p>
+
+<h2>
+<a id="adaptive" class="anchor" href="#adaptive" aria-hidden="true"><span class="octicon octicon-link"></span></a>Adaptive</h2>
+
+<p>AIs also tend to play against human opponents. Here,  should be able to hold its own against poor to intermediate opponents. A large complication in playing against human opponents is their unpredictability.  should be able to adapt to changing situations, including some anti-computer tactics employed by human opponents.</p>
+
+<h2>
+<a id="modular" class="anchor" href="#modular" aria-hidden="true"><span class="octicon octicon-link"></span></a>Modular</h2>
+
+<p>The source code of the AI should be built to accomodate a number of strategies. Adjustments to the core strategy and details alike should be easy to make.</p>
+
+<h1>
+<a id="features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h1>
+
+<p>Debug Manager</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Eagles-wings maintained by <a href="https://github.com/Shadowen">Shadowen</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
