@@ -1,4 +1,4 @@
-# Eagles-Wings
+# Lightning AI
 A JNIBWAPI bot for playing StarCraft: Brood War
 
 ## Requirements
