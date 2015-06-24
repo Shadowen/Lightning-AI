@@ -7,15 +7,20 @@ import gamestructure.debug.DrawEngine;
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 
 import pathfinder.PathingManager;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
+import bwapi.WalkPosition;
 import datastructure.Base;
 import datastructure.BaseManager;
 import datastructure.Worker;
@@ -25,12 +30,13 @@ public final class MicroManager {
 	private static int mapHeight;
 	private static double[][] targetMap;
 	private static double[][] threatMap;
+	private static Point[][] movementMap;
 
-	private static Optional<Base> scoutingTarget;
-	private static Queue<Point> scoutPath;
-	private static Optional<Unit> scoutingUnit;
+	private static Optional<Position> scoutingTarget;
+	private static Optional<UnitAgent> scoutingUnit;
 
-	private static HashMap<UnitType, HashMap<Unit, UnitAgent>> units;
+	private static Map<UnitType, HashSet<UnitAgent>> unitsByType;
+	private static Map<Unit, UnitAgent> unitAgents;
 
 	public static void init() {
 		System.out.print("Starting MicroManager... ");
@@ -39,9 +45,10 @@ public final class MicroManager {
 		targetMap = new double[mapWidth + 1][mapHeight + 1];
 		threatMap = new double[mapWidth + 1][mapHeight + 1];
 
-		units = new HashMap<UnitType, HashMap<Unit, UnitAgent>>();
+		unitsByType = new HashMap<UnitType, HashSet<UnitAgent>>();
+		unitAgents = new HashMap<Unit, UnitAgent>();
 
-		scoutPath = new ArrayDeque<Point>();
+		scoutingUnit = Optional.empty();
 
 		registerDebugFunctions();
 		System.out.println("Success!");
@@ -56,7 +63,16 @@ public final class MicroManager {
 		// Move attacking units
 		micro();
 		// Move scouting unit(s)
-		scout();
+		if (scoutingUnit.isPresent() && scoutingTarget.isPresent()) {
+			// Acquire a target if necessary
+			if (GameHandler.isVisible(scoutingTarget.get().getX() / 32,
+					scoutingTarget.get().getY() / 32)) {
+				scoutingTarget = getScoutingTarget();
+				// Clear previous path
+				scoutingUnit.get().path.clear();
+			}
+			scout(scoutingUnit.get(), scoutingTarget.get());
+		}
 	}
 
 	private static void updateMap() {
@@ -112,111 +128,123 @@ public final class MicroManager {
 	}
 
 	private static void micro() {
-		Point[][] movementMap = new Point[mapWidth + 1][mapHeight + 1];
-		for (int x = 0; x < mapWidth; x++) {
-			for (int y = 0; y < mapHeight; y++) {
+		movementMap = new Point[mapWidth + 1][mapHeight + 1];
+		for (int x = 1; x < mapWidth - 1; x++) {
+			for (int y = 1; y < mapHeight - 1; y++) {
 				movementMap[x][y] = new Point(
 						(int) (threatMap[x + 1][y] - threatMap[x - 1][y]),
 						(int) (threatMap[x][y + 1] - threatMap[x][y - 1]));
 			}
 		}
-		for (UnitAgent ua : units.get(UnitType.Terran_Wraith).values()) {
+		for (UnitAgent ua : unitsByType.get(UnitType.Terran_Wraith)) {
 			Unit u = ua.unit;
 			int x = u.getX();
 			int y = u.getY();
-			u.move(new Position(x + movementMap[x][y].x, y
-					+ movementMap[x][y].y));
+			switch (ua.task) {
+			case IDLE:
+				ua.task = UnitTask.SCOUTING;
+				break;
+			case SCOUTING:
+				// Scout the base...
+				if (scoutingTarget.isPresent()) {
+					scout(ua, scoutingTarget.get());
+				}
+				// Go aggro when threshold is reached
+				if (unitsByType.get(UnitType.Terran_Wraith).size() > 2) {
+					ua.task = UnitTask.ATTACK_RUN;
+				}
+				break;
+			case ATTACK_RUN:
+				GameHandler
+						.getEnemyUnits()
+						.stream()
+						.sorted((u1, u2) -> u2.getPosition().getApproxDistance(
+								u.getPosition())
+								- u1.getPosition().getApproxDistance(
+										u.getPosition()))
+						.filter(e -> u.getPosition().getApproxDistance(
+								e.getPosition()) < u.getType().groundWeapon()
+								.maxRange()).findFirst().ifPresent(e -> {
+							ua.task = UnitTask.FIRING;
+							ua.timeout = 100;
+						});
+				break;
+			case FIRING:
+				ua.timeout--;
+				if (ua.timeout <= 0) {
+					ua.task = UnitTask.RETREATING;
+				}
+				break;
+			case RETREATING:
+				u.move(new Position(x + movementMap[x][y].x, y
+						+ movementMap[x][y].y));
+				if (u.getGroundWeaponCooldown() <= 0) {
+					ua.task = UnitTask.ATTACK_RUN;
+				}
+				break;
+			default:
+				break;
+			}
 		}
 	}
 
-	private static void scout() {
-		// If I have no scouting unit assigned, don't scout
-		if (!scoutingUnit.isPresent()) {
-			return;
-		}
-
-		// Acquire a target if necessary
-		if (!scoutingTarget.isPresent()
-				|| GameHandler.isVisible(scoutingTarget.get().getX() / 32,
-						scoutingTarget.get().getY() / 32)) {
-			scoutingTarget = getScoutingTarget();
-			// Clear previous path
-			scoutPath.clear();
-		}
-
-		try {
-			// Issue commands as appropriate
-			if (scoutingUnit.isPresent() && scoutingTarget.isPresent()) {
-				if (scoutPath.size() < 15) {
-					// Path planned is short
-					scoutPath = PathingManager.findGroundPath(scoutingUnit
-							.get().getX(), scoutingUnit.get().getY(),
-							scoutingTarget.get().getX(), scoutingTarget.get()
-									.getY(), scoutingUnit.get().getType(), 256);
-				}
-
-				Point moveTarget;
-				double distanceToCheckPoint;
-				while (true) {
-					moveTarget = scoutPath.element();
-					distanceToCheckPoint = Point.distance(scoutingUnit.get()
-							.getX(), scoutingUnit.get().getY(), moveTarget.x,
-							moveTarget.y);
-
-					if (distanceToCheckPoint > 128) {
-						// Recalculate a path
-						scoutPath.clear();
-						return;
-					} else if (distanceToCheckPoint > 64) {
-						// Keep following existing path
-						break;
-					} else {
-						// Checkpoint
-						scoutPath.remove();
-					}
-				}
-
-				// Issue a movement command
-				scoutingUnit.get().move(
-						new Position(moveTarget.x, moveTarget.y));
+	private static void scout(UnitAgent ua, Position target) {
+		ua.task = UnitTask.SCOUTING;
+		if (ua.path.size() < 15) {
+			// Path planned is short
+			if (ua.unit.getType().isFlyer()) {
+				// TODO air paths
+				ua.path = PathingManager.findGroundPath(ua.unit.getX(),
+						ua.unit.getY(), target.getX(), target.getY(),
+						ua.unit.getType(), 256);
+			} else {
+				ua.path = PathingManager.findGroundPath(ua.unit.getX(),
+						ua.unit.getY(), target.getX(), target.getY(),
+						ua.unit.getType(), 256);
 			}
-		} catch (NullPointerException e) {
-			System.out.println("Pathfinder failed to find a path...");
+			if (ua.path.size() == 0) {
+				System.out.println("Pathfinder failed to find a path...");
+			}
 		}
+
+		WalkPosition moveTarget;
+		double distanceToCheckPoint;
+		while (true) {
+			moveTarget = ua.path.element();
+			distanceToCheckPoint = ua.unit.getPosition().getApproxDistance(
+					new Position(moveTarget.getX(), moveTarget.getY()));
+
+			if (distanceToCheckPoint > 128) {
+				// Recalculate a path
+				ua.path.clear();
+				return;
+			} else if (distanceToCheckPoint > 64) {
+				// Keep following existing path
+				break;
+			} else {
+				// Checkpoint
+				ua.path.remove();
+			}
+		}
+
+		// Issue a movement command
+		ua.unit.move(new Position(moveTarget.getX(), moveTarget.getY()));
 	}
 
-	private static Optional<Base> getScoutingTarget() {
-		Optional<Base> target = Optional.empty();
-		for (Base b : BaseManager.getBases()) {
-			// Scout all mains
-			if (b.getLocation().isStartLocation()) {
-				if (b.getPlayer() == GameHandler.getNeutralPlayer()
-						&& (!target.isPresent() || b.getLastScouted() < target
-								.get().getLastScouted())) {
-					target = Optional.of(b);
-				}
-			}
-		}
-		if (target.isPresent()) {
-			return target;
-		}
-
-		// If there is still no target
-		for (Base b : BaseManager.getBases()) {
-			// Scout all expos
-			if (b.getPlayer() == GameHandler.getNeutralPlayer()
-					&& (!target.isPresent() || b.getLastScouted() < target
-							.get().getLastScouted())) {
-				target = Optional.of(b);
-			}
-		}
+	private static Optional<Position> getScoutingTarget() {
+		Optional<Position> target;
+		target = BaseManager.getBases().stream()
+				.filter(b -> b.getLocation().isStartLocation())
+				.filter(b -> b.getPlayer() == GameHandler.getNeutralPlayer())
+				.sorted((b1, b2) -> b2.getLastScouted() - b1.getLastScouted())
+				.findFirst().map(b -> b.getLocation().getPosition());
 		return target;
 	}
 
 	public static void setScoutingUnit(Unit unit) {
-		Optional<Worker> ow = BaseManager.getWorker(scoutingUnit.get());
+		Optional<Worker> ow = BaseManager.getWorker(scoutingUnit.get().unit);
 		ow.ifPresent(w -> w.setBase(BaseManager.main));
-		scoutingUnit = Optional.of(unit);
+		scoutingUnit = Optional.of(unitAgents.get(unit));
 	}
 
 	public static boolean isScouting() {
@@ -224,13 +252,18 @@ public final class MicroManager {
 	}
 
 	public static void unitCreate(Unit unit) {
+		UnitType type = unit.getType();
+		UnitAgent ua = new UnitAgent(unit);
+		unitsByType.putIfAbsent(type, new HashSet<UnitAgent>());
+		unitsByType.get(type).add(ua);
+		unitAgents.put(unit, ua);
 	}
 
 	public static void unitDestroyed(Unit unit) {
-		units.get(unit.getType()).remove(unit);
+		UnitAgent ua = unitAgents.get(unit);
+		unitsByType.get(unit.getType()).remove(ua);
 		if (scoutingUnit.filter(su -> su.equals(unit)).isPresent()) {
 			scoutingUnit = Optional.empty();
-			scoutPath = new ArrayDeque<Point>();
 		}
 	}
 
@@ -247,62 +280,56 @@ public final class MicroManager {
 				}
 			});
 		// Movement map
-		DebugManager.createDebugModule("movement").setDraw(() -> {
-			// Actually draw
-				for (int x = 1; x < mapWidth; x++) {
-					for (int y = 1; y < mapHeight; y++) {
-						DrawEngine.drawArrowMap(x, y, x, y, Color.Green);
+		DebugManager.createDebugModule("movement").setDraw(
+				() -> {
+					for (int x = 1; x < mapWidth; x++) {
+						for (int y = 1; y < mapHeight; y++) {
+							DrawEngine.drawArrowMap(x, y, x
+									+ movementMap[x][y].x, y
+									+ movementMap[x][y].y, Color.Green);
+						}
 					}
-				}
-			});
+				});
 		// Target map
-		// debugEngine.registerDebugFunction(new DebugModule("targets") {
-		// @Override
-		// public void draw(DebugEngine engine) throws ShapeOverflowException{
-		// // Actually draw
-		// for (int tx = 1; tx < mapWidth - 1; tx++) {
-		// int x = tx * 32;
-		// for (int ty = 1; ty < mapHeight - 1; ty++) {
-		// int y = ty * 32;
-		//
-		// int north = (int) Math.round(targetMap[tx][ty - 1]);
-		// int east = (int) Math.round(targetMap[tx + 1][ty]);
-		// int south = (int) Math.round(targetMap[tx][ty - 1]);
-		// int west = (int) Math.round(targetMap[tx - 1][ty]);
-		// engine.drawArrow(x, y, x + (east - west) * 5, y
-		// + (north - south) * 5, BWColor.TEAL, false);
-		// }
-		// }
-		// }
-		// });
-		// Weapon cooldown bars
-		DebugManager
-				.createDebugModule("cooldowns")
+		DebugManager.createDebugModule("targets")
 				.setDraw(
 						() -> {
-							for (Entry<UnitType, HashMap<Unit, UnitAgent>> unitTypeMap : units
-									.entrySet()) {
-								for (Entry<Unit, UnitAgent> entry : unitTypeMap
-										.getValue().entrySet()) {
-									UnitAgent ua = entry.getValue();
-									Unit u = ua.unit;
-									UnitType unitType = u.getType();
-									int cooldownBarSize = 20;
-									int cooldownRemaining = u
-											.getGroundWeaponCooldown();
-									int maxCooldown = unitType.groundWeapon()
-											.damageCooldown();
-									DrawEngine.drawLineMap(u.getX(), u.getY(),
-											u.getX() + cooldownBarSize,
-											u.getY(), Color.Green);
-									DrawEngine.drawLineMap(u.getX(), u.getY(),
-											u.getX() + cooldownRemaining
-													* cooldownBarSize
-													/ maxCooldown, u.getY(),
-											Color.Red);
+							for (int tx = 1; tx < mapWidth - 1; tx++) {
+								int x = tx * 32;
+								for (int ty = 1; ty < mapHeight - 1; ty++) {
+									int y = ty * 32;
+
+									int north = (int) Math
+											.round(targetMap[tx][ty - 1]);
+									int east = (int) Math
+											.round(targetMap[tx + 1][ty]);
+									int south = (int) Math
+											.round(targetMap[tx][ty - 1]);
+									int west = (int) Math
+											.round(targetMap[tx - 1][ty]);
+									DrawEngine.drawArrowMap(x, y, x
+											+ (east - west) * 5, y
+											+ (north - south) * 5, Color.Teal);
 								}
 							}
 						});
+		// Weapon cooldown bars
+		DebugManager.createDebugModule("cooldowns").setDraw(
+				() -> {
+					for (UnitAgent ua : unitAgents.values()) {
+						Unit u = ua.unit;
+						UnitType unitType = u.getType();
+						int cooldownBarSize = 20;
+						int cooldownRemaining = u.getGroundWeaponCooldown();
+						int maxCooldown = unitType.groundWeapon()
+								.damageCooldown();
+						DrawEngine.drawLineMap(u.getX(), u.getY(), u.getX()
+								+ cooldownBarSize, u.getY(), Color.Green);
+						DrawEngine.drawLineMap(u.getX(), u.getY(), u.getX()
+								+ cooldownRemaining * cooldownBarSize
+								/ maxCooldown, u.getY(), Color.Red);
+					}
+				});
 		// Scouting Target
 		DebugManager.createDebugModule("scouting").setDraw(
 				() -> {
@@ -314,10 +341,24 @@ public final class MicroManager {
 						DrawEngine.drawLineMap(x + 10, y - 10, x - 10, y + 10,
 								Color.Red);
 					}
-					for (Point p : scoutPath) {
-						DrawEngine.drawBoxMap(p.x - 4, p.y - 4, p.x + 4,
-								p.y + 4, Color.Yellow, false);
-					}
 				});
+		// Pathing
+		DebugManager.createDebugModule("pathing")
+				.setDraw(
+						() -> {
+							for (UnitAgent ua : unitAgents.values()) {
+								final Iterator<WalkPosition> it = ua.path
+										.iterator();
+								WalkPosition previous = it.hasNext() ? it
+										.next() : null;
+								while (it.hasNext()) {
+									final WalkPosition current = it.next();
+									DrawEngine.drawLineMap(previous.getX(),
+											previous.getY(), current.getX(),
+											current.getY(), Color.Yellow);
+									previous = current;
+								}
+							}
+						});
 	}
 }

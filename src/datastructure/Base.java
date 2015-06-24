@@ -21,7 +21,7 @@ public class Base {
 
 	private Player player;
 	// When the base was last scouted, in game frames
-	private long lastScouted;
+	private int lastScouted;
 
 	public Base(BaseLocation l) {
 		workers = new ArrayList<Worker>();
@@ -158,7 +158,7 @@ public class Base {
 	 * 
 	 * @return The time the base was last scouted, in frames.
 	 */
-	public long getLastScouted() {
+	public int getLastScouted() {
 		TilePosition tp = location.getTilePosition();
 		if (GameHandler.isVisible(tp.getX(), tp.getY())) {
 			lastScouted = GameHandler.getFrameCount();

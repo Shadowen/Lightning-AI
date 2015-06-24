@@ -20,6 +20,7 @@ import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
+import bwapi.WalkPosition;
 import bwta.BWTA;
 import bwta.Chokepoint;
 import datastructure.BaseManager;
@@ -33,20 +34,20 @@ public final class PathingManager {
 	private static int mapWalkHeight;
 
 	// A list of tiles detailing a path into the main from the choke
-	private static Queue<Point> pathIntoMain;
-	private static Point topOfRamp;
-	private static List<Point> chokeRampWalkTiles;
+	private static Queue<WalkPosition> pathIntoMain;
+	private static WalkPosition topOfRamp;
+	private static List<WalkPosition> chokeRampWalkTiles;
 
 	public static void init() {
 		System.out.print("Starting PathingManager... ");
-		mapWalkWidth = 0; // TODO
-		mapWalkHeight = 0; // TODO
+		mapWalkWidth = GameHandler.getMapWalkWidth();
+		mapWalkHeight = GameHandler.getMapWalkHeight();
 
 		// Init walkable map
 		walkableNodes = new ArrayList<ArrayList<Node>>();
-		for (int wx = 0; wx < mapWalkWidth; wx++) { // TODO
+		for (int wx = 0; wx < mapWalkWidth; wx++) {
 			walkableNodes.add(new ArrayList<Node>());
-			for (int wy = 0; wy < mapWalkHeight; wy++) { // TODO
+			for (int wy = 0; wy < mapWalkHeight; wy++) {
 				walkableNodes.get(wx).add(new Node(wx, wy));
 			}
 		}
@@ -67,50 +68,55 @@ public final class PathingManager {
 				.getLocation().getPosition(), UnitType.Zerg_Zergling);
 
 		// Find top of ramp
-		for (Point p : pathIntoMain) {
-			if (GameHandler.isBuildable(p.x / 32, p.y / 32, false)) {
+		for (WalkPosition p : pathIntoMain) {
+			if (GameHandler.isBuildable(p.getX() / 32, p.getY() / 32, false)) {
 				topOfRamp = p;
 				break;
 			}
 		}
 
 		// Mark entire ramp
-		chokeRampWalkTiles = new ArrayList<Point>();
-		Queue<Point> rampWalkTileOpenSet = new PriorityQueue<Point>(1,
-				new Comparator<Point>() {
+		chokeRampWalkTiles = new ArrayList<WalkPosition>();
+		Queue<WalkPosition> rampWalkTileOpenSet = new PriorityQueue<>(1,
+				new Comparator<WalkPosition>() {
 					@Override
-					public int compare(Point p1, Point p2) {
-						Point topOfRampWalkTile = new Point(topOfRamp.x / 8,
-								topOfRamp.y / 8);
-						return (int) (p1.distanceSq(topOfRampWalkTile) - p2
-								.distanceSq(topOfRampWalkTile));
+					public int compare(WalkPosition p1, WalkPosition p2) {
+						WalkPosition topOfRampWalkTile = new WalkPosition(
+								topOfRamp.getX() / 8, topOfRamp.getY() / 8);
+						return (int) (p1.getApproxDistance(topOfRampWalkTile) - p2
+								.getApproxDistance(topOfRampWalkTile));
 					}
 				});
-		rampWalkTileOpenSet.add(new Point(choke.getCenter().getX() / 8, choke
-				.getCenter().getY() / 8));
+		rampWalkTileOpenSet.add(new WalkPosition(choke.getCenter().getX() / 8,
+				choke.getCenter().getY() / 8));
 		while (!rampWalkTileOpenSet.isEmpty()) {
-			Point currentNode = rampWalkTileOpenSet.poll();
-			if (GameHandler.isWalkable(currentNode.x, currentNode.y)
-					&& !GameHandler.isBuildable(currentNode.x / 4,
-							currentNode.y / 4, false)) {
-				chokeRampWalkTiles.add(new Point(currentNode.x, currentNode.y));
-				Point nextNode;
-				nextNode = new Point(currentNode.x - 1, currentNode.y);
+			WalkPosition currentNode = rampWalkTileOpenSet.poll();
+			if (GameHandler.isWalkable(currentNode)
+					&& !GameHandler.isBuildable(currentNode.getX() / 4,
+							currentNode.getY() / 4, false)) {
+				chokeRampWalkTiles.add(new WalkPosition(currentNode.getX(),
+						currentNode.getY()));
+				WalkPosition nextNode;
+				nextNode = new WalkPosition(currentNode.getX() - 1,
+						currentNode.getY());
 				if (!chokeRampWalkTiles.contains(nextNode)
 						&& !rampWalkTileOpenSet.contains(nextNode)) {
 					rampWalkTileOpenSet.add(nextNode);
 				}
-				nextNode = new Point(currentNode.x + 1, currentNode.y);
+				nextNode = new WalkPosition(currentNode.getX() + 1,
+						currentNode.getY());
 				if (!chokeRampWalkTiles.contains(nextNode)
 						&& !rampWalkTileOpenSet.contains(nextNode)) {
 					rampWalkTileOpenSet.add(nextNode);
 				}
-				nextNode = new Point(currentNode.x, currentNode.y - 1);
+				nextNode = new WalkPosition(currentNode.getX(),
+						currentNode.getY() - 1);
 				if (!chokeRampWalkTiles.contains(nextNode)
 						&& !rampWalkTileOpenSet.contains(nextNode)) {
 					rampWalkTileOpenSet.add(nextNode);
 				}
-				nextNode = new Point(currentNode.x, currentNode.y + 1);
+				nextNode = new WalkPosition(currentNode.getX(),
+						currentNode.getY() + 1);
 				if (!chokeRampWalkTiles.contains(nextNode)
 						&& !rampWalkTileOpenSet.contains(nextNode)) {
 					rampWalkTileOpenSet.add(nextNode);
@@ -125,20 +131,20 @@ public final class PathingManager {
 		}
 	}
 
-	private static Queue<Point> findGroundPath(Position start, Position end,
-			UnitType unitType) {
+	private static Queue<WalkPosition> findGroundPath(Position start,
+			Position end, UnitType unitType) {
 		return findGroundPath(start.getX(), start.getY(), end.getX(),
 				end.getY(), unitType);
 	}
 
-	public static Queue<Point> findGroundPath(int startx, int starty, int endx,
-			int endy, UnitType unitType) {
+	public static Queue<WalkPosition> findGroundPath(int startx, int starty,
+			int endx, int endy, UnitType unitType) {
 		return findGroundPath(startx, starty, endx, endy, unitType,
 				Integer.MAX_VALUE);
 	}
 
-	public static Queue<Point> findGroundPath(int startx, int starty, int endx,
-			int endy, UnitType type, int length) {
+	public static Queue<WalkPosition> findGroundPath(int startx, int starty,
+			int endx, int endy, UnitType type, int length) {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
 		int endWx = endx / 8;
@@ -151,25 +157,6 @@ public final class PathingManager {
 			}
 		}
 		// Avoid cliffs
-		// TODO New implementation
-		// IntStream
-		// .range(0, GameHandler.getMapWidth() * 4)
-		// .forEach(
-		// wx -> IntStream
-		// .range(0, GameHandler.getMapHeight() * 4)
-		// .forEach(
-		// wy -> {
-		// for (int iwx = Math.max(wx - 3, 0); iwx < Math
-		// .min(wx + 3, mapWalkWidth); iwx++) {
-		// for (int iwy = Math.max(wy - 3,
-		// 0); iwy < Math.min(
-		// wy + 3, mapWalkHeight); iwy++) {
-		// walkableNodes.get(iwx).get(
-		// iwy).walkable = GameHandler
-		// .isWalkable(wx, wy);
-		// }
-		// }
-		// }));
 		for (int wx = 0; wx < GameHandler.getMapWidth() * 4; wx++) {
 			for (int wy = 0; wy < GameHandler.getMapHeight() * 4; wy++) {
 				if (!GameHandler.isWalkable(wx, wy)) {
@@ -220,7 +207,7 @@ public final class PathingManager {
 			// Base case
 			if ((currentNode.x == endWx && currentNode.y == endWy)
 					|| currentNode.costFromStart > length) {
-				Deque<Point> path = new ArrayDeque<Point>();
+				Deque<WalkPosition> path = new ArrayDeque<>();
 				reconstructPath(path, currentNode);
 				return path;
 			}
@@ -289,9 +276,9 @@ public final class PathingManager {
 		return neighbors;
 	}
 
-	private static Deque<Point> reconstructPath(Deque<Point> path,
-			Node finalNode) {
-		path.push(new Point(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
+	private static Deque<WalkPosition> reconstructPath(
+			Deque<WalkPosition> path, Node finalNode) {
+		path.push(new WalkPosition(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
 
 		// Base case
 		if (finalNode.parent == null) {
@@ -316,25 +303,24 @@ public final class PathingManager {
 					}
 				});
 		// Draw the path from the choke point into the main
-		chokeDM.addSubmodule("path")
-				.setDraw(
-						() -> {
-							for (Point location : pathIntoMain) {
-								DrawEngine.drawBoxMap(location.x + 1,
-										location.y + 1, location.x + 6,
-										location.y + 6, Color.Grey, false);
-							}
-							DrawEngine.drawBoxMap(topOfRamp.x + 1,
-									topOfRamp.y + 1, topOfRamp.x + 6,
-									topOfRamp.y + 6, Color.Red, false);
-						});
+		chokeDM.addSubmodule("path").setDraw(
+				() -> {
+					for (WalkPosition location : pathIntoMain) {
+						DrawEngine.drawBoxMap(location.getX() + 1,
+								location.getY() + 1, location.getX() + 6,
+								location.getY() + 6, Color.Grey, false);
+					}
+					DrawEngine.drawBoxMap(topOfRamp.getX() + 1,
+							topOfRamp.getY() + 1, topOfRamp.getX() + 6,
+							topOfRamp.getY() + 6, Color.Red, false);
+				});
 		// Highlight the tiles of the main ramp
 		chokeDM.addSubmodule("ramp").setDraw(
 				() -> {
-					for (Point location : chokeRampWalkTiles) {
-						DrawEngine.drawBoxMap(location.x * 8, location.y * 8,
-								location.x * 8 + 8, location.y * 8 + 8,
-								Color.Green, false);
+					for (WalkPosition location : chokeRampWalkTiles) {
+						DrawEngine.drawBoxMap(location.getX() * 8,
+								location.getY() * 8, location.getX() * 8 + 8,
+								location.getY() * 8 + 8, Color.Green, false);
 					}
 				});
 	}

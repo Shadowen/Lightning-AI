@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import bwapi.Bullet;
 import bwapi.Game;
 import bwapi.Player;
+import bwapi.PlayerType;
+import bwapi.Playerset;
 import bwapi.Region;
 import bwapi.TechType;
 import bwapi.TilePosition;
@@ -30,14 +32,43 @@ public final class GameHandler {
 		System.out.println("Success!");
 	}
 
+	/**
+	 * @return the width of the map in build tiles
+	 */
 	public static int getMapWidth() {
 		return game.mapWidth();
 	}
 
+	/**
+	 * @return the width of the map in walk tiles
+	 */
+	public static int getMapWalkWidth() {
+		return 4 * getMapWidth();
+	}
+
+	/**
+	 * @return the height of the map in build tiles
+	 */
 	public static int getMapHeight() {
 		return game.mapHeight();
 	}
 
+	/**
+	 * @return the height of the map in walk tiles
+	 */
+	public static int getMapWalkHeight() {
+		return 4 * getMapHeight();
+	}
+
+	/**
+	 * Get the closest unit that is one of the given types
+	 * 
+	 * @param x
+	 * @param y
+	 * @param types
+	 *            a varags parameter of the types of units to search for.
+	 * @return a unit if found
+	 */
 	public static Optional<Unit> getClosestUnit(int x, int y, UnitType... types) {
 		Set<UnitType> typesSet = new HashSet<UnitType>(Arrays.asList(types));
 		Unit closest = null;
