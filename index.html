@@ -8,7 +8,7 @@
 
     <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-    <title>Eagles-wings</title>
+    <title>Lightning AI</title>
   </head>
 
   <body>
@@ -16,14 +16,14 @@
     <!-- HEADER -->
     <div id="header_wrap" class="outer">
         <header class="inner">
-          <a id="forkme_banner" href="https://github.com/Shadowen/Lightning AI">View on GitHub</a>
+          <a id="forkme_banner" href="https://github.com/Shadowen/Lightning-AI">View on GitHub</a>
 
           <h1 id="project_title">Lightning AI</h1>
           <h2 id="project_tagline">A JNIBWAPI bot for playing StarCraft: Brood War</h2>
 
             <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/Shadowen/Lightning AI/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/Shadowen/Lightning AI/tarball/master">Download this project as a tar.gz file</a>
+              <a class="zip_download_link" href="https://github.com/Shadowen/Lightning-AI/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/Shadowen/Lightning-AI/tarball/master">Download this project as a tar.gz file</a>
             </section>
         </header>
     </div>
@@ -66,19 +66,22 @@ BWAPI restricts the information that the AI can obtain to the same information t
 <p>A powerful, yet simple to implement debug manager allows the programmer to quickly and easily see what the AI is thinking at any given time. The debugger is modular so different sets of information can be quickly displayed or hidden at a keystroke.</p>
 
 <p>
-  Writing a module for the debugger is as simple as knowing what you want to display and how. The main module resides in a static class called `DebugManager`. To display information through it, you must first register a `DebugModule`, as below. This is a fire-and-forget method: each debug module only has to be registered once.
+  Writing a module for the debugger is as simple as knowing what you want to display and how. The main module resides in a static class called <code>DebugManager</code>. To display information through it, you must first register a <code>DebugModule</code>, as below. This is a fire-and-forget method: each debug module only has to be registered once.
 </p>
-  ```Java
-		createDebugModule("example")
-				.addCommand(
-						null,
-						(c) -> {
-					    GameHandler.sendText("The example draws stuff."))
-				.addAlias("help")
-				.setDraw(() -> DrawEngine.drawCircleScreen(320, 120, 10, Color.Red, false);
-  ```
+<!-- HTML generated using hilite.me --><div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><table><tr><td><pre style="margin: 0; line-height: 125%">1
+2
+3
+4
+5
+6</pre></td><td><pre style="margin: 0; line-height: 125%">createDebugModule<span style="color: #333333">(</span><span style="background-color: #fff0f0">&quot;example&quot;</span><span style="color: #333333">)</span>
+	<span style="color: #333333">.</span><span style="color: #0000CC">addCommand</span><span style="color: #333333">(</span>
+<span style="color: #008800; font-weight: bold">null</span><span style="color: #333333">,</span> <span style="color: #333333">(</span>c<span style="color: #333333">)</span> <span style="color: #333333">-</span> <span style="color: #333333">&gt;</span> <span style="color: #333333">{</span>
+	GameHandler<span style="color: #333333">.</span><span style="color: #0000CC">sendText</span><span style="color: #333333">(</span><span style="background-color: #fff0f0">&quot;The example draws stuff.&quot;</span><span style="color: #333333">))</span>
+	<span style="color: #333333">.</span><span style="color: #0000CC">addAlias</span><span style="color: #333333">(</span><span style="background-color: #fff0f0">&quot;help&quot;</span><span style="color: #333333">)</span>
+	<span style="color: #333333">.</span><span style="color: #0000CC">setDraw</span><span style="color: #333333">(()</span> <span style="color: #333333">-</span> <span style="color: #333333">&gt;</span> DrawEngine<span style="color: #333333">.</span><span style="color: #0000CC">drawCircleScreen</span><span style="color: #333333">(</span><span style="color: #0000DD; font-weight: bold">320</span><span style="color: #333333">,</span> <span style="color: #0000DD; font-weight: bold">120</span><span style="color: #333333">,</span> <span style="color: #0000DD; font-weight: bold">10</span><span style="color: #333333">,</span> Color<span style="color: #333333">.</span><span style="color: #0000CC">Red</span><span style="color: #333333">,</span> <span style="color: #008800; font-weight: bold">false</span><span style="color: #333333">);</span>
+</pre></td></tr></table></div>
 <p>
-  The internal interface relies heavily on function-chaining to make the declarations fluent. Used in conjunction with Java 8 lambda functions and functional interfaces, the entire interface is very fluent and easy to read. The interface was designed this way so that the lambda function passed to `setDraw(...)` would be in the same lexical scope as the declaring class and therefore have access to private and protected variables for quick and easy debugging.
+  The internal interface relies heavily on function-chaining to make the declarations fluent. Used in conjunction with Java 8 lambda functions and functional interfaces, the entire interface is very fluent and easy to read. The interface was designed this way so that the lambda function passed to <code>setDraw(...)</code> would be in the same lexical scope as the declaring class and therefore have access to private and protected variables for quick and easy debugging.
 </p>
 <p>
   And you're good to go! The debugger should not interfere with regular operation of the class. It simply serves as an easy way to display the internal state of various parts of the AI. 
@@ -89,12 +92,9 @@ BWAPI restricts the information that the AI can obtain to the same information t
     <!-- FOOTER  -->
     <div id="footer_wrap" class="outer">
       <footer class="inner">
-        <p class="copyright">Eagles-wings maintained by <a href="https://github.com/Shadowen">Shadowen</a></p>
+        <p class="copyright">Lightning maintained by <a href="https://github.com/Shadowen">Shadowen</a></p>
         <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
       </footer>
     </div>
-
-    
-
   </body>
 </html>
