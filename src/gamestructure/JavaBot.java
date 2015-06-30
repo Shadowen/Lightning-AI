@@ -29,7 +29,7 @@ import datastructure.BuildManager;
 import datastructure.Resource;
 
 public class JavaBot implements BWEventListener {
-	public Mirror mirror = new Mirror();
+	private Mirror mirror = new Mirror();
 
 	private BotState botState;
 	// Only contains my units under construction
@@ -91,13 +91,15 @@ public class JavaBot implements BWEventListener {
 				}
 				return false;
 			});
+
+			BaseManager.onFrame();
 			// Allow the bot to act
 			// Bot state updates
 			botState = botState.act();
 			// BuildManager check build order
 			BuildManager.checkMinimums();
 			// Micro units
-			// microManager.act();
+			MicroManager.act();
 
 			// Auto economy
 			BaseManager.gatherResources();
@@ -152,7 +154,7 @@ public class JavaBot implements BWEventListener {
 			BuildManager.unitQueue.stream()
 					.forEach(
 							toTrain -> GameHandler
-									.getAllUnits()
+									.getMyUnits()
 									.stream()
 									.filter(u -> u.getType() == toTrain
 											.whatBuilds().first)
@@ -192,7 +194,7 @@ public class JavaBot implements BWEventListener {
 		try {
 			// Base occupation detection
 			if (unit.getType().isResourceDepot()) {
-				BaseManager.resourceDepotShown(unit);
+				BaseManager.unitShown(unit);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -202,10 +204,7 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onUnitHide(Unit unit) {
 		try {
-			// Base occupation detection
-			if (unit.getType().isResourceDepot()) {
-				BaseManager.resourceDepotHidden(unit);
-			}
+			BaseManager.unitHidden(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -231,17 +230,13 @@ public class JavaBot implements BWEventListener {
 			// under construction
 			unitsUnderConstruction.remove(unit);
 
-			// Base occupation detection
-			if (unit.getType().isResourceDepot()) {
-				BaseManager.resourceDepotDestroyed(unit);
-			}
 			// Remove workers from the BaseManager
 			BaseManager.unitDestroyed(unit);
 			// Deletes units from microManager
 			MicroManager.unitDestroyed(unit);
 
 			// Allow the bot state to act
-			botState = botState.unitDestroy(unit);
+			botState = botState.unitDestroyed(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -269,14 +264,10 @@ public class JavaBot implements BWEventListener {
 				GameHandler.sendText("Unit constructed: " + type.toString());
 
 				BuildManager.buildingComplete(unit);
-
-				if (type == UnitType.Terran_SCV) {
-					// Add new workers to nearest base
-					BaseManager.workerComplete(unit);
-				}
-
-				botState = botState.unitComplete(unit);
 			}
+			BaseManager.onUnitConstructed(unit);
+			botState = botState.unitComplete(unit);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -284,15 +275,19 @@ public class JavaBot implements BWEventListener {
 
 	@Override
 	public void onSendText(String s) {
-		if (s.startsWith("/")) {
-			List<String> command = new ArrayList<>(Arrays.asList(s.substring(1)
-					.split(" ")));
-			try {
-				DebugManager.onReceiveCommand(command);
-			} catch (InvalidCommandException e) {
-				GameHandler.sendText(e.getMessage());
-				e.printStackTrace();
+		try {
+			if (s.startsWith("/")) {
+				List<String> command = new ArrayList<>(Arrays.asList(s
+						.substring(1).split(" ")));
+				try {
+					DebugManager.onReceiveCommand(command);
+				} catch (InvalidCommandException e) {
+					GameHandler.sendText(e.getMessage());
+					e.printStackTrace();
+				}
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -342,25 +337,17 @@ public class JavaBot implements BWEventListener {
 
 	@Override
 	public void onReceiveText(Player player, String text) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onPlayerLeft(Player player) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onSaveGame(String gameName) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void onPlayerDropped(Player player) {
-		// TODO Auto-generated method stub
-
 	}
 }

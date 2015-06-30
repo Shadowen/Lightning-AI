@@ -78,13 +78,15 @@ public class StarportRush extends BotState {
 	@Override
 	public BotState unitComplete(Unit unit) {
 		UnitType unitType = unit.getType();
-		if (unitType.isRefinery()) {
-			// TODO put just enough workers on gas immediately according to
-			// strategy
-			for (int i = 0; i < 2; i++) {
-				BaseManager.getBuilder().ifPresent(
-						w -> BaseManager.getResource(unit).ifPresent(
-								r -> w.gather(r)));
+		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
+			if (unitType.isRefinery()) {
+				// TODO put just enough workers on gas immediately according to
+				// strategy
+				for (int i = 0; i < 2; i++) {
+					BaseManager.getBuilder().ifPresent(
+							w -> BaseManager.getResource(unit).ifPresent(
+									r -> w.gather(r)));
+				}
 			}
 		}
 		return this;

@@ -5,23 +5,17 @@ import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
 
 import java.awt.Point;
-import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.Set;
-
 import pathfinder.PathingManager;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwapi.WalkPosition;
-import datastructure.Base;
 import datastructure.BaseManager;
 import datastructure.Worker;
 
@@ -44,10 +38,17 @@ public final class MicroManager {
 		mapHeight = GameHandler.getMapHeight();
 		targetMap = new double[mapWidth + 1][mapHeight + 1];
 		threatMap = new double[mapWidth + 1][mapHeight + 1];
+		movementMap = new Point[mapWidth + 1][mapHeight + 1];
+		for (int x = 0; x < movementMap.length; x++) {
+			for (int y = 0; y < movementMap[x].length; y++) {
+				movementMap[x][y] = new Point(0, 0);
+			}
+		}
 
 		unitsByType = new HashMap<UnitType, HashSet<UnitAgent>>();
 		unitAgents = new HashMap<Unit, UnitAgent>();
 
+		scoutingTarget = Optional.empty();
 		scoutingUnit = Optional.empty();
 
 		registerDebugFunctions();
@@ -120,14 +121,12 @@ public final class MicroManager {
 				int startY = Math.max(y - remainingRadius, 0);
 				int endY = Math.min(y + remainingRadius, mapHeight);
 				for (int cy = startY; cy < endY; cy++) {
-					threatMap[cx][cy] += threatValue * radius
-							/ (Point.distance(x, y, cx, cy) + 1);
+					threatMap[cx][cy] += threatValue
+							* Math.max(radius - Point.distance(x, y, cx, cy), 0);
 				}
 			}
 		}
-	}
 
-	private static void micro() {
 		movementMap = new Point[mapWidth + 1][mapHeight + 1];
 		for (int x = 1; x < mapWidth - 1; x++) {
 			for (int y = 1; y < mapHeight - 1; y++) {
@@ -136,6 +135,9 @@ public final class MicroManager {
 						(int) (threatMap[x][y + 1] - threatMap[x][y - 1]));
 			}
 		}
+	}
+
+	private static void micro() {
 		for (UnitAgent ua : unitsByType.get(UnitType.Terran_Wraith)) {
 			Unit u = ua.unit;
 			int x = u.getX();
@@ -194,9 +196,9 @@ public final class MicroManager {
 			// Path planned is short
 			if (ua.unit.getType().isFlyer()) {
 				// TODO air paths
-				ua.path = PathingManager.findGroundPath(ua.unit.getX(),
+				ua.path = PathingManager.findSafeAirPath(ua.unit.getX(),
 						ua.unit.getY(), target.getX(), target.getY(),
-						ua.unit.getType(), 256);
+						threatMap, 256);
 			} else {
 				ua.path = PathingManager.findGroundPath(ua.unit.getX(),
 						ua.unit.getY(), target.getX(), target.getY(),
@@ -268,28 +270,28 @@ public final class MicroManager {
 	}
 
 	public static void registerDebugFunctions() {
-		// Threat map
-		DebugManager.createDebugModule("threats").setDraw(() -> {
-			// Actually draw
-				for (int x = 1; x < mapWidth; x++) {
-					for (int y = 1; y < mapHeight; y++) {
-						DrawEngine.drawCircleMap(x * 32, y * 32,
-								(int) Math.round(threatMap[x][y]), Color.Red,
-								false);
-					}
-				}
-			});
-		// Movement map
-		DebugManager.createDebugModule("movement").setDraw(
-				() -> {
-					for (int x = 1; x < mapWidth; x++) {
-						for (int y = 1; y < mapHeight; y++) {
-							DrawEngine.drawArrowMap(x, y, x
-									+ movementMap[x][y].x, y
-									+ movementMap[x][y].y, Color.Green);
-						}
-					}
-				});
+		// // Threat map
+		// DebugManager.createDebugModule("threats").setDraw(() -> {
+		// // Actually draw
+		// for (int x = 1; x < mapWidth; x++) {
+		// for (int y = 1; y < mapHeight; y++) {
+		// DrawEngine.drawCircleMap(x * 32, y * 32,
+		// (int) Math.round(threatMap[x][y]), Color.Red,
+		// false);
+		// }
+		// }
+		// });
+		// // Movement map
+		// DebugManager.createDebugModule("movement").setDraw(
+		// () -> {
+		// for (int x = 1; x < mapWidth; x++) {
+		// for (int y = 1; y < mapHeight; y++) {
+		// DrawEngine.drawArrowMap(x, y, x
+		// + movementMap[x][y].x, y
+		// + movementMap[x][y].y, Color.Green);
+		// }
+		// }
+		// });
 		// Target map
 		DebugManager.createDebugModule("targets")
 				.setDraw(
@@ -323,11 +325,13 @@ public final class MicroManager {
 						int cooldownRemaining = u.getGroundWeaponCooldown();
 						int maxCooldown = unitType.groundWeapon()
 								.damageCooldown();
-						DrawEngine.drawLineMap(u.getX(), u.getY(), u.getX()
-								+ cooldownBarSize, u.getY(), Color.Green);
-						DrawEngine.drawLineMap(u.getX(), u.getY(), u.getX()
-								+ cooldownRemaining * cooldownBarSize
-								/ maxCooldown, u.getY(), Color.Red);
+						if (maxCooldown > 0) {
+							DrawEngine.drawLineMap(u.getX(), u.getY(), u.getX()
+									+ cooldownBarSize, u.getY(), Color.Green);
+							DrawEngine.drawLineMap(u.getX(), u.getY(), u.getX()
+									+ cooldownRemaining * cooldownBarSize
+									/ maxCooldown, u.getY(), Color.Red);
+						}
 					}
 				});
 		// Scouting Target

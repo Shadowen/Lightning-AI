@@ -82,10 +82,16 @@ public class DebugManager {
 	 */
 	public static void onReceiveCommand(List<String> command)
 			throws InvalidCommandException {
+		// Null terminate the command
+		command.add(null);
+		System.out.println("Received command " + command);
+
 		String first = command.get(0);
 
 		if (first.equalsIgnoreCase("all")) {
+			System.out.println("Activating all modules!");
 			for (DebugModule v : debugModules.values()) {
+				System.out.print(v.name + "\t");
 				v.onReceiveCommand(command.subList(1, command.size()));
 			}
 		} else {

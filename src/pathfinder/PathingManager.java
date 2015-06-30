@@ -237,6 +237,65 @@ public final class PathingManager {
 		throw new NullPointerException();
 	}
 
+	public static Queue<WalkPosition> findSafeAirPath(int startx, int starty,
+			int endx, int endy, double[][] threatMap, int length) {
+		int startWx = startx / 8;
+		int startWy = starty / 8;
+		int endWx = endx / 8;
+		int endWy = endy / 8;
+
+		Queue<Node> openSet = new PriorityQueue<Node>(1,
+				new Comparator<Node>() {
+					@Override
+					public int compare(Node n1, Node n2) {
+						return (int) Math
+								.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
+					}
+				});
+		walkableNodes.get(startWx).get(startWy).parent = null;
+		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
+		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point
+				.distance(startWx, startWy, endWx, endWy);
+		openSet.add(walkableNodes.get(startWx).get(startWy));
+		Set<Node> closedSet = new HashSet<Node>();
+
+		// Iterate
+		while (openSet.size() > 0) {
+			Node currentNode = openSet.remove();
+			// Base case
+			if ((currentNode.x == endWx && currentNode.y == endWy)
+					|| currentNode.costFromStart > length) {
+				Deque<WalkPosition> path = new ArrayDeque<>();
+				reconstructPath(path, currentNode);
+				return path;
+			}
+			// Move the node from the open set to the closed set
+			closedSet.add(currentNode);
+			// Add all neigbors to the open set
+			for (Node neighbor : getNeighbors(currentNode.x, currentNode.y)) {
+				if (closedSet.contains(neighbor)
+						|| threatMap[currentNode.x / 4][currentNode.y / 4] > 0) {
+					continue;
+				}
+
+				double tentative_g_score = currentNode.costFromStart
+						+ Point.distance(currentNode.x, currentNode.y,
+								neighbor.x, neighbor.y);
+				if (!openSet.contains(neighbor)
+						|| tentative_g_score < neighbor.costFromStart) {
+					neighbor.parent = currentNode;
+					neighbor.costFromStart = tentative_g_score;
+					neighbor.predictedTotalCost = tentative_g_score
+							+ Point.distance(neighbor.x, neighbor.y, endWx,
+									endWy);
+					openSet.add(neighbor);
+				}
+			}
+		}
+
+		throw new NullPointerException();
+	}
+
 	private static List<Node> getNeighbors(int x, int y) {
 		List<Node> neighbors = new ArrayList<Node>();
 

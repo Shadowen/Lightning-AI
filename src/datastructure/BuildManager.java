@@ -171,7 +171,7 @@ public final class BuildManager {
 
 					if (u.getType().isRefinery()) {
 						// The gas geyser becomes a refinery...
-						BaseManager.refineryComplete(u);
+						BaseManager.unitComplete(u);
 						// If it's a refinery, the worker will automatically
 						// become
 						// a gas miner!

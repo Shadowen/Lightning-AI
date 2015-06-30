@@ -20,7 +20,7 @@ public abstract class BotState {
 		return this;
 	}
 
-	public BotState unitDestroy(Unit unit) {
+	public BotState unitDestroyed(Unit unit) {
 		return this;
 	}
 

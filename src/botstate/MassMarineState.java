@@ -84,7 +84,7 @@ public class MassMarineState extends BotState {
 
 	}
 
-	public BotState unitDestroyed(int unitID) {
+	public BotState unitDestroyed(Unit unit) {
 		armySize++;
 		return this;
 	}

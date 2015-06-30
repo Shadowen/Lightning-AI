@@ -146,7 +146,9 @@ public class DebugModule {
 	final void onReceiveCommand(List<String> command)
 			throws InvalidCommandException {
 		// A command in my list
+		System.out.println(name + " is parsing command..." + command);
 		if (commands.containsKey(command.get(0))) {
+			System.out.print("Found command " + command + " ");
 			commands.get(command.get(0)).apply(command);
 			return;
 		}

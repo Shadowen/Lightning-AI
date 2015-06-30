@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import jdk.internal.dynalink.support.TypeUtilities;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
@@ -21,6 +22,7 @@ import bwta.BaseLocation;
 
 public final class BaseManager {
 	private static Map<BaseLocation, Base> bases;
+	private static Set<Unit> enemyBuildings;
 	public static Base main;
 	/**
 	 * The radius the bot looks around a potential base location to determine if
@@ -64,6 +66,12 @@ public final class BaseManager {
 
 	/** This constructor should never be called. */
 	private BaseManager() {
+	}
+
+	public static void onFrame() {
+		bases.forEach((bl, b) -> b.commandCenter.map(c -> c.getPosition())
+				.flatMap(p -> getClosestBase(p))
+				.ifPresent(bs -> bs.setLastScouted()));
 	}
 
 	public static void gatherResources() {
@@ -128,6 +136,18 @@ public final class BaseManager {
 					break;
 				}
 			}
+		} else if (type.isResourceDepot()) {
+			getClosestBase(unit.getPosition()).ifPresent(b -> {
+				b.commandCenter = Optional.empty();
+				b.setPlayer(GameHandler.getNeutralPlayer());
+			});
+		}
+	}
+
+	public static void unitComplete(Unit u) {
+		if (u.getType().isRefinery()) {
+			getClosestBase(u.getPosition()).ifPresent(
+					b -> b.gas.add(new GasResource(u)));
 		}
 	}
 
@@ -147,11 +167,6 @@ public final class BaseManager {
 		return Optional.empty();
 	}
 
-	public static void refineryComplete(Unit u) {
-		getClosestBase(u.getPosition()).ifPresent(
-				b -> b.gas.add(new GasResource(u)));
-	}
-
 	public static Optional<Resource> getResource(Unit u) {
 		if (u.getType().isMineralField()) {
 			return bases.values().stream().flatMap(b -> b.minerals.stream())
@@ -165,26 +180,22 @@ public final class BaseManager {
 		return Optional.empty();
 	}
 
-	public static void resourceDepotShown(Unit unit) {
-		getClosestBase(unit.getPosition()).ifPresent(b -> {
-			b.commandCenter = Optional.of(unit);
-			b.setPlayer(unit.getPlayer());
-		});
+	public static void unitShown(Unit unit) {
+		if (unit.getType().isResourceDepot()) {
+			getClosestBase(unit.getPosition()).ifPresent(b -> {
+				b.commandCenter = Optional.of(unit);
+				b.setPlayer(unit.getPlayer());
+			});
+		}
 	}
 
-	public static void resourceDepotDestroyed(Unit unit) {
-		getClosestBase(unit.getPosition()).ifPresent(b -> {
-			b.commandCenter = Optional.empty();
-			b.setPlayer(GameHandler.getNeutralPlayer());
-		});
-	}
-
-	public static void resourceDepotHidden(Unit unit) {
-		getClosestBase(unit.getPosition()).ifPresent(b -> b.setLastScouted());
-	}
-
-	public static void workerComplete(Unit unit) {
-		getClosestBase(unit.getPosition()).ifPresent(b -> b.addWorker(unit));
+	public static void onUnitConstructed(Unit unit) {
+		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
+			if (unit.getType().isWorker()) {
+				getClosestBase(unit.getPosition()).ifPresent(
+						b -> b.addWorker(unit));
+			}
+		}
 	}
 
 	public static void registerDebugFunctions() {
@@ -262,5 +273,10 @@ public final class BaseManager {
 						}
 					}
 				}).addAlias("miners");
+	}
+
+	public static void unitHidden(Unit unit) {
+		// TODO Auto-generated method stub
+
 	}
 }
