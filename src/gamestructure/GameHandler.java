@@ -29,6 +29,10 @@ public final class GameHandler {
 		game.setTextSize(bwapi.Text.Size.Enum.Small);
 		// allow me to manually control units during the game
 		game.enableFlag(1);
+
+		myUnitsHash = -1;
+		enemyUnitsHash = -1;
+
 		System.out.println("Success!");
 	}
 
@@ -174,7 +178,8 @@ public final class GameHandler {
 		final int hashCode = allUnits.hashCode();
 		if (hashCode != myUnitsHash) {
 			System.out.println("Recomputing myUnits..."); // TODO
-			allUnits.stream().filter(u -> u.getPlayer() == getSelfPlayer())
+			myUnits = allUnits.stream()
+					.filter(u -> u.getPlayer() == getSelfPlayer())
 					.collect(Collectors.toSet());
 			myUnitsHash = hashCode;
 		} else {

@@ -12,10 +12,10 @@ public abstract class BotState {
 
 	public abstract BotState act();
 
-	public BotState unitCreate(Unit unit) {
+	public BotState unitDiscover(Unit unit){
 		return this;
 	}
-
+	
 	public BotState unitComplete(Unit unit) {
 		return this;
 	}
@@ -24,7 +24,7 @@ public abstract class BotState {
 		return this;
 	}
 
-	public BotState unitDiscover(Unit unit) {
+	public BotState unitShow(Unit unit) {
 		return this;
 	}
 }

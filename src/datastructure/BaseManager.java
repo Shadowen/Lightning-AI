@@ -22,6 +22,7 @@ import bwta.BaseLocation;
 
 public final class BaseManager {
 	private static Map<BaseLocation, Base> bases;
+	private static Map<Unit, Worker> workers;
 	private static Set<Unit> enemyBuildings;
 	public static Base main;
 	/**
@@ -32,6 +33,7 @@ public final class BaseManager {
 
 	public static void init() {
 		System.out.print("Starting BaseManager... ");
+		workers = new HashMap<>();
 		bases = new HashMap<>();
 		// Add bases
 		for (BaseLocation location : BWTA.getBaseLocations()) {
@@ -42,7 +44,6 @@ public final class BaseManager {
 		for (Unit u : GameHandler.getAllUnits()) {
 			UnitType type = u.getType();
 			Optional<Base> closestBase = getClosestBase(u.getPosition());
-			System.out.println(type.isResourceDepot());
 			if (closestBase.isPresent()) {
 				if (type.isMineralField()) {
 					closestBase.get().minerals.add(new MineralResource(u));
@@ -119,7 +120,7 @@ public final class BaseManager {
 		UnitType type = unit.getType();
 		if (type == UnitType.Terran_SCV) {
 			for (Base b : bases.values()) {
-				if (b.removeWorker(unit)) {
+				if (b.removeWorker(workers.get(unit))) {
 					break;
 				}
 			}
@@ -145,9 +146,14 @@ public final class BaseManager {
 	}
 
 	public static void unitComplete(Unit u) {
-		if (u.getType().isRefinery()) {
-			getClosestBase(u.getPosition()).ifPresent(
-					b -> b.gas.add(new GasResource(u)));
+		if (u.getType() == UnitType.Terran_SCV) {
+			workers.get(u).setTask(WorkerTask.Mining_Minerals, null);
+		} else if (u.getType().isRefinery()) {
+			// If it's a refinery, the worker will automatically
+			// become a gas miner!
+			GasResource r = new GasResource(u);
+			getClosestBase(u.getPosition()).ifPresent(b -> b.gas.add(r));
+			u.gather(r.getUnit());
 		}
 	}
 
@@ -180,6 +186,13 @@ public final class BaseManager {
 		return Optional.empty();
 	}
 
+	public static void unitCreated(Unit unit) {
+		if (unit.getType() == UnitType.Terran_SCV
+				&& unit.getPlayer() == GameHandler.getSelfPlayer()) {
+			workers.put(unit, new Worker(unit));
+		}
+	}
+
 	public static void unitShown(Unit unit) {
 		if (unit.getType().isResourceDepot()) {
 			getClosestBase(unit.getPosition()).ifPresent(b -> {
@@ -193,7 +206,7 @@ public final class BaseManager {
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (unit.getType().isWorker()) {
 				getClosestBase(unit.getPosition()).ifPresent(
-						b -> b.addWorker(unit));
+						b -> b.addWorker(workers.get(unit)));
 			}
 		}
 	}
@@ -273,10 +286,5 @@ public final class BaseManager {
 						}
 					}
 				}).addAlias("miners");
-	}
-
-	public static void unitHidden(Unit unit) {
-		// TODO Auto-generated method stub
-
 	}
 }

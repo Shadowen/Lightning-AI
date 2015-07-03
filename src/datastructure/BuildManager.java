@@ -168,19 +168,7 @@ public final class BuildManager {
 						&& u.getTilePosition().equals(p.getTilePosition())) {
 					// It has been completed
 					buildingQueue.remove(p);
-
-					if (u.getType().isRefinery()) {
-						// The gas geyser becomes a refinery...
-						BaseManager.unitComplete(u);
-						// If it's a refinery, the worker will automatically
-						// become
-						// a gas miner!
-						BaseManager.getResource(u).ifPresent(
-								r -> p.builder.gather(r));
-					} else {
-						// Otherwise, back to work!
-						p.builder.gather(p.builder.getCurrentResource());
-					}
+					p.builder.gather(p.builder.getCurrentResource());
 					break;
 				}
 			}

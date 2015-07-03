@@ -1,6 +1,7 @@
 package datastructure;
 
 import gamestructure.GameHandler;
+import gamestructure.debug.DebugManager;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -30,6 +31,8 @@ public class Base {
 		minerals = new ArrayList<MineralResource>();
 		gas = new ArrayList<GasResource>();
 
+		commandCenter = Optional.empty();
+
 		setPlayer(GameHandler.getNeutralPlayer());
 		lastScouted = 0;
 	}
@@ -52,7 +55,7 @@ public class Base {
 			WorkerTask currentTask = worker.getTask();
 			if (worker.isIdle()
 					&& (currentTask == WorkerTask.Mining_Minerals || currentTask == WorkerTask.Mining_Gas)) {
-				// game.sendText("Idle worker detected!"); // TODO
+				GameHandler.sendText("Idle worker detected!");
 				// Get back to work
 				if (worker.getCurrentResource() != null) {
 					worker.gather(worker.getCurrentResource());
@@ -115,21 +118,13 @@ public class Base {
 		return i;
 	}
 
-	public void addWorker(Unit unit) {
-		Worker w = new Worker(unit);
+	public void addWorker(Worker w) {
 		w.setBase(this);
-		w.setTask(WorkerTask.Mining_Minerals, null);
-		workers.add(w); // TODO figure out what to do with unitID
+		workers.add(w);
 	}
 
-	public boolean removeWorker(final Unit unit) {
-		return workers.removeIf((w) -> {
-			if (w.getUnit() == unit) {
-				w.unitDestroyed();
-				return true;
-			}
-			return false;
-		});
+	public boolean removeWorker(Worker w) {
+		return workers.remove(w);
 	}
 
 	public BaseLocation getLocation() {

@@ -14,7 +14,6 @@ import bwta.BWTA;
 import bwta.BaseLocation;
 
 public class MassMarineState extends BotState {
-	int frameCount = 0;
 	int enemyLocation = 3;
 	private int armySize = 0;
 
@@ -38,9 +37,8 @@ public class MassMarineState extends BotState {
 		}
 
 		// Attack
-		frameCount++;
-		if (frameCount % 5 == 0) {
-			for (Unit u : GameHandler.getAllUnits()) { // TODO only my units
+		if (GameHandler.getFrameCount() % 5 == 0) {
+			for (Unit u : GameHandler.getMyUnits()) {
 				if (u.getType() == UnitType.Terran_Marine) {
 					Optional<Unit> enemyUnit = GameHandler.getClosestEnemy(u);
 					if (enemyUnit.isPresent()
@@ -72,8 +70,6 @@ public class MassMarineState extends BotState {
 							}
 							if (enemyLocation >= baseLocations.size()) {
 								enemyLocation = 0;
-								// Consider using
-								// baseLocation.isStartingLocation()
 							}
 						}
 					}

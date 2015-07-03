@@ -151,16 +151,14 @@ public class JavaBot implements BWEventListener {
 						}
 					});
 			// Auto train
-			BuildManager.unitQueue.stream()
-					.forEach(
-							toTrain -> GameHandler
-									.getMyUnits()
-									.stream()
-									.filter(u -> u.getType() == toTrain
-											.whatBuilds().first)
-									.filter(u -> !u.isTraining()).findFirst()
-									.ifPresent(u -> u.train(toTrain)));
-
+			for (UnitType toTrain : BuildManager.unitQueue) {
+				for (Unit u : GameHandler.getMyUnits()) {
+					if (u.getType() == toTrain.whatBuilds().first
+							&& !u.isTraining()) {
+						u.train(toTrain);
+					}
+				}
+			}
 			// Draw debug information on screen
 			DebugManager.draw();
 		} catch (Exception e) {
@@ -204,7 +202,6 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onUnitHide(Unit unit) {
 		try {
-			BaseManager.unitHidden(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -215,9 +212,8 @@ public class JavaBot implements BWEventListener {
 		try {
 			if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 				unitsUnderConstruction.add(unit);
-				MicroManager.unitCreate(unit);
 			}
-			botState = botState.unitCreate(unit);
+			BaseManager.unitCreated(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -254,7 +250,6 @@ public class JavaBot implements BWEventListener {
 
 	@Override
 	public void onUnitComplete(Unit unit) {
-		GameHandler.sendText("Unit complete: " + unit.getType());
 	}
 
 	public void onUnitConstructed(Unit unit) {
@@ -263,7 +258,9 @@ public class JavaBot implements BWEventListener {
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
 				GameHandler.sendText("Unit constructed: " + type.toString());
 
+				MicroManager.unitConstructed(unit);
 				BuildManager.buildingComplete(unit);
+				BaseManager.unitComplete(unit);
 			}
 			BaseManager.onUnitConstructed(unit);
 			botState = botState.unitComplete(unit);

@@ -29,6 +29,8 @@ public final class PathingManager {
 
 	private static final int MAX_RAMP_WALK_TILES = 500;
 
+	private static final double AIR_EPSILON = 0;
+
 	private static ArrayList<ArrayList<Node>> walkableNodes;
 	private static int mapWalkWidth;
 	private static int mapWalkHeight;
@@ -36,7 +38,7 @@ public final class PathingManager {
 	// A list of tiles detailing a path into the main from the choke
 	private static Queue<WalkPosition> pathIntoMain;
 	private static WalkPosition topOfRamp;
-	private static List<WalkPosition> chokeRampWalkTiles;
+	private static List<WalkPosition> chokeRampWalkTiles = new ArrayList<WalkPosition>();;
 
 	public static void init() {
 		System.out.print("Starting PathingManager... ");
@@ -53,6 +55,8 @@ public final class PathingManager {
 		}
 
 		registerDebugFunctions();
+
+		// findChokeToMain();
 		System.out.println("Success!");
 	}
 
@@ -282,7 +286,8 @@ public final class PathingManager {
 						+ Point.distance(currentNode.x, currentNode.y,
 								neighbor.x, neighbor.y);
 				if (!openSet.contains(neighbor)
-						|| tentative_g_score < neighbor.costFromStart) {
+						|| tentative_g_score < neighbor.costFromStart
+								+ AIR_EPSILON) {
 					neighbor.parent = currentNode;
 					neighbor.costFromStart = tentative_g_score;
 					neighbor.predictedTotalCost = tentative_g_score

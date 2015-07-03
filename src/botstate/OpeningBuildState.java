@@ -14,11 +14,11 @@ public class OpeningBuildState extends BotState {
 	@Override
 	public BotState act() {
 		// Add barracks at 11 supply
-		if (GameHandler.getSelfPlayer().supplyUsed() / 2 == 11) {
-			// Check that it's not already in the queue
-			if (!BuildManager.isInQueue(UnitType.Terran_Barracks)) {
-				BuildManager.addToQueue(UnitType.Terran_Barracks);
-			}
+		int supply = GameHandler.getSelfPlayer().supplyUsed() / 2;
+		if (supply >= 9) {
+			BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
+		} else if (supply >= 11) {
+			BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
 		}
 
 		return this;
@@ -30,6 +30,13 @@ public class OpeningBuildState extends BotState {
 			return new MassMarineState(this);
 		}
 
+		return this;
+	}
+
+	public BotState unitShow(Unit unit) {
+		if (unit.getType() == UnitType.Protoss_Gateway) {
+			return new MassMarineState(this);
+		}
 		return this;
 	}
 }

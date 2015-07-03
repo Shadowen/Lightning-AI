@@ -5,11 +5,13 @@ import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
 
 import java.awt.Point;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+
 import pathfinder.PathingManager;
 import bwapi.Color;
 import bwapi.Position;
@@ -46,6 +48,7 @@ public final class MicroManager {
 		}
 
 		unitsByType = new HashMap<UnitType, HashSet<UnitAgent>>();
+		unitsByType.put(UnitType.Terran_Wraith, new HashSet<UnitAgent>());
 		unitAgents = new HashMap<Unit, UnitAgent>();
 
 		scoutingTarget = Optional.empty();
@@ -152,7 +155,7 @@ public final class MicroManager {
 					scout(ua, scoutingTarget.get());
 				}
 				// Go aggro when threshold is reached
-				if (unitsByType.get(UnitType.Terran_Wraith).size() > 2) {
+				if (unitsByType.get(UnitType.Terran_Wraith).size() > 5) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
@@ -180,7 +183,10 @@ public final class MicroManager {
 			case RETREATING:
 				u.move(new Position(x + movementMap[x][y].x, y
 						+ movementMap[x][y].y));
-				if (u.getGroundWeaponCooldown() <= 0) {
+				// Go safe when threshold is reached
+				if (unitsByType.get(UnitType.Terran_Wraith).size() < 3) {
+					ua.task = UnitTask.SCOUTING;
+				} else if (u.getGroundWeaponCooldown() <= 0) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
@@ -195,7 +201,6 @@ public final class MicroManager {
 		if (ua.path.size() < 15) {
 			// Path planned is short
 			if (ua.unit.getType().isFlyer()) {
-				// TODO air paths
 				ua.path = PathingManager.findSafeAirPath(ua.unit.getX(),
 						ua.unit.getY(), target.getX(), target.getY(),
 						threatMap, 256);
@@ -253,7 +258,7 @@ public final class MicroManager {
 		return scoutingUnit.isPresent();
 	}
 
-	public static void unitCreate(Unit unit) {
+	public static void unitConstructed(Unit unit) {
 		UnitType type = unit.getType();
 		UnitAgent ua = new UnitAgent(unit);
 		unitsByType.putIfAbsent(type, new HashSet<UnitAgent>());
@@ -357,7 +362,7 @@ public final class MicroManager {
 										.next() : null;
 								while (it.hasNext()) {
 									final WalkPosition current = it.next();
-									DrawEngine.drawLineMap(previous.getX(),
+									DrawEngine.drawArrowMap(previous.getX(),
 											previous.getY(), current.getX(),
 											current.getY(), Color.Yellow);
 									previous = current;

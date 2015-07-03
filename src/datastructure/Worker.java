@@ -15,6 +15,7 @@ public class Worker {
 
 	public Worker(Unit u) {
 		unit = u;
+		currentTask = WorkerTask.training;
 	}
 
 	public void setBase(Base b) {
@@ -64,7 +65,7 @@ public class Worker {
 			}
 		} else if (task == WorkerTask.SCOUTING) {
 			if (base != null) {
-				base.removeWorker(unit);
+				base.removeWorker(this);
 			}
 		}
 
