@@ -249,7 +249,7 @@ public final class MicroManager {
 	}
 
 	public static void setScoutingUnit(Unit unit) {
-		Optional<Worker> ow = BaseManager.getWorker(scoutingUnit.get().unit);
+		Optional<Worker> ow = BaseManager.getFreeWorker(scoutingUnit.get().unit);
 		ow.ifPresent(w -> w.setBase(BaseManager.main));
 		scoutingUnit = Optional.of(unitAgents.get(unit));
 	}

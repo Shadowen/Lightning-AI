@@ -24,7 +24,7 @@ public abstract class BotState {
 		return this;
 	}
 
-	public BotState unitShow(Unit unit) {
+	public BotState unitShown(Unit unit) {
 		return this;
 	}
 }

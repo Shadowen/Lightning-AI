@@ -15,7 +15,7 @@ public class Worker {
 
 	public Worker(Unit u) {
 		unit = u;
-		currentTask = WorkerTask.training;
+		currentTask = WorkerTask.TRAINING;
 	}
 
 	public void setBase(Base b) {
@@ -34,9 +34,9 @@ public class Worker {
 		unit.gather(r.getUnit());
 
 		if (r instanceof MineralResource) {
-			setTask(WorkerTask.Mining_Minerals, r);
+			setTask(WorkerTask.MINERALS, r);
 		} else if (r instanceof GasResource) {
-			setTask(WorkerTask.Mining_Gas, r);
+			setTask(WorkerTask.GAS, r);
 		} else {
 			GameHandler.sendText("Error in gathering");
 			setTask(WorkerTask.SCOUTING, null);
@@ -46,7 +46,7 @@ public class Worker {
 	public void build(BuildingPlan toBuild) {
 		unit.build(toBuild.getType(), toBuild.getTilePosition());
 		toBuild.setBuilder(this);
-		currentTask = WorkerTask.Constructing_Building;
+		currentTask = WorkerTask.CONSTRUCTING;
 	}
 
 	public WorkerTask getTask() {
@@ -56,7 +56,7 @@ public class Worker {
 	public void setTask(WorkerTask task, Resource newResource) {
 		currentTask = task;
 
-		if (task == WorkerTask.Mining_Minerals || task == WorkerTask.Mining_Gas) {
+		if (task == WorkerTask.MINERALS || task == WorkerTask.GAS) {
 			if (currentResource != null) {
 				currentResource.removeGatherer();
 			}

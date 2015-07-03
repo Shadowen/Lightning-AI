@@ -33,7 +33,7 @@ public class OpeningBuildState extends BotState {
 		return this;
 	}
 
-	public BotState unitShow(Unit unit) {
+	public BotState unitShown(Unit unit) {
 		if (unit.getType() == UnitType.Protoss_Gateway) {
 			return new MassMarineState(this);
 		}

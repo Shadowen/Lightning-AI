@@ -54,7 +54,7 @@ public class Base {
 		for (Worker worker : workers) {
 			WorkerTask currentTask = worker.getTask();
 			if (worker.isIdle()
-					&& (currentTask == WorkerTask.Mining_Minerals || currentTask == WorkerTask.Mining_Gas)) {
+					&& (currentTask == WorkerTask.MINERALS || currentTask == WorkerTask.GAS)) {
 				GameHandler.sendText("Idle worker detected!");
 				// Get back to work
 				if (worker.getCurrentResource() != null) {
@@ -91,13 +91,15 @@ public class Base {
 
 				// Worker could not be assigned a patch as the base is
 				// supersaturated
+				System.out.println("Warning: Base is supersaturated!");
+				GameHandler.sendText("Warning: Base is supersaturated!");
 			}
 		}
 	}
 
 	public Worker getBuilder() {
 		for (Worker w : workers) {
-			if (w.getTask() == WorkerTask.Mining_Minerals) {
+			if (w.getTask() == WorkerTask.MINERALS) {
 				return w;
 			}
 		}
@@ -111,7 +113,7 @@ public class Base {
 	public int getMineralWorkerCount() {
 		int i = 0;
 		for (Worker w : workers) {
-			if (w.getTask() == WorkerTask.Mining_Minerals) {
+			if (w.getTask() == WorkerTask.MINERALS) {
 				i++;
 			}
 		}

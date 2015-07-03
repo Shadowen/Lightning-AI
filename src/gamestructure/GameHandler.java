@@ -11,8 +11,6 @@ import java.util.stream.Collectors;
 import bwapi.Bullet;
 import bwapi.Game;
 import bwapi.Player;
-import bwapi.PlayerType;
-import bwapi.Playerset;
 import bwapi.Region;
 import bwapi.TechType;
 import bwapi.TilePosition;
@@ -177,13 +175,10 @@ public final class GameHandler {
 		final List<Unit> allUnits = game.getAllUnits();
 		final int hashCode = allUnits.hashCode();
 		if (hashCode != myUnitsHash) {
-			System.out.println("Recomputing myUnits..."); // TODO
 			myUnits = allUnits.stream()
 					.filter(u -> u.getPlayer() == getSelfPlayer())
 					.collect(Collectors.toSet());
 			myUnitsHash = hashCode;
-		} else {
-			System.out.println("Retrieving myUnits from cache!"); // TODO
 		}
 		return myUnits;
 	}
@@ -199,13 +194,10 @@ public final class GameHandler {
 		final List<Unit> allUnits = game.getAllUnits();
 		final int hashCode = allUnits.hashCode();
 		if (enemyUnitsHash != hashCode) {
-			System.out.println("Recomputing enemyUnits..."); // TODO
 			enemyUnitsList = allUnits.stream()
 					.filter(u -> u.getPlayer() == getEnemyPlayer())
 					.collect(Collectors.toList());
 			enemyUnitsHash = hashCode;
-		} else {
-			System.out.println("Retrieving enemyUnits from cache!"); // TODO
 		}
 		return enemyUnitsList;
 	}

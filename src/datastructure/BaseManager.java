@@ -116,11 +116,47 @@ public final class BaseManager {
 		return Optional.empty();
 	}
 
+	public static void unitCreated(Unit unit) {
+		if (unit.getType() == UnitType.Terran_SCV
+				&& unit.getPlayer() == GameHandler.getSelfPlayer()) {
+			workers.put(unit, new Worker(unit));
+		}
+	}
+
+	public static void unitShown(Unit unit) {
+		if (unit.getPlayer() == GameHandler.getEnemyPlayer()) {
+			enemyBuildings.add(unit);
+		}
+
+		if (unit.getType().isResourceDepot()) {
+			getClosestBase(unit.getPosition()).ifPresent(b -> {
+				b.commandCenter = Optional.of(unit);
+				b.setPlayer(unit.getPlayer());
+			});
+		}
+	}
+
+	public static void unitComplete(Unit u) {
+		if (u.getPlayer() == GameHandler.getSelfPlayer()) {
+			if (u.getType().isWorker()) {
+				getClosestBase(u.getPosition()).ifPresent(
+						b -> b.addWorker(workers.get(u)));
+			} else if (u.getType().isRefinery()) {
+				// If it's a refinery, the worker will automatically
+				// become a gas miner!
+				GasResource r = new GasResource(u);
+				getClosestBase(u.getPosition()).ifPresent(b -> b.gas.add(r));
+				u.gather(r.getUnit());
+			}
+		}
+	}
+
 	public static void unitDestroyed(Unit unit) {
 		UnitType type = unit.getType();
-		if (type == UnitType.Terran_SCV) {
+		if (type.isWorker()) {
 			for (Base b : bases.values()) {
 				if (b.removeWorker(workers.get(unit))) {
+					workers.remove(unit);
 					break;
 				}
 			}
@@ -145,23 +181,11 @@ public final class BaseManager {
 		}
 	}
 
-	public static void unitComplete(Unit u) {
-		if (u.getType() == UnitType.Terran_SCV) {
-			workers.get(u).setTask(WorkerTask.Mining_Minerals, null);
-		} else if (u.getType().isRefinery()) {
-			// If it's a refinery, the worker will automatically
-			// become a gas miner!
-			GasResource r = new GasResource(u);
-			getClosestBase(u.getPosition()).ifPresent(b -> b.gas.add(r));
-			u.gather(r.getUnit());
-		}
-	}
-
 	public static Collection<Base> getBases() {
 		return bases.values();
 	}
 
-	public static Optional<Worker> getWorker(Unit u) {
+	public static Optional<Worker> getFreeWorker(Unit u) {
 		// Find the right worker
 		int uid = u.getID();
 		for (Base b : bases.values()) {
@@ -184,31 +208,6 @@ public final class BaseManager {
 		System.err
 				.println("Searching for a resource corresponding to a unit that is not a resource...");
 		return Optional.empty();
-	}
-
-	public static void unitCreated(Unit unit) {
-		if (unit.getType() == UnitType.Terran_SCV
-				&& unit.getPlayer() == GameHandler.getSelfPlayer()) {
-			workers.put(unit, new Worker(unit));
-		}
-	}
-
-	public static void unitShown(Unit unit) {
-		if (unit.getType().isResourceDepot()) {
-			getClosestBase(unit.getPosition()).ifPresent(b -> {
-				b.commandCenter = Optional.of(unit);
-				b.setPlayer(unit.getPlayer());
-			});
-		}
-	}
-
-	public static void onUnitConstructed(Unit unit) {
-		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
-			if (unit.getType().isWorker()) {
-				getClosestBase(unit.getPosition()).ifPresent(
-						b -> b.addWorker(workers.get(unit)));
-			}
-		}
 	}
 
 	public static void registerDebugFunctions() {
@@ -273,13 +272,13 @@ public final class BaseManager {
 
 						// Workers
 						for (Worker w : b.workers) {
-							if (w.getTask() == WorkerTask.Mining_Minerals) {
+							if (w.getTask() == WorkerTask.MINERALS) {
 								DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
 										Color.Blue, true);
-							} else if (w.getTask() == WorkerTask.Mining_Gas) {
+							} else if (w.getTask() == WorkerTask.GAS) {
 								DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
 										Color.Green, true);
-							} else if (w.getTask() == WorkerTask.Constructing_Building) {
+							} else if (w.getTask() == WorkerTask.CONSTRUCTING) {
 								DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
 										Color.Orange, true);
 							}

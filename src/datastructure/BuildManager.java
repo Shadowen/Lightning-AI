@@ -155,12 +155,9 @@ public final class BuildManager {
 	 * @param u
 	 *            The unit that has just completed.
 	 * **/
-	public static void buildingComplete(Unit u) {
+	public static void unitComplete(Unit u) {
 		UnitType type = u.getType();
-		if (!type.isBuilding()) {
-			// Go through planned units
-			unitQueue.remove(type);
-		} else {
+		if (type.isBuilding()) {
 			// Go through planned buildings
 			for (BuildingPlan p : buildingQueue) {
 				// If it's the right building according to the plan
