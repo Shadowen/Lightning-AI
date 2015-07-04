@@ -6,7 +6,9 @@ import gamestructure.debug.DrawEngine;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.Queue;
 
@@ -18,12 +20,15 @@ public final class BuildManager {
 	public static Hashtable<UnitType, Integer> unitMinimums;
 	public static Queue<BuildingPlan> buildingQueue;
 	public static Queue<UnitType> unitQueue;
+	// Only contains my units under construction
+	public static Set<Unit> unitsUnderConstruction;
 
 	public static void init() {
 		System.out.print("Starting BuildManager... ");
 		unitMinimums = new Hashtable<UnitType, Integer>();
 		buildingQueue = new ArrayDeque<BuildingPlan>();
 		unitQueue = new ArrayDeque<UnitType>();
+		unitsUnderConstruction = new HashSet<Unit>();
 
 		registerDebugFunctions();
 		System.out.println("Success!");
@@ -79,12 +84,6 @@ public final class BuildManager {
 		buildingQueue.add(new BuildingPlan(tx, ty, type));
 	}
 
-	/**
-	 * Call this whenever a unit completes construction.
-	 * 
-	 * @param u
-	 *            The unit that has just completed.
-	 * **/
 	public static void unitComplete(Unit u) {
 		UnitType type = u.getType();
 		if (type.isBuilding()) {
@@ -115,15 +114,22 @@ public final class BuildManager {
 			return buildingQueue.stream().anyMatch(
 					bp -> bp.getType() == unitType);
 		}
-		return unitQueue.stream().anyMatch(u -> u == unitType);
+		return unitQueue.stream().anyMatch(u -> u == unitType)
+				|| unitsUnderConstruction.stream().anyMatch(
+						u -> u.getType() == unitType);
 	}
 
-	public static int getCountInQueue(UnitType unitType) {
+	public static long getCountInQueue(UnitType unitType) {
 		if (unitType.isBuilding()) {
-			return (int) buildingQueue.stream().map(bp -> bp.getType())
+			return buildingQueue.stream().map(bp -> bp.getType())
 					.filter(ut -> ut == unitType).count();
 		}
-		return (int) unitQueue.stream().filter(ut -> ut == unitType).count();
+		return unitQueue.stream().filter(ut -> ut == unitType).count();
+	}
+
+	public static long getTrainingCount(UnitType unitType) {
+		return unitsUnderConstruction.stream()
+				.filter(u -> u.getType() == unitType).count();
 	}
 
 	public static int getMyUnitCount(UnitType type) {
@@ -144,9 +150,10 @@ public final class BuildManager {
 		for (Entry<UnitType, Integer> entry : unitMinimums.entrySet()) {
 			UnitType unitType = entry.getKey();
 			int currentCount = getMyUnitCount(unitType);
-			int inQueueCount = getCountInQueue(unitType);
+			long inQueueCount = getCountInQueue(unitType);
+			long inTrainingCount = getTrainingCount(unitType);
 			int requiredCount = entry.getValue();
-			if (currentCount + inQueueCount < requiredCount) {
+			if (currentCount + inQueueCount + inTrainingCount < requiredCount) {
 				GameHandler.sendText("Queuing up another "
 						+ unitType.toString());
 				addToQueue(unitType);
@@ -189,25 +196,34 @@ public final class BuildManager {
 					DrawEngine.drawTextScreen(5, 40, "Training Queue: "
 							+ trainingQueueString);
 				});
-		DebugManager.createDebugModule("unitminimums").setDraw(() -> {
-			// Unit minimums
-				DrawEngine.drawTextScreen(5, 80,
-						"Unit Minimums: current(queued)/required");
-				int y = 90;
-				for (Entry<UnitType, Integer> entry : unitMinimums.entrySet()) {
-					UnitType unitType = entry.getKey();
-					int inQueueCount = getCountInQueue(unitType);
-					int currentCount = getMyUnitCount(unitType);
-					int requiredCount = entry.getValue();
+		DebugManager
+				.createDebugModule("unitminimums")
+				.setDraw(() -> {
+					// Unit minimums
+						DrawEngine
+								.drawTextScreen(5, 80,
+										"Unit Minimums: current(queued, training)/required");
+						int y = 90;
+						for (Entry<UnitType, Integer> entry : unitMinimums
+								.entrySet()) {
+							UnitType unitType = entry.getKey();
+							long inQueueCount = getCountInQueue(unitType);
+							long inTrainingCount = getTrainingCount(unitType);
+							int currentCount = getMyUnitCount(unitType);
+							int requiredCount = entry.getValue();
 
-					if (inQueueCount != 0 || currentCount != 0
-							|| requiredCount != 0) {
-						DrawEngine.drawTextScreen(5, y, unitType.toString()
-								+ ": " + currentCount + "(" + inQueueCount
-								+ ")/" + requiredCount);
-						y += 10;
-					}
-				}
-			});
+							if (inQueueCount != 0 || currentCount != 0
+									|| inTrainingCount != 0
+									|| requiredCount != 0) {
+								DrawEngine.drawTextScreen(5, y,
+										unitType.toString() + ": "
+												+ currentCount + "("
+												+ inQueueCount + ", "
+												+ inTrainingCount + ")/"
+												+ requiredCount);
+								y += 10;
+							}
+						}
+					});
 	}
 }

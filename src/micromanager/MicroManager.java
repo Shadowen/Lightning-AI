@@ -32,7 +32,7 @@ public final class MicroManager {
 	private static Optional<Position> scoutingTarget;
 	private static Optional<UnitAgent> scoutingUnit;
 
-	private static Map<UnitType, HashSet<UnitAgent>> unitsByType;
+	public static Map<UnitType, HashSet<UnitAgent>> unitsByType;
 	private static Map<Unit, UnitAgent> unitAgents;
 
 	public static void init() {
@@ -50,6 +50,9 @@ public final class MicroManager {
 
 		unitsByType = new HashMap<UnitType, HashSet<UnitAgent>>();
 		unitsByType.put(UnitType.Terran_Wraith, new HashSet<UnitAgent>());
+		unitsByType.put(UnitType.Terran_Barracks, new HashSet<UnitAgent>());
+		unitsByType.put(UnitType.Terran_Factory, new HashSet<UnitAgent>());
+		unitsByType.put(UnitType.Terran_Vulture, new HashSet<UnitAgent>());
 		unitAgents = new HashMap<Unit, UnitAgent>();
 
 		scoutingTarget = Optional.empty();
@@ -182,8 +185,8 @@ public final class MicroManager {
 				}
 				break;
 			case RETREATING:
-				u.move(new Position(x + movementMap[x][y].x, y
-						+ movementMap[x][y].y));
+				u.move(new Position(x + movementMap[x / 32][y / 32].x, y
+						+ movementMap[x / 32][y / 32].y));
 				// Go safe when threshold is reached
 				if (unitsByType.get(UnitType.Terran_Wraith).size() < 3) {
 					ua.task = UnitTask.SCOUTING;

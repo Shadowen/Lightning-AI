@@ -8,6 +8,7 @@ import gamestructure.debug.InvalidCommandException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -31,8 +32,6 @@ public class JavaBot implements BWEventListener {
 	private Mirror mirror = new Mirror();
 
 	private BotState botState;
-	// Only contains my units under construction
-	private Set<Unit> unitsUnderConstruction;
 
 	public static void main(String[] args) {
 		new JavaBot();
@@ -64,8 +63,6 @@ public class JavaBot implements BWEventListener {
 			MicroManager.init();
 			PathingManager.init();
 			botState = new FirstFrameState();
-			// Initialize
-			unitsUnderConstruction = new HashSet<Unit>();
 
 			// Start all the modules
 			registerDebugFunctions();
@@ -83,7 +80,7 @@ public class JavaBot implements BWEventListener {
 	public void onFrame() {
 		try {
 			// Check if any units have completed
-			unitsUnderConstruction.removeIf(unit -> {
+			BuildManager.unitsUnderConstruction.removeIf(unit -> {
 				if (unit.isCompleted()) {
 					onUnitConstructed(unit);
 					return true;
@@ -151,15 +148,28 @@ public class JavaBot implements BWEventListener {
 						}
 					});
 			// Auto train
-			for (UnitType toTrain : BuildManager.unitQueue) {
-				System.out.print("Want to train " + toTrain + "... ");
+			Iterator<UnitType> it = BuildManager.unitQueue.iterator();
+			for (UnitType toTrain; it.hasNext();) {
+				toTrain = it.next();
+				UnitType whatBuilds = toTrain.whatBuilds().first;
 				for (Unit u : GameHandler.getMyUnits()) {
-					if (u.getType() == toTrain.whatBuilds().first
-							&& !u.isTraining()) {
-						System.out.println(u.getType() + " can train it!");
-						u.train(toTrain);
-						BuildManager.unitQueue.remove(toTrain);
-						break;
+					// TODO find better way of comparing
+					if (u.getType().toString().equals(whatBuilds.toString())) {
+						if (GameHandler.getSelfPlayer().minerals() >= toTrain
+								.mineralPrice()
+								&& GameHandler.getSelfPlayer().gas() >= toTrain
+										.gasPrice()
+								&& GameHandler.getSelfPlayer().supplyTotal()
+										- GameHandler.getSelfPlayer()
+												.supplyUsed() >= toTrain
+											.supplyRequired()) {
+							if (!u.isTraining() && u.isCompleted()) {
+								u.train(toTrain);
+								it.remove();
+								// GameHandler.sendText("Removing " + toTrain);
+								break;
+							}
+						}
 					}
 				}
 			}
@@ -216,11 +226,11 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onUnitCreate(Unit unit) {
 		try {
-			// GameHandler.sendText("Unit created: " + unit.getType());
 			if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
-				unitsUnderConstruction.add(unit);
+				BuildManager.unitsUnderConstruction.add(unit);
 			}
 			BaseManager.unitCreated(unit);
+			BuildManager.unitQueue.remove(unit.getType());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -231,7 +241,7 @@ public class JavaBot implements BWEventListener {
 		try {
 			// If a unit is canceled from a build queue or building is cancelled
 			// under construction
-			unitsUnderConstruction.remove(unit);
+			BuildManager.unitsUnderConstruction.remove(unit);
 
 			// Remove workers from the BaseManager
 			BaseManager.unitDestroyed(unit);
@@ -265,8 +275,8 @@ public class JavaBot implements BWEventListener {
 	@Deprecated
 	@Override
 	public void onUnitComplete(Unit unit) {
-		UnitType type = unit.getType();
-		GameHandler.sendText("Unit complete: " + type);
+		// UnitType type = unit.getType();
+		// GameHandler.sendText("Unit complete: " + type);
 	}
 
 	/**
@@ -277,7 +287,7 @@ public class JavaBot implements BWEventListener {
 	public void onUnitConstructed(Unit unit) {
 		try {
 			UnitType type = unit.getType();
-			GameHandler.sendText("Unit constructed: " + type);
+			// GameHandler.sendText("Unit constructed: " + type);
 
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
 				MicroManager.unitConstructed(unit);
@@ -339,7 +349,7 @@ public class JavaBot implements BWEventListener {
 		DebugManager.createDebugModule("construction").setDraw(
 				() -> {
 					String uucString = "";
-					for (Unit u : unitsUnderConstruction) {
+					for (Unit u : BuildManager.unitsUnderConstruction) {
 						uucString += u.getType().toString() + ", ";
 					}
 					DrawEngine.drawTextScreen(5, 60, "unitsUnderConstruction: "

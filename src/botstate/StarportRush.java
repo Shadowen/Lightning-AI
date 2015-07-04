@@ -23,12 +23,30 @@ public class StarportRush extends BotState {
 	public BotState act() {
 		// Check the build order
 		int supply = GameHandler.getSelfPlayer().supplyUsed() / 2;
-		if (previousSupply < supply) {
-			switch (supply) {
-			case 9:
-				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
-				break;
-			case 11:
+		if (supply > 30) {
+			if (GameHandler.getSelfPlayer().supplyTotal()
+					- GameHandler.getSelfPlayer().supplyUsed() < 4) {
+				if (!BuildManager.isInQueue(UnitType.Terran_Supply_Depot)) {
+					BuildManager.addToQueue(UnitType.Terran_Supply_Depot);
+				}
+			}
+		} else if (previousSupply < supply) {
+			if (supply > 22) {
+				BuildManager.setMinimum(UnitType.Terran_Starport, 2);
+				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 3);
+				BuildManager.setMinimum(UnitType.Terran_Wraith, 24);
+			} else if (supply > 16) {
+				BuildManager.setMinimum(UnitType.Terran_Factory, 1);
+				BuildManager.addToQueue(UnitType.Terran_Vulture, 2);
+			} else if (supply > 14) {
+				BuildManager.setMinimum(UnitType.Terran_Marine, 2);
+				BaseManager.getFreeWorker().ifPresent(
+						w -> MicroManager.setScoutingUnit(w.getUnit()));
+			} else if (supply > 13) {
+				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 2);
+			} else if (supply > 12) {
+				BuildManager.setMinimum(UnitType.Terran_Refinery, 1);
+			} else if (supply > 11) {
 				BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
 				if (!MicroManager.isScouting()) {
 					Optional<Worker> w = BaseManager.getFreeWorker();
@@ -40,41 +58,12 @@ public class StarportRush extends BotState {
 						// microManager.setScoutingUnit(w.get().getUnit());
 					}
 				}
-				break;
-			case 12:
-				BuildManager.setMinimum(UnitType.Terran_Refinery, 1);
-				break;
-			case 13:
-				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 2);
-				break;
-			case 14:
-				BaseManager.getFreeWorker().ifPresent(
-						w -> MicroManager.setScoutingUnit(w.getUnit()));
-			case 16:
-				BuildManager.setMinimum(UnitType.Terran_Factory, 1);
-				BuildManager.addToQueue(UnitType.Terran_Vulture, 2);
-				break;
-			case 22:
-				BuildManager.setMinimum(UnitType.Terran_Starport, 2);
-				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 3);
-				BuildManager.setMinimum(UnitType.Terran_Wraith, 24);
-				break;
-			case 30:
-				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 4);
-				break;
+			} else if (supply > 9) {
+				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
 			}
 		}
 		previousSupply = supply;
 
-		if (supply > 30) {
-			int numSupplyDepots = BuildManager
-					.getMyUnitCount(UnitType.Terran_Supply_Depot);
-			BuildManager.setMinimum(UnitType.Terran_Supply_Depot,
-					numSupplyDepots
-							+ (supply
-									- GameHandler.getSelfPlayer().supplyTotal()
-									/ 2 + 4) > 0 ? 1 : 0);
-		}
 		return this;
 	}
 

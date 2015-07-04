@@ -52,46 +52,51 @@ public class Base {
 		// Idle workers
 		for (Worker worker : workers) {
 			WorkerTask currentTask = worker.getTask();
-			if (worker.isIdle()
-					&& (currentTask == WorkerTask.MINERALS || currentTask == WorkerTask.GAS)) {
-				GameHandler.sendText("Idle worker detected!");
-				// Get back to work
-				if (worker.getCurrentResource() != null) {
-					worker.gather(worker.getCurrentResource());
-					continue;
-				}
-
-				// Try to assign one worker to each mineral first
-				Resource mineral = null;
-				double distance = 0;
-
-				// This variable is the loop counter
-				// It only allows maxMiners to gather each resource patch each
-				// loop.
-				int maxMiners = 1;
-				boolean workerAssigned = false;
-				while (!workerAssigned && maxMiners <= 2) {
-					for (MineralResource m : minerals) {
-						if (m.getNumGatherers() < maxMiners) {
-							// Find closest mineral patch
-							double newDistance = Point.distance(worker.getX(),
-									worker.getY(), m.getX(), m.getY());
-							if (mineral == null || newDistance < distance) {
-								mineral = m;
-								distance = newDistance;
-								worker.gather(mineral);
-								workerAssigned = true;
-							}
-						}
+			if (worker.isIdle()) {
+				if (currentTask == WorkerTask.MINERALS
+						|| currentTask == WorkerTask.GAS) {
+					// Get back to work
+					if (worker.getCurrentResource() != null) {
+						Resource r = worker.getCurrentResource();
+						worker.gather(r);
+						continue;
 					}
 
-					maxMiners++;
-				}
+					// Try to assign one worker to each mineral first
+					Resource mineral = null;
+					double distance = 0;
 
-				// Worker could not be assigned a patch as the base is
-				// supersaturated
-				if (!workerAssigned) {
-					GameHandler.sendText("Warning: Base is supersaturated!");
+					// This variable is the loop counter
+					// It only allows maxMiners to gather each resource patch
+					// each
+					// loop.
+					int maxMiners = 1;
+					boolean workerAssigned = false;
+					while (!workerAssigned && maxMiners <= 2) {
+						for (MineralResource m : minerals) {
+							if (m.getNumGatherers() < maxMiners) {
+								// Find closest mineral patch
+								double newDistance = Point.distance(
+										worker.getX(), worker.getY(), m.getX(),
+										m.getY());
+								if (mineral == null || newDistance < distance) {
+									mineral = m;
+									distance = newDistance;
+									worker.gather(mineral);
+									workerAssigned = true;
+								}
+							}
+						}
+
+						maxMiners++;
+					}
+
+					// Worker could not be assigned a patch as the base is
+					// supersaturated
+					if (!workerAssigned) {
+						GameHandler
+								.sendText("Warning: Base is supersaturated!");
+					}
 				}
 			}
 		}

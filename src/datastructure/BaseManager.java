@@ -131,7 +131,8 @@ public final class BaseManager {
 	}
 
 	public static void unitShown(Unit unit) {
-		if (unit.getPlayer() == GameHandler.getEnemyPlayer()) {
+		if (unit.getPlayer() == GameHandler.getEnemyPlayer()
+				&& unit.getType().isBuilding()) {
 			enemyBuildings.add(unit);
 		}
 
