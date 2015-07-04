@@ -47,6 +47,9 @@ public class StarportRush extends BotState {
 			case 13:
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 2);
 				break;
+			case 14:
+				BaseManager.getFreeWorker().ifPresent(
+						w -> MicroManager.setScoutingUnit(w.getUnit()));
 			case 16:
 				BuildManager.setMinimum(UnitType.Terran_Factory, 1);
 				BuildManager.addToQueue(UnitType.Terran_Vulture, 2);

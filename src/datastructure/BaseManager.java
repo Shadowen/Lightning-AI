@@ -188,15 +188,7 @@ public final class BaseManager {
 	}
 
 	public static Optional<Worker> getWorker(Unit u) {
-		// Find the right worker
-		int uid = u.getID();
-		for (Base b : bases.values()) {
-			Worker w = b.workers.get(uid);
-			if (w != null) {
-				return Optional.of(w);
-			}
-		}
-		return Optional.empty();
+		return Optional.ofNullable(workers.get(u));
 	}
 
 	public static Optional<Resource> getResource(Unit u) {

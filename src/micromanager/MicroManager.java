@@ -250,12 +250,10 @@ public final class MicroManager {
 	}
 
 	public static void setScoutingUnit(Unit unit) {
-		Optional<Worker> ow = BaseManager.getWorker(scoutingUnit.get().unit);
-		ow.ifPresent(w -> {
-			w.setBase(BaseManager.main);
-			w.setTask(WorkerTask.SCOUTING, null);
-		});
 		scoutingUnit = Optional.of(unitAgents.get(unit));
+
+		Optional<Worker> ow = BaseManager.getWorker(unit);
+		ow.ifPresent(w -> w.setTask(WorkerTask.SCOUTING, null));
 	}
 
 	public static boolean isScouting() {

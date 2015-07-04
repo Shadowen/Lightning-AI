@@ -374,8 +374,8 @@ public final class GameHandler {
 		int height = type.tileHeight();
 
 		// Check if location is buildable
-		for (int i = left; i < left + width - 1; i++) {
-			for (int j = top; j < top + height - 1; j++) {
+		for (int i = left; i < left + width; i++) {
+			for (int j = top; j < top + height; j++) {
 				if (!(GameHandler.isBuildable(i, j, true))) {
 					return false;
 				}
