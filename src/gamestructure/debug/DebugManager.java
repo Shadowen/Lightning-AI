@@ -91,8 +91,7 @@ public class DebugManager {
 		if (first.equalsIgnoreCase("all")) {
 			System.out.println("Activating all modules!");
 			for (DebugModule v : debugModules.values()) {
-				System.out.print(v.name + "\t");
-				v.onReceiveCommand(command.subList(1, command.size()));
+				v.onReceiveCommand(command);
 			}
 		} else {
 			if (debugModules.containsKey(first)) {

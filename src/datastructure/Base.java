@@ -1,7 +1,6 @@
 package datastructure;
 
 import gamestructure.GameHandler;
-import gamestructure.debug.DebugManager;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -71,7 +70,7 @@ public class Base {
 				// loop.
 				int maxMiners = 1;
 				boolean workerAssigned = false;
-				while (!workerAssigned && maxMiners < 3) {
+				while (!workerAssigned && maxMiners <= 2) {
 					for (MineralResource m : minerals) {
 						if (m.getNumGatherers() < maxMiners) {
 							// Find closest mineral patch
@@ -91,13 +90,14 @@ public class Base {
 
 				// Worker could not be assigned a patch as the base is
 				// supersaturated
-				System.out.println("Warning: Base is supersaturated!");
-				GameHandler.sendText("Warning: Base is supersaturated!");
+				if (!workerAssigned) {
+					GameHandler.sendText("Warning: Base is supersaturated!");
+				}
 			}
 		}
 	}
 
-	public Worker getBuilder() {
+	public Worker getFreeWorker() {
 		for (Worker w : workers) {
 			if (w.getTask() == WorkerTask.MINERALS) {
 				return w;

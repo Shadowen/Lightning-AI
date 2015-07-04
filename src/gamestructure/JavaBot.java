@@ -11,8 +11,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import pathfinder.PathingManager;
 import micromanager.MicroManager;
+import pathfinder.PathingManager;
 import botstate.BotState;
 import botstate.FirstFrameState;
 import bwapi.BWEventListener;
@@ -21,7 +21,6 @@ import bwapi.Player;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
-import bwapi.Utils;
 import bwta.BWTA;
 import datastructure.Base;
 import datastructure.BaseManager;
@@ -147,7 +146,8 @@ public class JavaBot implements BWEventListener {
 							}
 						} else {
 							// If it isn't being built yet
-							BaseManager.getBuilder().ifPresent(w -> w.build(b));
+							BaseManager.getFreeWorker().ifPresent(
+									w -> w.build(b));
 						}
 					});
 			// Auto train
@@ -209,9 +209,14 @@ public class JavaBot implements BWEventListener {
 		}
 	}
 
+	/**
+	 * Called when the unit enters the game (under construction, training queue,
+	 * etc).
+	 */
 	@Override
 	public void onUnitCreate(Unit unit) {
 		try {
+			// GameHandler.sendText("Unit created: " + unit.getType());
 			if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 				unitsUnderConstruction.add(unit);
 			}
@@ -240,9 +245,16 @@ public class JavaBot implements BWEventListener {
 		}
 	}
 
+	/**
+	 * Called when one unit morphs into another. Refineries being started
+	 * counts!
+	 */
 	@Override
 	public void onUnitMorph(Unit unit) {
-		onUnitCreate(unit);
+		UnitType type = unit.getType();
+		if (type.isRefinery()) {
+			onUnitCreate(unit);
+		}
 	}
 
 	@Override
@@ -250,11 +262,18 @@ public class JavaBot implements BWEventListener {
 
 	}
 
+	@Deprecated
 	@Override
 	public void onUnitComplete(Unit unit) {
-		GameHandler.sendText("Unit complete: " + unit.getType());
+		UnitType type = unit.getType();
+		GameHandler.sendText("Unit complete: " + type);
 	}
 
+	/**
+	 * Called when the unit finishes training or construction.
+	 * 
+	 * @param unit
+	 */
 	public void onUnitConstructed(Unit unit) {
 		try {
 			UnitType type = unit.getType();

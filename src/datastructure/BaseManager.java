@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import jdk.internal.dynalink.support.TypeUtilities;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.Unit;
@@ -51,9 +50,10 @@ public final class BaseManager {
 					closestBase.get().gas.add(new GasResource(u));
 				} else if (type.isResourceDepot()) {
 					System.out.println("Found resource depot!");
-
+					closestBase.get().commandCenter = Optional.of(u);
 					closestBase.get().setPlayer(u.getPlayer());
-					System.out.println("Found a base for " + u.getPlayer());
+					System.out.println("Found a base for Player "
+							+ u.getPlayer().getID());
 				}
 			}
 		}
@@ -102,13 +102,15 @@ public final class BaseManager {
 				closestDistance = distance;
 			}
 		}
-
+		if (closestBase == null) {
+			System.out.println("No base found!");
+		}
 		return Optional.ofNullable(closestBase);
 	}
 
-	public static Optional<Worker> getBuilder() {
+	public static Optional<Worker> getFreeWorker() {
 		for (Base b : bases.values()) {
-			Worker u = b.getBuilder();
+			Worker u = b.getFreeWorker();
 			if (u != null) {
 				return Optional.of(u);
 			}
@@ -117,9 +119,14 @@ public final class BaseManager {
 	}
 
 	public static void unitCreated(Unit unit) {
-		if (unit.getType() == UnitType.Terran_SCV
+		if (unit.getType().isWorker()
 				&& unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			workers.put(unit, new Worker(unit));
+		} else if (unit.getType().isResourceDepot()) {
+			getClosestBase(unit.getPosition()).ifPresent(b -> {
+				b.commandCenter = Optional.of(unit);
+				b.setPlayer(unit.getPlayer());
+			});
 		}
 	}
 
@@ -139,14 +146,9 @@ public final class BaseManager {
 	public static void unitComplete(Unit u) {
 		if (u.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (u.getType().isWorker()) {
-				getClosestBase(u.getPosition()).ifPresent(
-						b -> b.addWorker(workers.get(u)));
-			} else if (u.getType().isRefinery()) {
-				// If it's a refinery, the worker will automatically
-				// become a gas miner!
-				GasResource r = new GasResource(u);
-				getClosestBase(u.getPosition()).ifPresent(b -> b.gas.add(r));
-				u.gather(r.getUnit());
+				Worker w = workers.get(u);
+				getClosestBase(u.getPosition()).ifPresent(b -> b.addWorker(w));
+				w.setTask(WorkerTask.MINERALS, null);
 			}
 		}
 	}
@@ -185,7 +187,7 @@ public final class BaseManager {
 		return bases.values();
 	}
 
-	public static Optional<Worker> getFreeWorker(Unit u) {
+	public static Optional<Worker> getWorker(Unit u) {
 		// Find the right worker
 		int uid = u.getID();
 		for (Base b : bases.values()) {
@@ -261,29 +263,51 @@ public final class BaseManager {
 				}
 			}
 		});
-		bases.addSubmodule("workers")
-				.setDraw(() -> {
-					for (Base b : BaseManager.bases.values()) {
-						// Miner counts
-						DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 15,
-								"Mineral Miners: " + b.getMineralWorkerCount());
-						DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 25,
-								"Mineral Fields: " + b.minerals.size());
-
-						// Workers
-						for (Worker w : b.workers) {
-							if (w.getTask() == WorkerTask.MINERALS) {
-								DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-										Color.Blue, true);
-							} else if (w.getTask() == WorkerTask.GAS) {
-								DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-										Color.Green, true);
-							} else if (w.getTask() == WorkerTask.CONSTRUCTING) {
-								DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-										Color.Orange, true);
-							}
-						}
+		bases.addSubmodule("miners").setDraw(() -> {
+			for (Base b : BaseManager.bases.values()) {
+				// Miner counts
+				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 15,
+						"Mineral Miners: " + b.getMineralWorkerCount());
+				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 25,
+						"Mineral Fields: " + b.minerals.size());
+			}
+		});
+		bases.addSubmodule("workers").setDraw(() -> {
+			// Workers
+				for (Worker w : workers.values()) {
+					switch (w.getTask()) {
+					case CONSTRUCTING:
+						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
+								Color.Orange, true);
+						break;
+					case GAS:
+						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
+								Color.Green, true);
+						DrawEngine.drawLineMap(w.getX(), w.getY(), w
+								.getCurrentResource().getX(), w
+								.getCurrentResource().getY(), Color.Green);
+						break;
+					case MINERALS:
+						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
+								Color.Blue, true);
+						DrawEngine.drawLineMap(w.getX(), w.getY(), w
+								.getCurrentResource().getX(), w
+								.getCurrentResource().getY(), Color.Blue);
+						break;
+					case SCOUTING:
+						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
+								Color.White, true);
+						break;
+					case TRAINING:
+						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
+								Color.Teal, true);
+						break;
+					default:
+						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
+								Color.Black, true);
+						break;
 					}
-				}).addAlias("miners");
+				}
+			});
 	}
 }

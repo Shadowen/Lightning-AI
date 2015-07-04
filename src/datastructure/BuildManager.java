@@ -30,7 +30,6 @@ public final class BuildManager {
 	}
 
 	/** This constructor should never be called */
-	@Deprecated
 	private BuildManager() {
 	}
 
@@ -43,17 +42,18 @@ public final class BuildManager {
 					if (!r.gasTaken()) {
 						addBuilding(r.getX() / 32 - 2, r.getY() / 32 - 1,
 								UnitType.Terran_Refinery);
-						break;
+						return;
 					}
 				}
 				GameHandler
-						.sendText("Wanted to take another gas, but none left!"); // TODO
+						.sendText("Wanted to take another gas, but none left!");
 			}
 		} else if (unitType.isBuilding()) {
 			// Otherwise, buildings
 			if (BaseManager.main != null) {
-				Point location = getBuildLocation(BaseManager.main.getX(),
-						BaseManager.main.getY(), unitType);
+				Point location = GameHandler.getBuildLocation(
+						BaseManager.main.getX(), BaseManager.main.getY(),
+						unitType);
 				addBuilding(location.x, location.y, unitType);
 			}
 		} else {
@@ -79,76 +79,6 @@ public final class BuildManager {
 		buildingQueue.add(new BuildingPlan(tx, ty, type));
 	}
 
-	// TODO put this somewhere else?
-	// Finds a nearby valid build location for the building of specified type
-	// Returns the Point object representing the suitable build tile
-	// position
-	// for a given building type near specified pixel position (or
-	// Point(-1,-1) if not found)
-	private static Point getBuildLocation(int x, int y, UnitType toBuild) {
-		Point ret = new Point(-1, -1);
-		int maxDist = 3;
-		int stopDist = 40;
-		int tileX = x / 32;
-		int tileY = y / 32;
-
-		while ((maxDist < stopDist) && (ret.x == -1)) {
-			for (int i = tileX - maxDist; i <= tileX + maxDist; i++) {
-				for (int j = tileY - maxDist; j <= tileY + maxDist; j++) {
-					if (canBuildHere(i, j, toBuild)) {
-						// units that are blocking the tile
-						boolean unitsInWay = false;
-						for (Unit u : GameHandler.getAllUnits()) {
-							if ((Math.abs(u.getX() / 32 - i) < 4)
-									&& (Math.abs(u.getY() / 32 - j) < 4)) {
-								unitsInWay = true;
-							}
-						}
-						if (!unitsInWay) {
-							ret.x = i;
-							ret.y = j;
-							return ret;
-						}
-					}
-				}
-			}
-			maxDist++;
-		}
-
-		if (ret.x == -1) {
-			throw new NullPointerException();
-		}
-
-		return ret;
-	}
-
-	// Checks if the building type specified can be built at the coordinates
-	// given
-	private static boolean canBuildHere(int left, int top, UnitType type) {
-		int width = type.tileWidth();
-		int height = type.tileHeight();
-
-		// Check if location is buildable
-		for (int i = left; i < left + width - 1; i++) {
-			for (int j = top; j < top + height - 1; j++) {
-				if (!(GameHandler.isBuildable(i, j, true))) {
-					return false;
-				}
-			}
-		}
-		// Check if another building is planned for this spot
-		for (BuildingPlan bp : buildingQueue) {
-			if (bp.getTx() <= left + width
-					&& bp.getTx() + bp.getType().tileWidth() >= left) {
-				if (bp.getTy() <= top + height
-						&& bp.getTy() + bp.getType().tileHeight() >= top) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
 	/**
 	 * Call this whenever a unit completes construction.
 	 * 
@@ -168,6 +98,14 @@ public final class BuildManager {
 					p.builder.gather(p.builder.getCurrentResource());
 					break;
 				}
+			}
+			if (u.getType().isRefinery()) {
+				// If it's a refinery, the worker will automatically
+				// become a gas miner!
+				GasResource r = new GasResource(u);
+				BaseManager.getClosestBase(u.getPosition()).ifPresent(
+						b -> b.gas.add(r));
+				u.gather(r.getUnit());
 			}
 		}
 	}

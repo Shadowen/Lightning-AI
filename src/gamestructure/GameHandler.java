@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import datastructure.BuildManager;
+import datastructure.BuildingPlan;
 import bwapi.Bullet;
 import bwapi.Game;
 import bwapi.Player;
@@ -319,6 +321,77 @@ public final class GameHandler {
 
 	public static List<Region> getAllRegions() {
 		return game.getAllRegions();
+	}
+
+	/**
+	 * Finds a nearby valid build location for the building of specified type
+	 * 
+	 * @return a {@link Point} representing the suitable build tile position for
+	 *         a given building type near specified pixel position (or
+	 *         Point(-1,-1) if not found)
+	 */
+	public static Point getBuildLocation(int x, int y, UnitType toBuild) {
+		Point ret = new Point(-1, -1);
+		int maxDist = 3;
+		int stopDist = 40;
+		int tileX = x / 32;
+		int tileY = y / 32;
+
+		while ((maxDist < stopDist) && (ret.x == -1)) {
+			for (int i = tileX - maxDist; i <= tileX + maxDist; i++) {
+				for (int j = tileY - maxDist; j <= tileY + maxDist; j++) {
+					if (canBuildHere(i, j, toBuild)) {
+						// units that are blocking the tile
+						boolean unitsInWay = false;
+						for (Unit u : GameHandler.getAllUnits()) {
+							if ((Math.abs(u.getX() / 32 - i) < 4)
+									&& (Math.abs(u.getY() / 32 - j) < 4)) {
+								unitsInWay = true;
+							}
+						}
+						if (!unitsInWay) {
+							ret.x = i;
+							ret.y = j;
+							return ret;
+						}
+					}
+				}
+			}
+			maxDist++;
+		}
+
+		if (ret.x == -1) {
+			throw new NullPointerException();
+		}
+
+		return ret;
+	}
+
+	// Checks if the building type specified can be built at the coordinates
+	// given
+	public static boolean canBuildHere(int left, int top, UnitType type) {
+		int width = type.tileWidth();
+		int height = type.tileHeight();
+
+		// Check if location is buildable
+		for (int i = left; i < left + width - 1; i++) {
+			for (int j = top; j < top + height - 1; j++) {
+				if (!(GameHandler.isBuildable(i, j, true))) {
+					return false;
+				}
+			}
+		}
+		// Check if another building is planned for this spot
+		for (BuildingPlan bp : BuildManager.buildingQueue) {
+			if (bp.getTx() <= left + width
+					&& bp.getTx() + bp.getType().tileWidth() >= left) {
+				if (bp.getTy() <= top + height
+						&& bp.getTy() + bp.getType().tileHeight() >= top) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	public static void sendText(String message) {

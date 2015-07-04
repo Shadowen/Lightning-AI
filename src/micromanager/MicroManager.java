@@ -20,6 +20,7 @@ import bwapi.UnitType;
 import bwapi.WalkPosition;
 import datastructure.BaseManager;
 import datastructure.Worker;
+import datastructure.WorkerTask;
 
 public final class MicroManager {
 	private static int mapWidth;
@@ -249,8 +250,11 @@ public final class MicroManager {
 	}
 
 	public static void setScoutingUnit(Unit unit) {
-		Optional<Worker> ow = BaseManager.getFreeWorker(scoutingUnit.get().unit);
-		ow.ifPresent(w -> w.setBase(BaseManager.main));
+		Optional<Worker> ow = BaseManager.getWorker(scoutingUnit.get().unit);
+		ow.ifPresent(w -> {
+			w.setBase(BaseManager.main);
+			w.setTask(WorkerTask.SCOUTING, null);
+		});
 		scoutingUnit = Optional.of(unitAgents.get(unit));
 	}
 
@@ -298,28 +302,28 @@ public final class MicroManager {
 		// }
 		// });
 		// Target map
-		DebugManager.createDebugModule("targets")
-				.setDraw(
-						() -> {
-							for (int tx = 1; tx < mapWidth - 1; tx++) {
-								int x = tx * 32;
-								for (int ty = 1; ty < mapHeight - 1; ty++) {
-									int y = ty * 32;
-
-									int north = (int) Math
-											.round(targetMap[tx][ty - 1]);
-									int east = (int) Math
-											.round(targetMap[tx + 1][ty]);
-									int south = (int) Math
-											.round(targetMap[tx][ty - 1]);
-									int west = (int) Math
-											.round(targetMap[tx - 1][ty]);
-									DrawEngine.drawArrowMap(x, y, x
-											+ (east - west) * 5, y
-											+ (north - south) * 5, Color.Teal);
-								}
-							}
-						});
+		// DebugManager.createDebugModule("targets")
+		// .setDraw(
+		// () -> {
+		// for (int tx = 1; tx < mapWidth - 1; tx++) {
+		// int x = tx * 32;
+		// for (int ty = 1; ty < mapHeight - 1; ty++) {
+		// int y = ty * 32;
+		//
+		// int north = (int) Math
+		// .round(targetMap[tx][ty - 1]);
+		// int east = (int) Math
+		// .round(targetMap[tx + 1][ty]);
+		// int south = (int) Math
+		// .round(targetMap[tx][ty - 1]);
+		// int west = (int) Math
+		// .round(targetMap[tx - 1][ty]);
+		// DrawEngine.drawArrowMap(x, y, x
+		// + (east - west) * 5, y
+		// + (north - south) * 5, Color.Teal);
+		// }
+		// }
+		// });
 		// Weapon cooldown bars
 		DebugManager.createDebugModule("cooldowns").setDraw(
 				() -> {

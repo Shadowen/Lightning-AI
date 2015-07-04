@@ -36,9 +36,9 @@ public final class PathingManager {
 	private static int mapWalkHeight;
 
 	// A list of tiles detailing a path into the main from the choke
-	private static Queue<WalkPosition> pathIntoMain;
+	private static Queue<WalkPosition> pathIntoMain = new ArrayDeque<>();
 	private static WalkPosition topOfRamp;
-	private static List<WalkPosition> chokeRampWalkTiles = new ArrayList<WalkPosition>();;
+	private static List<WalkPosition> chokeRampWalkTiles = new ArrayList<>();;
 
 	public static void init() {
 		System.out.print("Starting PathingManager... ");
@@ -367,25 +367,25 @@ public final class PathingManager {
 					}
 				});
 		// Draw the path from the choke point into the main
-		chokeDM.addSubmodule("path").setDraw(
-				() -> {
-					for (WalkPosition location : pathIntoMain) {
-						DrawEngine.drawBoxMap(location.getX() + 1,
-								location.getY() + 1, location.getX() + 6,
-								location.getY() + 6, Color.Grey, false);
-					}
-					DrawEngine.drawBoxMap(topOfRamp.getX() + 1,
-							topOfRamp.getY() + 1, topOfRamp.getX() + 6,
-							topOfRamp.getY() + 6, Color.Red, false);
-				});
+//		chokeDM.addSubmodule("path").setDraw(
+//				() -> {
+//					for (WalkPosition location : pathIntoMain) {
+//						DrawEngine.drawBoxMap(location.getX() + 1,
+//								location.getY() + 1, location.getX() + 6,
+//								location.getY() + 6, Color.Grey, false);
+//					}
+//					DrawEngine.drawBoxMap(topOfRamp.getX() + 1,
+//							topOfRamp.getY() + 1, topOfRamp.getX() + 6,
+//							topOfRamp.getY() + 6, Color.Red, false);
+//				});
 		// Highlight the tiles of the main ramp
-		chokeDM.addSubmodule("ramp").setDraw(
-				() -> {
-					for (WalkPosition location : chokeRampWalkTiles) {
-						DrawEngine.drawBoxMap(location.getX() * 8,
-								location.getY() * 8, location.getX() * 8 + 8,
-								location.getY() * 8 + 8, Color.Green, false);
-					}
-				});
+//		chokeDM.addSubmodule("ramp").setDraw(
+//				() -> {
+//					for (WalkPosition location : chokeRampWalkTiles) {
+//						DrawEngine.drawBoxMap(location.getX() * 8,
+//								location.getY() * 8, location.getX() * 8 + 8,
+//								location.getY() * 8 + 8, Color.Green, false);
+//					}
+//				});
 	}
 }

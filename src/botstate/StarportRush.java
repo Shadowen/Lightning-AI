@@ -31,7 +31,7 @@ public class StarportRush extends BotState {
 			case 11:
 				BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
 				if (!MicroManager.isScouting()) {
-					Optional<Worker> w = BaseManager.getBuilder();
+					Optional<Worker> w = BaseManager.getFreeWorker();
 					if (!w.isPresent()) {
 						GameHandler
 								.sendText("Can't scout since no workers available!");
@@ -54,7 +54,7 @@ public class StarportRush extends BotState {
 			case 22:
 				BuildManager.setMinimum(UnitType.Terran_Starport, 2);
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 3);
-				BuildManager.setMinimum(UnitType.Terran_Wraith, 50);
+				BuildManager.setMinimum(UnitType.Terran_Wraith, 24);
 				break;
 			case 30:
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 4);
@@ -80,10 +80,8 @@ public class StarportRush extends BotState {
 		UnitType unitType = unit.getType();
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (unitType.isRefinery()) {
-				// TODO put just enough workers on gas immediately according to
-				// strategy
-				for (int i = 0; i < 2; i++) {
-					BaseManager.getBuilder().ifPresent(
+				for (int i = 0; i < 3; i++) {
+					BaseManager.getFreeWorker().ifPresent(
 							w -> BaseManager.getResource(unit).ifPresent(
 									r -> w.gather(r)));
 				}
