@@ -64,7 +64,7 @@ public final class PathingManager {
 	private PathingManager() {
 	}
 
-	public static void findChokeToMain() {
+	public static void findChokeToMain() throws NoPathFoundException {
 		Chokepoint choke = BWTA.getNearestChokepoint(BaseManager.main
 				.getLocation().getTilePosition());
 		// Find the path into the main
@@ -136,19 +136,20 @@ public final class PathingManager {
 	}
 
 	private static Queue<WalkPosition> findGroundPath(Position start,
-			Position end, UnitType unitType) {
+			Position end, UnitType unitType) throws NoPathFoundException {
 		return findGroundPath(start.getX(), start.getY(), end.getX(),
 				end.getY(), unitType);
 	}
 
 	public static Queue<WalkPosition> findGroundPath(int startx, int starty,
-			int endx, int endy, UnitType unitType) {
+			int endx, int endy, UnitType unitType) throws NoPathFoundException {
 		return findGroundPath(startx, starty, endx, endy, unitType,
 				Integer.MAX_VALUE);
 	}
 
 	public static Queue<WalkPosition> findGroundPath(int startx, int starty,
-			int endx, int endy, UnitType type, int length) {
+			int endx, int endy, UnitType type, int length)
+			throws NoPathFoundException {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
 		int endWx = endx / 8;
@@ -238,7 +239,7 @@ public final class PathingManager {
 			}
 		}
 
-		throw new NullPointerException();
+		throw new NoPathFoundException();
 	}
 
 	public static Queue<WalkPosition> findSafeAirPath(int startx, int starty,
@@ -367,25 +368,25 @@ public final class PathingManager {
 					}
 				});
 		// Draw the path from the choke point into the main
-//		chokeDM.addSubmodule("path").setDraw(
-//				() -> {
-//					for (WalkPosition location : pathIntoMain) {
-//						DrawEngine.drawBoxMap(location.getX() + 1,
-//								location.getY() + 1, location.getX() + 6,
-//								location.getY() + 6, Color.Grey, false);
-//					}
-//					DrawEngine.drawBoxMap(topOfRamp.getX() + 1,
-//							topOfRamp.getY() + 1, topOfRamp.getX() + 6,
-//							topOfRamp.getY() + 6, Color.Red, false);
-//				});
+		// chokeDM.addSubmodule("path").setDraw(
+		// () -> {
+		// for (WalkPosition location : pathIntoMain) {
+		// DrawEngine.drawBoxMap(location.getX() + 1,
+		// location.getY() + 1, location.getX() + 6,
+		// location.getY() + 6, Color.Grey, false);
+		// }
+		// DrawEngine.drawBoxMap(topOfRamp.getX() + 1,
+		// topOfRamp.getY() + 1, topOfRamp.getX() + 6,
+		// topOfRamp.getY() + 6, Color.Red, false);
+		// });
 		// Highlight the tiles of the main ramp
-//		chokeDM.addSubmodule("ramp").setDraw(
-//				() -> {
-//					for (WalkPosition location : chokeRampWalkTiles) {
-//						DrawEngine.drawBoxMap(location.getX() * 8,
-//								location.getY() * 8, location.getX() * 8 + 8,
-//								location.getY() * 8 + 8, Color.Green, false);
-//					}
-//				});
+		// chokeDM.addSubmodule("ramp").setDraw(
+		// () -> {
+		// for (WalkPosition location : chokeRampWalkTiles) {
+		// DrawEngine.drawBoxMap(location.getX() * 8,
+		// location.getY() * 8, location.getX() * 8 + 8,
+		// location.getY() * 8 + 8, Color.Green, false);
+		// }
+		// });
 	}
 }

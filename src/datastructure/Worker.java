@@ -18,10 +18,6 @@ public class Worker {
 		currentTask = WorkerTask.TRAINING;
 	}
 
-	public void setBase(Base b) {
-		base = b;
-	}
-
 	public boolean isIdle() {
 		return unit.isIdle();
 	}
@@ -88,6 +84,14 @@ public class Worker {
 		return unit;
 	}
 
+	public void setBase(Base b) {
+		base = b;
+	}
+
+	public Base getBase() {
+		return base;
+	}
+
 	public Resource getCurrentResource() {
 		return currentResource;
 	}
@@ -97,4 +101,5 @@ public class Worker {
 			currentResource.removeGatherer();
 		}
 	}
+
 }

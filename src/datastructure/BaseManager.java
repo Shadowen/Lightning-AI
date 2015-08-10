@@ -157,12 +157,10 @@ public final class BaseManager {
 	public static void unitDestroyed(Unit unit) {
 		UnitType type = unit.getType();
 		if (type.isWorker()) {
-			for (Base b : bases.values()) {
-				if (b.removeWorker(workers.get(unit))) {
-					workers.remove(unit);
-					break;
-				}
-			}
+			Worker w = workers.get(unit);
+			w.unitDestroyed();
+			w.getBase().removeWorker(w);
+			workers.remove(w);
 		} else if (type.isMineralField()) {
 			for (Base b : bases.values()) {
 				if (b.minerals.remove(unit)) {
@@ -256,6 +254,13 @@ public final class BaseManager {
 				}
 			}
 		});
+		// bases.addSubmodule("enemy").setDraw(
+		// () -> {
+		// for (Unit u : enemyBuildings) {
+		// DrawEngine.drawBoxScreen(u.getLeft(), u.getTop(),
+		// u.getRight(), u.getBottom(), Color.Red, false);
+		// }
+		// });
 		bases.addSubmodule("miners").setDraw(() -> {
 			for (Base b : BaseManager.bases.values()) {
 				// Miner counts

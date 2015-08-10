@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
+import pathfinder.NoPathFoundException;
 import pathfinder.PathingManager;
 import bwapi.Color;
 import bwapi.Position;
@@ -71,14 +72,14 @@ public final class MicroManager {
 		// Move attacking units
 		micro();
 		// Move scouting unit(s)
+		if (!scoutingTarget.isPresent()
+				|| GameHandler.isVisible(scoutingTarget.get().getX() / 32,
+						scoutingTarget.get().getY() / 32)) {
+			GameHandler.sendText("Looking for new target");
+			scoutingTarget = getScoutingTarget();
+		}
 		if (scoutingUnit.isPresent() && scoutingTarget.isPresent()) {
 			// Acquire a target if necessary
-			if (GameHandler.isVisible(scoutingTarget.get().getX() / 32,
-					scoutingTarget.get().getY() / 32)) {
-				scoutingTarget = getScoutingTarget();
-				// Clear previous path
-				scoutingUnit.get().path.clear();
-			}
 			scout(scoutingUnit.get(), scoutingTarget.get());
 		}
 	}
@@ -209,9 +210,13 @@ public final class MicroManager {
 						ua.unit.getY(), target.getX(), target.getY(),
 						threatMap, 256);
 			} else {
-				ua.path = PathingManager.findGroundPath(ua.unit.getX(),
-						ua.unit.getY(), target.getX(), target.getY(),
-						ua.unit.getType(), 256);
+				try {
+					ua.path = PathingManager.findGroundPath(ua.unit.getX(),
+							ua.unit.getY(), target.getX(), target.getY(),
+							ua.unit.getType(), 256);
+				} catch (NoPathFoundException e) {
+					GameHandler.sendText("Failed to find a ground path!");
+				}
 			}
 			if (ua.path.size() == 0) {
 				System.out.println("Pathfinder failed to find a path...");
@@ -280,6 +285,13 @@ public final class MicroManager {
 	}
 
 	public static void registerDebugFunctions() {
+		DebugManager.createDebugModule("tasks").setDraw(
+				() -> {
+					for (UnitAgent ua : unitAgents.values()) {
+						DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(),
+								ua.task);
+					}
+				});
 		// // Threat map
 		// DebugManager.createDebugModule("threats").setDraw(() -> {
 		// // Actually draw

@@ -318,6 +318,29 @@ public class DrawEngine {
 	}
 
 	/**
+	 * Draws text on the screen using the {@link javabot.JNIBWAPI} native
+	 * methods.
+	 * 
+	 * @param x
+	 *            The x coordinate to start drawing from in pixels.
+	 * @param y
+	 *            The y coordinate of the bottom of the line of text in pixels.
+	 * @param message
+	 *            The {@link Object} to be displayed.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawTextScreen(int x, int y, Object message)
+			throws ShapeOverflowException {
+		game.drawTextScreen(x, y, message.toString());
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
 	 * Draws text on the map using the {@link javabot.JNIBWAPI} native methods.
 	 * 
 	 * @param x
@@ -333,6 +356,28 @@ public class DrawEngine {
 	public static void drawTextMap(int x, int y, String message)
 			throws ShapeOverflowException {
 		game.drawTextMap(x, y, message);
+		shapeCount++;
+		if (shapeCount > MAX_SHAPES) {
+			throw new ShapeOverflowException(shapeCount);
+		}
+	}
+
+	/**
+	 * Draws text on the map using the {@link javabot.JNIBWAPI} native methods.
+	 * 
+	 * @param x
+	 *            The x coordinate to start drawing from in pixels.
+	 * @param y
+	 *            The y coordinate of the bottom of the line of text in pixels.
+	 * @param message
+	 *            The {@link Object} to be displayed.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawTextMap(int x, int y, Object message)
+			throws ShapeOverflowException {
+		game.drawTextMap(x, y, message.toString());
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
 			throw new ShapeOverflowException(shapeCount);
