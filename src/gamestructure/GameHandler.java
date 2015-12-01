@@ -95,8 +95,7 @@ public final class GameHandler {
 		for (Unit u : game.enemy().getUnits()) {
 			double distanceX = x - u.getX();
 			double distanceY = y - u.getY();
-			double distance = Math.sqrt(Math.pow(distanceX, 2)
-					+ Math.pow(distanceY, 2));
+			double distance = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2));
 
 			if (distance < closestDistance) {
 				closestUnit = u;
@@ -172,14 +171,12 @@ public final class GameHandler {
 	 * recomputes if allUnits has changed since the last invocation.
 	 * 
 	 * @return my units
-	 * */
+	 */
 	public static Set<Unit> getMyUnits() {
 		final List<Unit> allUnits = game.getAllUnits();
 		final int hashCode = allUnits.hashCode();
 		if (hashCode != myUnitsHash) {
-			myUnits = allUnits.stream()
-					.filter(u -> u.getPlayer() == getSelfPlayer())
-					.collect(Collectors.toSet());
+			myUnits = allUnits.stream().filter(u -> u.getPlayer() == getSelfPlayer()).collect(Collectors.toSet());
 			myUnitsHash = hashCode;
 		}
 		return myUnits;
@@ -196,8 +193,7 @@ public final class GameHandler {
 		final List<Unit> allUnits = game.getAllUnits();
 		final int hashCode = allUnits.hashCode();
 		if (enemyUnitsHash != hashCode) {
-			enemyUnitsList = allUnits.stream()
-					.filter(u -> u.getPlayer() == getEnemyPlayer())
+			enemyUnitsList = allUnits.stream().filter(u -> u.getPlayer() == getEnemyPlayer())
 					.collect(Collectors.toList());
 			enemyUnitsHash = hashCode;
 		}
@@ -216,17 +212,19 @@ public final class GameHandler {
 		return game.isVisible(tileX, tileY);
 	}
 
+	public static boolean isVisible(TilePosition tilePosition) {
+		return game.isVisible(tilePosition.getX(), tilePosition.getY());
+	}
+
 	public static boolean canBuildHere(TilePosition position, UnitType type) {
 		return game.canBuildHere(position, type);
 	}
 
-	public static boolean canBuildHere(TilePosition position, UnitType type,
-			Unit builder) {
+	public static boolean canBuildHere(TilePosition position, UnitType type, Unit builder) {
 		return game.canBuildHere(position, type, builder);
 	}
 
-	public static boolean canBuildHere(TilePosition position, UnitType type,
-			Unit builder, boolean checkExplored) {
+	public static boolean canBuildHere(TilePosition position, UnitType type, Unit builder, boolean checkExplored) {
 		return game.canBuildHere(position, type, builder, checkExplored);
 	}
 
@@ -246,18 +244,15 @@ public final class GameHandler {
 		return game.canResearch(type, unit);
 	}
 
-	public static boolean canResearch(TechType type, Unit unit,
-			boolean checkCanIssueCommandType) {
+	public static boolean canResearch(TechType type, Unit unit, boolean checkCanIssueCommandType) {
 		return game.canResearch(type, unit, checkCanIssueCommandType);
 	}
 
-	public static boolean isBuildable(TilePosition position,
-			boolean includeBuildings) {
+	public static boolean isBuildable(TilePosition position, boolean includeBuildings) {
 		return game.isBuildable(position, includeBuildings);
 	}
 
-	public static boolean isBuildable(int tileX, int tileY,
-			boolean includeBuildings) {
+	public static boolean isBuildable(int tileX, int tileY, boolean includeBuildings) {
 		return game.isBuildable(tileX, tileY, includeBuildings);
 	}
 
@@ -269,13 +264,11 @@ public final class GameHandler {
 		return game.isWalkable(wx, wy);
 	}
 
-	public static TilePosition getBuildLocation(UnitType type,
-			TilePosition desiredPosition) {
+	public static TilePosition getBuildLocation(UnitType type, TilePosition desiredPosition) {
 		return game.getBuildLocation(type, desiredPosition);
 	}
 
-	public static TilePosition getBuildLocation(UnitType type,
-			TilePosition desiredPosition, int maxRange) {
+	public static TilePosition getBuildLocation(UnitType type, TilePosition desiredPosition, int maxRange) {
 		return game.getBuildLocation(type, desiredPosition, maxRange);
 	}
 
@@ -287,13 +280,11 @@ public final class GameHandler {
 		return game.getDamageFrom(fromType, toType);
 	}
 
-	public static int getDamageFrom(UnitType fromType, UnitType toType,
-			Player fromPlayer) {
+	public static int getDamageFrom(UnitType fromType, UnitType toType, Player fromPlayer) {
 		return game.getDamageFrom(fromType, toType, fromPlayer);
 	}
 
-	public static int getDamageFrom(UnitType fromType, UnitType toType,
-			Player fromPlayer, Player toPlayer) {
+	public static int getDamageFrom(UnitType fromType, UnitType toType, Player fromPlayer, Player toPlayer) {
 		return game.getDamageFrom(fromType, toType, fromPlayer, toPlayer);
 	}
 
@@ -301,13 +292,11 @@ public final class GameHandler {
 		return game.getDamageTo(toType, fromType);
 	}
 
-	public static int getDamageTo(UnitType toType, UnitType fromType,
-			Player toPlayer) {
+	public static int getDamageTo(UnitType toType, UnitType fromType, Player toPlayer) {
 		return game.getDamageTo(toType, fromType, toPlayer);
 	}
 
-	public static int getDamageTo(UnitType toType, UnitType fromType,
-			Player toPlayer, Player fromPlayer) {
+	public static int getDamageTo(UnitType toType, UnitType fromType, Player toPlayer, Player fromPlayer) {
 		return game.getDamageTo(toType, fromType, toPlayer, fromPlayer);
 	}
 
@@ -344,8 +333,7 @@ public final class GameHandler {
 						// units that are blocking the tile
 						boolean unitsInWay = false;
 						for (Unit u : GameHandler.getAllUnits()) {
-							if ((Math.abs(u.getX() / 32 - i) < 4)
-									&& (Math.abs(u.getY() / 32 - j) < 4)) {
+							if ((Math.abs(u.getX() / 32 - i) < 4) && (Math.abs(u.getY() / 32 - j) < 4)) {
 								unitsInWay = true;
 							}
 						}
@@ -383,10 +371,8 @@ public final class GameHandler {
 		}
 		// Check if another building is planned for this spot
 		for (BuildingPlan bp : BuildManager.buildingQueue) {
-			if (bp.getTx() <= left + width
-					&& bp.getTx() + bp.getType().tileWidth() >= left) {
-				if (bp.getTy() <= top + height
-						&& bp.getTy() + bp.getType().tileHeight() >= top) {
+			if (bp.getTx() <= left + width && bp.getTx() + bp.getType().tileWidth() >= left) {
+				if (bp.getTy() <= top + height && bp.getTy() + bp.getType().tileHeight() >= top) {
 					return false;
 				}
 			}

@@ -50,135 +50,18 @@ public final class PathingManager {
 		for (int wx = 0; wx < mapWalkWidth; wx++) {
 			walkableNodes.add(new ArrayList<Node>());
 			for (int wy = 0; wy < mapWalkHeight; wy++) {
-				walkableNodes.get(wx).add(new Node(wx, wy));
-			}
-		}
-
-		registerDebugFunctions();
-
-		// findChokeToMain();
-		System.out.println("Success!");
-	}
-
-	/** This constructor should never be used. */
-	private PathingManager() {
-	}
-
-	public static void findChokeToMain() throws NoPathFoundException {
-		Chokepoint choke = BWTA.getNearestChokepoint(BaseManager.main
-				.getLocation().getTilePosition());
-		// Find the path into the main
-		pathIntoMain = findGroundPath(choke.getCenter(), BaseManager.main
-				.getLocation().getPosition(), UnitType.Zerg_Zergling);
-
-		// Find top of ramp
-		for (WalkPosition p : pathIntoMain) {
-			if (GameHandler.isBuildable(p.getX() / 32, p.getY() / 32, false)) {
-				topOfRamp = p;
-				break;
-			}
-		}
-
-		// Mark entire ramp
-		chokeRampWalkTiles = new ArrayList<WalkPosition>();
-		Queue<WalkPosition> rampWalkTileOpenSet = new PriorityQueue<>(1,
-				new Comparator<WalkPosition>() {
-					@Override
-					public int compare(WalkPosition p1, WalkPosition p2) {
-						WalkPosition topOfRampWalkTile = new WalkPosition(
-								topOfRamp.getX() / 8, topOfRamp.getY() / 8);
-						return (int) (p1.getApproxDistance(topOfRampWalkTile) - p2
-								.getApproxDistance(topOfRampWalkTile));
-					}
-				});
-		rampWalkTileOpenSet.add(new WalkPosition(choke.getCenter().getX() / 8,
-				choke.getCenter().getY() / 8));
-		while (!rampWalkTileOpenSet.isEmpty()) {
-			WalkPosition currentNode = rampWalkTileOpenSet.poll();
-			if (GameHandler.isWalkable(currentNode)
-					&& !GameHandler.isBuildable(currentNode.getX() / 4,
-							currentNode.getY() / 4, false)) {
-				chokeRampWalkTiles.add(new WalkPosition(currentNode.getX(),
-						currentNode.getY()));
-				WalkPosition nextNode;
-				nextNode = new WalkPosition(currentNode.getX() - 1,
-						currentNode.getY());
-				if (!chokeRampWalkTiles.contains(nextNode)
-						&& !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-				nextNode = new WalkPosition(currentNode.getX() + 1,
-						currentNode.getY());
-				if (!chokeRampWalkTiles.contains(nextNode)
-						&& !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-				nextNode = new WalkPosition(currentNode.getX(),
-						currentNode.getY() - 1);
-				if (!chokeRampWalkTiles.contains(nextNode)
-						&& !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-				nextNode = new WalkPosition(currentNode.getX(),
-						currentNode.getY() + 1);
-				if (!chokeRampWalkTiles.contains(nextNode)
-						&& !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-			}
-
-			// Safety to prevent the whole map from being interpreted as
-			// a ramp
-			if (chokeRampWalkTiles.size() >= MAX_RAMP_WALK_TILES) {
-				break;
-			}
-		}
-	}
-
-	private static Queue<WalkPosition> findGroundPath(Position start,
-			Position end, UnitType unitType) throws NoPathFoundException {
-		return findGroundPath(start.getX(), start.getY(), end.getX(),
-				end.getY(), unitType);
-	}
-
-	public static Queue<WalkPosition> findGroundPath(int startx, int starty,
-			int endx, int endy, UnitType unitType) throws NoPathFoundException {
-		return findGroundPath(startx, starty, endx, endy, unitType,
-				Integer.MAX_VALUE);
-	}
-
-	public static Queue<WalkPosition> findGroundPath(int startx, int starty,
-			int endx, int endy, UnitType type, int length)
-			throws NoPathFoundException {
-		int startWx = startx / 8;
-		int startWy = starty / 8;
-		int endWx = endx / 8;
-		int endWy = endy / 8;
-
-		// Initialize
-		for (int wx = 0; wx < mapWalkWidth; wx++) {
-			for (int wy = 0; wy < mapWalkHeight; wy++) {
-				walkableNodes.get(wx).get(wy).walkable = true;
-			}
-		}
-		// Avoid cliffs
-		for (int wx = 0; wx < GameHandler.getMapWidth() * 4; wx++) {
-			for (int wy = 0; wy < GameHandler.getMapHeight() * 4; wy++) {
+				Node n = new Node(wx, wy);
 				if (!GameHandler.isWalkable(wx, wy)) {
-					for (int iwx = Math.max(wx - 3, 0); iwx < Math.min(wx + 3,
-							mapWalkWidth); iwx++) {
-						for (int iwy = Math.max(wy - 3, 0); iwy < Math.min(
-								wy + 3, mapWalkHeight); iwy++) {
-							walkableNodes.get(iwx).get(iwy).walkable = false;
-						}
-					}
+					n.clearance = 0;
+					break;
 				}
 			}
 		}
 		// Avoid buildings
 		for (Unit u : GameHandler.getAllUnits()) {
 			UnitType utype = u.getType();
-			if (utype.isBuilding()) {
+			System.out.println(utype);
+			if (utype.isBuilding() && !utype.isFlyingBuilding()) {
 				int uwidth = utype.tileWidth();
 				int uheight = utype.tileHeight();
 				int tx = u.getTilePosition().getX();
@@ -191,18 +74,99 @@ public final class PathingManager {
 			}
 		}
 
-		Queue<Node> openSet = new PriorityQueue<Node>(1,
-				new Comparator<Node>() {
-					@Override
-					public int compare(Node n1, Node n2) {
-						return (int) Math
-								.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
-					}
-				});
+		registerDebugFunctions();
+
+		// findChokeToMain();
+		System.out.println("Success!");
+
+	}
+
+	/** This constructor should never be used. */
+	private PathingManager() {
+	}
+
+	public static void findChokeToMain() throws NoPathFoundException {
+		Chokepoint choke = BWTA.getNearestChokepoint(BaseManager.main.getLocation().getTilePosition());
+		// Find the path into the main
+		pathIntoMain = findGroundPath(choke.getCenter(), BaseManager.main.getLocation().getPosition(),
+				UnitType.Zerg_Zergling);
+
+		// Find top of ramp
+		for (WalkPosition p : pathIntoMain) {
+			if (GameHandler.isBuildable(p.getX() / 32, p.getY() / 32, false)) {
+				topOfRamp = p;
+				break;
+			}
+		}
+
+		// Mark entire ramp
+		chokeRampWalkTiles = new ArrayList<WalkPosition>();
+		Queue<WalkPosition> rampWalkTileOpenSet = new PriorityQueue<>(1, new Comparator<WalkPosition>() {
+			@Override
+			public int compare(WalkPosition p1, WalkPosition p2) {
+				WalkPosition topOfRampWalkTile = new WalkPosition(topOfRamp.getX() / 8, topOfRamp.getY() / 8);
+				return (int) (p1.getApproxDistance(topOfRampWalkTile) - p2.getApproxDistance(topOfRampWalkTile));
+			}
+		});
+		rampWalkTileOpenSet.add(new WalkPosition(choke.getCenter().getX() / 8, choke.getCenter().getY() / 8));
+		while (!rampWalkTileOpenSet.isEmpty()) {
+			WalkPosition currentNode = rampWalkTileOpenSet.poll();
+			if (GameHandler.isWalkable(currentNode)
+					&& !GameHandler.isBuildable(currentNode.getX() / 4, currentNode.getY() / 4, false)) {
+				chokeRampWalkTiles.add(new WalkPosition(currentNode.getX(), currentNode.getY()));
+				WalkPosition nextNode;
+				nextNode = new WalkPosition(currentNode.getX() - 1, currentNode.getY());
+				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+				nextNode = new WalkPosition(currentNode.getX() + 1, currentNode.getY());
+				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+				nextNode = new WalkPosition(currentNode.getX(), currentNode.getY() - 1);
+				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+				nextNode = new WalkPosition(currentNode.getX(), currentNode.getY() + 1);
+				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
+					rampWalkTileOpenSet.add(nextNode);
+				}
+			}
+
+			// Safety to prevent the whole map from being interpreted as
+			// a ramp
+			if (chokeRampWalkTiles.size() >= MAX_RAMP_WALK_TILES) {
+				break;
+			}
+		}
+	}
+
+	private static Queue<WalkPosition> findGroundPath(Position start, Position end, UnitType unitType)
+			throws NoPathFoundException {
+		return findGroundPath(start.getX(), start.getY(), end.getX(), end.getY(), unitType);
+	}
+
+	public static Queue<WalkPosition> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
+			throws NoPathFoundException {
+		return findGroundPath(startx, starty, endx, endy, unitType, Integer.MAX_VALUE);
+	}
+
+	public static Queue<WalkPosition> findGroundPath(int startx, int starty, int endx, int endy, UnitType type,
+			int length) throws NoPathFoundException {
+		int startWx = startx / 8;
+		int startWy = starty / 8;
+		int endWx = endx / 8;
+		int endWy = endy / 8;
+
+		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
+			@Override
+			public int compare(Node n1, Node n2) {
+				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
+			}
+		});
 		walkableNodes.get(startWx).get(startWy).parent = null;
 		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
-		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point
-				.distance(startWx, startWy, endWx, endWy);
+		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point.distance(startWx, startWy, endWx, endWy);
 		openSet.add(walkableNodes.get(startWx).get(startWy));
 		Set<Node> closedSet = new HashSet<Node>();
 
@@ -210,8 +174,7 @@ public final class PathingManager {
 		while (openSet.size() > 0) {
 			Node currentNode = openSet.remove();
 			// Base case
-			if ((currentNode.x == endWx && currentNode.y == endWy)
-					|| currentNode.costFromStart > length) {
+			if ((currentNode.x == endWx && currentNode.y == endWy) || currentNode.costFromStart > length) {
 				Deque<WalkPosition> path = new ArrayDeque<>();
 				reconstructPath(path, currentNode);
 				return path;
@@ -225,15 +188,12 @@ public final class PathingManager {
 				}
 
 				double tentative_g_score = currentNode.costFromStart
-						+ Point.distance(currentNode.x, currentNode.y,
-								neighbor.x, neighbor.y);
-				if (!openSet.contains(neighbor)
-						|| tentative_g_score < neighbor.costFromStart) {
+						+ Point.distance(currentNode.x, currentNode.y, neighbor.x, neighbor.y);
+				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
 					neighbor.parent = currentNode;
 					neighbor.costFromStart = tentative_g_score;
 					neighbor.predictedTotalCost = tentative_g_score
-							+ Point.distance(neighbor.x, neighbor.y, endWx,
-									endWy);
+							+ Point.distance(neighbor.x, neighbor.y, endWx, endWy);
 					openSet.add(neighbor);
 				}
 			}
@@ -242,25 +202,22 @@ public final class PathingManager {
 		throw new NoPathFoundException();
 	}
 
-	public static Queue<WalkPosition> findSafeAirPath(int startx, int starty,
-			int endx, int endy, double[][] threatMap, int length) {
+	public static Queue<WalkPosition> findSafeAirPath(int startx, int starty, int endx, int endy, double[][] threatMap,
+			int length) {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
 		int endWx = endx / 8;
 		int endWy = endy / 8;
 
-		Queue<Node> openSet = new PriorityQueue<Node>(1,
-				new Comparator<Node>() {
-					@Override
-					public int compare(Node n1, Node n2) {
-						return (int) Math
-								.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
-					}
-				});
+		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
+			@Override
+			public int compare(Node n1, Node n2) {
+				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
+			}
+		});
 		walkableNodes.get(startWx).get(startWy).parent = null;
 		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
-		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point
-				.distance(startWx, startWy, endWx, endWy);
+		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point.distance(startWx, startWy, endWx, endWy);
 		openSet.add(walkableNodes.get(startWx).get(startWy));
 		Set<Node> closedSet = new HashSet<Node>();
 
@@ -268,8 +225,7 @@ public final class PathingManager {
 		while (openSet.size() > 0) {
 			Node currentNode = openSet.remove();
 			// Base case
-			if ((currentNode.x == endWx && currentNode.y == endWy)
-					|| currentNode.costFromStart > length) {
+			if ((currentNode.x == endWx && currentNode.y == endWy) || currentNode.costFromStart > length) {
 				Deque<WalkPosition> path = new ArrayDeque<>();
 				reconstructPath(path, currentNode);
 				return path;
@@ -278,22 +234,17 @@ public final class PathingManager {
 			closedSet.add(currentNode);
 			// Add all neigbors to the open set
 			for (Node neighbor : getNeighbors(currentNode.x, currentNode.y)) {
-				if (closedSet.contains(neighbor)
-						|| threatMap[currentNode.x / 4][currentNode.y / 4] > 0) {
+				if (closedSet.contains(neighbor) || threatMap[currentNode.x / 4][currentNode.y / 4] > 0) {
 					continue;
 				}
 
 				double tentative_g_score = currentNode.costFromStart
-						+ Point.distance(currentNode.x, currentNode.y,
-								neighbor.x, neighbor.y);
-				if (!openSet.contains(neighbor)
-						|| tentative_g_score < neighbor.costFromStart
-								+ AIR_EPSILON) {
+						+ Point.distance(currentNode.x, currentNode.y, neighbor.x, neighbor.y);
+				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart + AIR_EPSILON) {
 					neighbor.parent = currentNode;
 					neighbor.costFromStart = tentative_g_score;
 					neighbor.predictedTotalCost = tentative_g_score
-							+ Point.distance(neighbor.x, neighbor.y, endWx,
-									endWy);
+							+ Point.distance(neighbor.x, neighbor.y, endWx, endWy);
 					openSet.add(neighbor);
 				}
 			}
@@ -341,8 +292,7 @@ public final class PathingManager {
 		return neighbors;
 	}
 
-	private static Deque<WalkPosition> reconstructPath(
-			Deque<WalkPosition> path, Node finalNode) {
+	private static Deque<WalkPosition> reconstructPath(Deque<WalkPosition> path, Node finalNode) {
 		path.push(new WalkPosition(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
 
 		// Base case
@@ -355,18 +305,15 @@ public final class PathingManager {
 	public static void registerDebugFunctions() {
 		DebugModule chokeDM = DebugManager.createDebugModule("choke");
 		// Label all chokes
-		chokeDM.addSubmodule("draw").setDraw(
-				() -> {
-					int i = 0;
-					for (Chokepoint choke : BWTA.getChokepoints()) {
-						DrawEngine.drawTextMap(choke.getCenter().getX() - 10,
-								choke.getCenter().getY() - 20, "Choke " + i);
-						DrawEngine.drawTextMap(choke.getCenter().getX() - 10,
-								choke.getCenter().getY() - 10, "Radius "
-										+ choke.getWidth());
-						i++;
-					}
-				});
+		chokeDM.addSubmodule("draw").setDraw(() -> {
+			int i = 0;
+			for (Chokepoint choke : BWTA.getChokepoints()) {
+				DrawEngine.drawTextMap(choke.getCenter().getX() - 10, choke.getCenter().getY() - 20, "Choke " + i);
+				DrawEngine.drawTextMap(choke.getCenter().getX() - 10, choke.getCenter().getY() - 10,
+						"Radius " + choke.getWidth());
+				i++;
+			}
+		});
 		// Draw the path from the choke point into the main
 		// chokeDM.addSubmodule("path").setDraw(
 		// () -> {
@@ -386,6 +333,15 @@ public final class PathingManager {
 		// DrawEngine.drawBoxMap(location.getX() * 8,
 		// location.getY() * 8, location.getX() * 8 + 8,
 		// location.getY() * 8 + 8, Color.Green, false);
+		// }
+		// });
+		// DebugManager.createDebugModule("walkable").setDraw(() -> {
+		// for (int wx = 0; wx < mapWalkWidth; wx++) {
+		// for (int wy = 0; wy < mapWalkHeight; wy++) {
+		// Node n = walkableNodes.get(wx).get(wy);
+		// DrawEngine.drawXMap(n.x * 8, n.y * 8, n.walkable ? Color.Green :
+		// Color.Red);
+		// }
 		// }
 		// });
 	}

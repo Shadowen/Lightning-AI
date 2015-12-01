@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -42,7 +43,7 @@ public final class BaseManager {
 		// Sort resources
 		for (Unit u : GameHandler.getAllUnits()) {
 			UnitType type = u.getType();
-			Optional<Base> closestBase = getClosestBase(u.getPosition());
+			Optional<Base> closestBase = getClosestBase(u.getPosition(), baseRadius);
 			if (closestBase.isPresent()) {
 				if (type.isMineralField()) {
 					closestBase.get().minerals.add(new MineralResource(u));
@@ -52,14 +53,15 @@ public final class BaseManager {
 					System.out.println("Found resource depot!");
 					closestBase.get().commandCenter = Optional.of(u);
 					closestBase.get().setPlayer(u.getPlayer());
-					System.out.println("Found a base for Player "
-							+ u.getPlayer().getID());
+					System.out.println("Found a base for Player " + u.getPlayer().getID());
 				}
 			}
 		}
 		System.out.print("Searching for main... ");
 		// First base is main
-		BaseManager.main = BaseManager.getMyBases().stream().findAny().get();
+		main = getMyBases().stream().findAny().get();
+
+		enemyBuildings = new HashSet<>();
 
 		registerDebugFunctions();
 		System.out.println("Success!");
@@ -70,9 +72,13 @@ public final class BaseManager {
 	}
 
 	public static void onFrame() {
-		bases.forEach((bl, b) -> b.commandCenter.map(c -> c.getPosition())
-				.flatMap(p -> getClosestBase(p))
-				.ifPresent(bs -> bs.setLastScouted()));
+		for (Entry<BaseLocation, Base> e : bases.entrySet()) {
+			BaseLocation bl = e.getKey();
+			Base b = e.getValue();
+			if (GameHandler.isVisible(b.getLocation().getTilePosition())) {
+				b.setLastScouted();
+			}
+		}
 	}
 
 	public static void gatherResources() {
@@ -95,15 +101,24 @@ public final class BaseManager {
 		int closestDistance = Integer.MAX_VALUE;
 		Base closestBase = null;
 		for (Base b : bases.values()) {
-			int distance = b.getLocation().getPosition()
-					.getApproxDistance(position);
+			int distance = b.getLocation().getPosition().getApproxDistance(position);
 			if (distance < closestDistance) {
 				closestBase = b;
 				closestDistance = distance;
 			}
 		}
-		if (closestBase == null) {
-			System.out.println("No base found!");
+		return Optional.ofNullable(closestBase);
+	}
+
+	public static Optional<Base> getClosestBase(Position position, int maxDistance) {
+		int closestDistance = Integer.MAX_VALUE;
+		Base closestBase = null;
+		for (Base b : bases.values()) {
+			int distance = b.getLocation().getPosition().getApproxDistance(position);
+			if (distance < maxDistance && distance < closestDistance) {
+				closestBase = b;
+				closestDistance = distance;
+			}
 		}
 		return Optional.ofNullable(closestBase);
 	}
@@ -119,8 +134,7 @@ public final class BaseManager {
 	}
 
 	public static void unitCreated(Unit unit) {
-		if (unit.getType().isWorker()
-				&& unit.getPlayer() == GameHandler.getSelfPlayer()) {
+		if (unit.getType().isWorker() && unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			workers.put(unit, new Worker(unit));
 		} else if (unit.getType().isResourceDepot()) {
 			getClosestBase(unit.getPosition()).ifPresent(b -> {
@@ -131,8 +145,7 @@ public final class BaseManager {
 	}
 
 	public static void unitShown(Unit unit) {
-		if (unit.getPlayer() == GameHandler.getEnemyPlayer()
-				&& unit.getType().isBuilding()) {
+		if (unit.getPlayer() == GameHandler.getEnemyPlayer() && unit.getType().isBuilding()) {
 			enemyBuildings.add(unit);
 		}
 
@@ -167,8 +180,7 @@ public final class BaseManager {
 					break;
 				}
 			}
-		} else if (type.equals(UnitType.Resource_Vespene_Geyser)
-				|| type.isRefinery()) {
+		} else if (type.equals(UnitType.Resource_Vespene_Geyser) || type.isRefinery()) {
 			for (Base b : bases.values()) {
 				if (b.gas.remove(unit)) {
 					break;
@@ -192,14 +204,13 @@ public final class BaseManager {
 
 	public static Optional<Resource> getResource(Unit u) {
 		if (u.getType().isMineralField()) {
-			return bases.values().stream().flatMap(b -> b.minerals.stream())
-					.filter(m -> m.getUnit() == u).findAny().map(m -> m);
+			return bases.values().stream().flatMap(b -> b.minerals.stream()).filter(m -> m.getUnit() == u).findAny()
+					.map(m -> m);
 		} else if (u.getType().isRefinery()) {
-			return bases.values().stream().flatMap(b -> b.gas.stream())
-					.filter(g -> g.getUnit() == u).findAny().map(g -> g);
+			return bases.values().stream().flatMap(b -> b.gas.stream()).filter(g -> g.getUnit() == u).findAny()
+					.map(g -> g);
 		}
-		System.err
-				.println("Searching for a resource corresponding to a unit that is not a resource...");
+		System.err.println("Searching for a resource corresponding to a unit that is not a resource...");
 		return Optional.empty();
 	}
 
@@ -210,39 +221,44 @@ public final class BaseManager {
 				DrawEngine.drawTextMap(main.getX(), main.getY(), "Main");
 			}
 		});
-		bases.addSubmodule("status")
-				.setDraw(
-						() -> {
-							for (Base b : BaseManager.bases.values()) {
-								// Status
-								DrawEngine.drawCircleMap(b.getX(), b.getY(),
-										100, Color.Teal, false);
-								DrawEngine.drawTextMap(b.getX() + 5,
-										b.getY() + 5, "Status: "
-												+ b.getPlayer().toString()
-												+ " @ " + b.getLastScouted());
-							}
-						});
-		bases.addSubmodule("commandcenter")
-				.setDraw(() -> {
-					for (Base b : BaseManager.bases.values()) {
-						// Command center
-						if (b.commandCenter.isPresent()) {
-							Unit c = b.commandCenter.get();
-							int tx = c.getTilePosition().getX();
-							int ty = c.getTilePosition().getY();
-							DrawEngine.drawBoxMap(tx * 32, ty * 32,
-									(tx + 4) * 32, (ty + 3) * 32, Color.Teal,
-									false);
-						}
-					}
-				}).addAlias("cc");
+		bases.addSubmodule("status").setDraw(() -> {
+			for (Base b : BaseManager.bases.values()) {
+				// Status
+				DrawEngine.drawCircleMap(b.getX(), b.getY(), baseRadius, Color.Teal, false);
+				String playerType;
+				if (b.getPlayer() == GameHandler.getSelfPlayer()) {
+					playerType = "SELF";
+				} else if (b.getPlayer() == GameHandler.getNeutralPlayer()) {
+					playerType = "NEUTRAL";
+				} else if (b.getPlayer() == GameHandler.getEnemyPlayer()) {
+					playerType = "ENEMY";
+				} else {
+					playerType = "UNKNOWN";
+				}
+
+				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 5,
+						"Status: " + playerType + " @ " + b.getLastScouted());
+				if (b.getLocation().isStartLocation()) {
+					DrawEngine.drawTextMap(b.getX() + 5, b.getY() - 5, "Starting Location");
+				}
+			}
+		});
+		bases.addSubmodule("commandcenter").setDraw(() -> {
+			for (Base b : BaseManager.bases.values()) {
+				// Command center
+				if (b.commandCenter.isPresent()) {
+					Unit c = b.commandCenter.get();
+					int tx = c.getTilePosition().getX();
+					int ty = c.getTilePosition().getY();
+					DrawEngine.drawBoxMap(tx * 32, ty * 32, (tx + 4) * 32, (ty + 3) * 32, Color.Teal, false);
+				}
+			}
+		}).addAlias("cc");
 		bases.addSubmodule("resources").setDraw(() -> {
 			for (Base b : BaseManager.bases.values()) {
 				// Minerals
 				for (MineralResource r : b.minerals) {
-					DrawEngine.drawTextMap(r.getX() - 8, r.getY() - 8,
-							String.valueOf(r.getNumGatherers()));
+					DrawEngine.drawTextMap(r.getX() - 8, r.getY() - 8, String.valueOf(r.getNumGatherers()));
 				}
 				// Gas
 				for (GasResource r : b.gas) {
@@ -264,48 +280,38 @@ public final class BaseManager {
 		bases.addSubmodule("miners").setDraw(() -> {
 			for (Base b : BaseManager.bases.values()) {
 				// Miner counts
-				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 15,
-						"Mineral Miners: " + b.getMineralWorkerCount());
-				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 25,
-						"Mineral Fields: " + b.minerals.size());
+				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 15, "Mineral Miners: " + b.getMineralWorkerCount());
+				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 25, "Mineral Fields: " + b.minerals.size());
 			}
 		});
 		bases.addSubmodule("workers").setDraw(() -> {
 			// Workers
-				for (Worker w : workers.values()) {
-					switch (w.getTask()) {
-					case CONSTRUCTING:
-						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-								Color.Orange, true);
-						break;
-					case GAS:
-						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-								Color.Green, true);
-						DrawEngine.drawLineMap(w.getX(), w.getY(), w
-								.getCurrentResource().getX(), w
-								.getCurrentResource().getY(), Color.Green);
-						break;
-					case MINERALS:
-						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-								Color.Blue, true);
-						DrawEngine.drawLineMap(w.getX(), w.getY(), w
-								.getCurrentResource().getX(), w
-								.getCurrentResource().getY(), Color.Blue);
-						break;
-					case SCOUTING:
-						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-								Color.White, true);
-						break;
-					case TRAINING:
-						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-								Color.Teal, true);
-						break;
-					default:
-						DrawEngine.drawCircleMap(w.getX(), w.getY(), 3,
-								Color.Black, true);
-						break;
-					}
+			for (Worker w : workers.values()) {
+				switch (w.getTask()) {
+				case CONSTRUCTING:
+					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Orange, true);
+					break;
+				case GAS:
+					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Green, true);
+					DrawEngine.drawLineMap(w.getX(), w.getY(), w.getCurrentResource().getX(),
+							w.getCurrentResource().getY(), Color.Green);
+					break;
+				case MINERALS:
+					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Blue, true);
+					DrawEngine.drawLineMap(w.getX(), w.getY(), w.getCurrentResource().getX(),
+							w.getCurrentResource().getY(), Color.Blue);
+					break;
+				case SCOUTING:
+					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.White, true);
+					break;
+				case TRAINING:
+					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Teal, true);
+					break;
+				default:
+					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Black, true);
+					break;
 				}
-			});
+			}
+		});
 	}
 }

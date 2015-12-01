@@ -7,10 +7,12 @@ public class Node {
 	public double costFromStart;
 	public double predictedTotalCost;
 	public Node parent;
+	public int clearance;
 
 	public Node(int ix, int iy) {
 		x = ix;
 		y = iy;
+		clearance = 0;
 	}
 
 	public String toString() {

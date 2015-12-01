@@ -25,18 +25,11 @@ public class DrawEngine {
 		System.out.print("Starting DrawEngine... ");
 		game = igame;
 		// Debugger debugger
-		DebugManager.createDebugModule("shapecount")
-				.setDraw(
-						() -> {
-							DrawEngine.drawTextScreen(
-									400,
-									100,
-									"Debug Shapes: "
-											+ String.valueOf(shapeCount + 1)
-											+ "/" + MAX_SHAPES);
-							// Reset the shapecount
-							shapeCount = 0;
-						});
+		DebugManager.createDebugModule("shapecount").setDraw(() -> {
+			DrawEngine.drawTextScreen(400, 100, "Debug Shapes: " + String.valueOf(shapeCount + 1) + "/" + MAX_SHAPES);
+			// Reset the shapecount
+			shapeCount = 0;
+		});
 		System.out.println("Success!");
 	}
 
@@ -67,8 +60,8 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawBoxMap(int left, int top, int right, int bottom,
-			Color color, boolean fill) throws ShapeOverflowException {
+	public static void drawBoxMap(int left, int top, int right, int bottom, Color color, boolean fill)
+			throws ShapeOverflowException {
 		game.drawBoxMap(left, top, right, bottom, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -97,8 +90,8 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawBoxScreen(int left, int top, int right, int bottom,
-			Color color, boolean fill) throws ShapeOverflowException {
+	public static void drawBoxScreen(int left, int top, int right, int bottom, Color color, boolean fill)
+			throws ShapeOverflowException {
 		game.drawBoxScreen(left, top, right, bottom, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -124,8 +117,8 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawCircleMap(int x, int y, int radius, Color color,
-			boolean fill) throws ShapeOverflowException {
+	public static void drawCircleMap(int x, int y, int radius, Color color, boolean fill)
+			throws ShapeOverflowException {
 		game.drawCircleMap(x, y, radius, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -151,8 +144,8 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawCircleScreen(int x, int y, int radius, Color color,
-			boolean fill) throws ShapeOverflowException {
+	public static void drawCircleScreen(int x, int y, int radius, Color color, boolean fill)
+			throws ShapeOverflowException {
 		game.drawCircleScreen(x, y, radius, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -173,8 +166,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawDotMap(int x, int y, Color color)
-			throws ShapeOverflowException {
+	public static void drawDotMap(int x, int y, Color color) throws ShapeOverflowException {
 		game.drawDotMap(x, y, color);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -196,8 +188,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawDotScreen(int x, int y, Color color)
-			throws ShapeOverflowException {
+	public static void drawDotScreen(int x, int y, Color color) throws ShapeOverflowException {
 		game.drawDotScreen(x, y, color);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -225,8 +216,8 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawEllipseMap(int x, int y, int xrad, int yrad,
-			Color color, boolean fill) throws ShapeOverflowException {
+	public static void drawEllipseMap(int x, int y, int xrad, int yrad, Color color, boolean fill)
+			throws ShapeOverflowException {
 		game.drawEllipseMap(x, y, xrad, yrad, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -254,8 +245,8 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawEllipseScreen(int x, int y, int xrad, int yrad,
-			Color color, boolean fill) throws ShapeOverflowException {
+	public static void drawEllipseScreen(int x, int y, int xrad, int yrad, Color color, boolean fill)
+			throws ShapeOverflowException {
 		game.drawEllipseScreen(x, y, xrad, yrad, color, fill);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -281,8 +272,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawLineMap(int x1, int y1, int x2, int y2, Color color)
-			throws ShapeOverflowException {
+	public static void drawLineMap(int x1, int y1, int x2, int y2, Color color) throws ShapeOverflowException {
 		game.drawLineMap(x1, y1, x2, y2, color);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -308,8 +298,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawLineScreen(int x1, int y1, int x2, int y2,
-			Color color) throws ShapeOverflowException {
+	public static void drawLineScreen(int x1, int y1, int x2, int y2, Color color) throws ShapeOverflowException {
 		game.drawLineScreen(x1, y1, x2, y2, color);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -331,8 +320,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawTextScreen(int x, int y, Object message)
-			throws ShapeOverflowException {
+	public static void drawTextScreen(int x, int y, Object message) throws ShapeOverflowException {
 		game.drawTextScreen(x, y, message.toString());
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -353,8 +341,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawTextMap(int x, int y, String message)
-			throws ShapeOverflowException {
+	public static void drawTextMap(int x, int y, String message) throws ShapeOverflowException {
 		game.drawTextMap(x, y, message);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -375,8 +362,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawTextMap(int x, int y, Object message)
-			throws ShapeOverflowException {
+	public static void drawTextMap(int x, int y, Object message) throws ShapeOverflowException {
 		game.drawTextMap(x, y, message.toString());
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -398,8 +384,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawTextScreen(int x, int y, String message)
-			throws ShapeOverflowException {
+	public static void drawTextScreen(int x, int y, String message) throws ShapeOverflowException {
 		game.drawTextScreen(x, y, message);
 		shapeCount++;
 		if (shapeCount > MAX_SHAPES) {
@@ -425,8 +410,7 @@ public class DrawEngine {
 	 *             Thrown if the {@link DebugManager} tries to draw too many
 	 *             shapes.
 	 */
-	public static void drawArrowMap(int x1, int y1, int x2, int y2, Color color)
-			throws ShapeOverflowException {
+	public static void drawArrowMap(int x1, int y1, int x2, int y2, Color color) throws ShapeOverflowException {
 		// Math at:
 		// http://stackoverflow.com/questions/10316180/how-to-calculate-the-coordinates-of-a-arrowhead-based-on-the-arrow
 
@@ -449,16 +433,17 @@ public class DrawEngine {
 		final double vx = -uy;
 		final double vy = ux;
 		// The first line
-		final int a1x = (int) Math.round(x2 - arrowheadLength * ux
-				+ arrowheadHalfWidth * vx);
-		final int a1y = (int) Math.round(y2 - arrowheadLength * uy
-				+ arrowheadHalfWidth * vy);
+		final int a1x = (int) Math.round(x2 - arrowheadLength * ux + arrowheadHalfWidth * vx);
+		final int a1y = (int) Math.round(y2 - arrowheadLength * uy + arrowheadHalfWidth * vy);
 		drawLineMap(x2, y2, a1x, a1y, color);
 		// The second line
-		final int a2x = (int) Math.round(x2 - arrowheadLength * ux
-				- arrowheadHalfWidth * vx);
-		final int a2y = (int) Math.round(y2 - arrowheadLength * uy
-				- arrowheadHalfWidth * vy);
+		final int a2x = (int) Math.round(x2 - arrowheadLength * ux - arrowheadHalfWidth * vx);
+		final int a2y = (int) Math.round(y2 - arrowheadLength * uy - arrowheadHalfWidth * vy);
 		drawLineMap(x2, y2, a2x, a2y, color);
+	}
+
+	public static void drawXMap(int x, int y, Color colour) throws ShapeOverflowException {
+		drawLineMap(x - 10, y - 10, x + 10, y + 10, colour);
+		drawLineMap(x + 10, y - 10, x - 10, y + 10, colour);
 	}
 }
