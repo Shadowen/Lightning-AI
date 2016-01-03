@@ -59,7 +59,7 @@ public final class BaseManager {
 		}
 		System.out.print("Searching for main... ");
 		// First base is main
-		main = getMyBases().stream().findAny().get();
+		main = getMyBases().stream().findAny().orElse(null);
 
 		enemyBuildings = new HashSet<>();
 

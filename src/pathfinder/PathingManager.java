@@ -4,6 +4,7 @@ import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
+import gamestructure.debug.ShapeOverflowException;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
@@ -26,19 +27,19 @@ import bwta.Chokepoint;
 import datastructure.BaseManager;
 
 public final class PathingManager {
-
 	private static final int MAX_RAMP_WALK_TILES = 500;
-
-	private static final double AIR_EPSILON = 0;
 
 	private static ArrayList<ArrayList<Node>> walkableNodes;
 	private static int mapWalkWidth;
 	private static int mapWalkHeight;
 
 	// A list of tiles detailing a path into the main from the choke
-	private static Queue<WalkPosition> pathIntoMain = new ArrayDeque<>();
+	private static Queue<Position> pathIntoMain = new ArrayDeque<>();
 	private static WalkPosition topOfRamp;
 	private static List<WalkPosition> chokeRampWalkTiles = new ArrayList<>();;
+
+	// TODO
+	private static Set<Node> latestClosedSet;
 
 	public static void init() {
 		System.out.print("Starting PathingManager... ");
@@ -46,33 +47,14 @@ public final class PathingManager {
 		mapWalkHeight = GameHandler.getMapWalkHeight();
 
 		// Init walkable map
-		walkableNodes = new ArrayList<ArrayList<Node>>();
+		walkableNodes = new ArrayList<ArrayList<Node>>(mapWalkWidth);
 		for (int wx = 0; wx < mapWalkWidth; wx++) {
-			walkableNodes.add(new ArrayList<Node>());
+			walkableNodes.add(new ArrayList<Node>(mapWalkHeight));
 			for (int wy = 0; wy < mapWalkHeight; wy++) {
-				Node n = new Node(wx, wy);
-				if (!GameHandler.isWalkable(wx, wy)) {
-					n.clearance = 0;
-					break;
-				}
+				walkableNodes.get(wx).add(new Node(wx, wy));
 			}
 		}
-		// Avoid buildings
-		for (Unit u : GameHandler.getAllUnits()) {
-			UnitType utype = u.getType();
-			System.out.println(utype);
-			if (utype.isBuilding() && !utype.isFlyingBuilding()) {
-				int uwidth = utype.tileWidth();
-				int uheight = utype.tileHeight();
-				int tx = u.getTilePosition().getX();
-				int ty = u.getTilePosition().getY();
-				for (int wx = tx * 4; wx < (ty + uwidth) * 4; wx++) {
-					for (int wy = tx * 4; wy < (ty + uheight) * 4; wy++) {
-						walkableNodes.get(wx).get(wy).walkable = false;
-					}
-				}
-			}
-		}
+		refreshWalkableMap();
 
 		registerDebugFunctions();
 
@@ -85,6 +67,48 @@ public final class PathingManager {
 	private PathingManager() {
 	}
 
+	public static void refreshWalkableMap() {
+		// Avoid terrain
+		for (int wx = 0; wx < 200; wx++) {
+			for (int wy = mapWalkHeight - 150; wy < mapWalkHeight; wy++) {
+				walkableNodes.get(wx).get(wy).clearance = getTrueClearance(wx, wy);
+			}
+			System.out.println("Refreshing map... " + (double) wx / mapWalkWidth + "%");
+		}
+		// // Avoid buildings
+		// for (Unit u : GameHandler.getAllUnits()) {
+		// UnitType utype = u.getType();
+		// if (utype.isBuilding() && !utype.isFlyingBuilding()) {
+		// int uwidth = utype.tileWidth();
+		// int uheight = utype.tileHeight();
+		// int tx = u.getTilePosition().getX();
+		// int ty = u.getTilePosition().getY();
+		// for (int wx = tx * 4; wx < (ty + uwidth) * 4; wx++) {
+		// for (int wy = tx * 4; wy < (ty + uheight) * 4; wy++) {
+		// walkableNodes.get(wx).get(wy).walkable = false;
+		// }
+		// }
+		// }
+		// }
+	}
+
+	/**
+	 * Finds the true clearance for a certain walk tile
+	 **/
+	private static int getTrueClearance(int wx, int wy) {
+		int d = 0;
+		for (; d < Math.min(mapWalkWidth - wx, mapWalkWidth - wy); d++) {
+			for (int dx = 0; dx < d; dx++) {
+				for (int dy = 0; dy < d; dy++) {
+					if (!GameHandler.isWalkable(wx + dx, wy + dy)) {
+						return d - 1;
+					}
+				}
+			}
+		}
+		return d;
+	}
+
 	public static void findChokeToMain() throws NoPathFoundException {
 		Chokepoint choke = BWTA.getNearestChokepoint(BaseManager.main.getLocation().getTilePosition());
 		// Find the path into the main
@@ -92,9 +116,9 @@ public final class PathingManager {
 				UnitType.Zerg_Zergling);
 
 		// Find top of ramp
-		for (WalkPosition p : pathIntoMain) {
+		for (Position p : pathIntoMain) {
 			if (GameHandler.isBuildable(p.getX() / 32, p.getY() / 32, false)) {
-				topOfRamp = p;
+				topOfRamp = new WalkPosition(p.getX() / 8, p.getY() / 8);
 				break;
 			}
 		}
@@ -141,22 +165,31 @@ public final class PathingManager {
 		}
 	}
 
-	private static Queue<WalkPosition> findGroundPath(Position start, Position end, UnitType unitType)
+	private static boolean unitDoesNotFit(UnitType type, int clearance) {
+		// Unit size is in pixels, clearance is is walk-tiles
+		// TODO use pixels to allow units to walk between buildings?
+		if (clearance < Math.max((type.width() + 4) / 8, (type.height() + 4) / 8)) {
+			return true;
+		}
+		return false;
+	}
+
+	private static Queue<Position> findGroundPath(Position start, Position end, UnitType unitType)
 			throws NoPathFoundException {
 		return findGroundPath(start.getX(), start.getY(), end.getX(), end.getY(), unitType);
 	}
 
-	public static Queue<WalkPosition> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
+	public static Queue<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
 			throws NoPathFoundException {
 		return findGroundPath(startx, starty, endx, endy, unitType, Integer.MAX_VALUE);
 	}
 
-	public static Queue<WalkPosition> findGroundPath(int startx, int starty, int endx, int endy, UnitType type,
-			int length) throws NoPathFoundException {
-		int startWx = startx / 8;
-		int startWy = starty / 8;
-		int endWx = endx / 8;
-		int endWy = endy / 8;
+	public static Queue<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType,
+			int maxLength) throws NoPathFoundException {
+		int startWx = (startx - unitType.width() / 2) / 8;
+		int startWy = (starty - unitType.height() / 2) / 8;
+		int endWx = (endx - unitType.width() / 2) / 8;
+		int endWy = (endy - unitType.height() / 2) / 8;
 
 		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
 			@Override
@@ -174,16 +207,16 @@ public final class PathingManager {
 		while (openSet.size() > 0) {
 			Node currentNode = openSet.remove();
 			// Base case
-			if ((currentNode.x == endWx && currentNode.y == endWy) || currentNode.costFromStart > length) {
-				Deque<WalkPosition> path = new ArrayDeque<>();
-				reconstructPath(path, currentNode);
+			if ((currentNode.x == endWx && currentNode.y == endWy) || currentNode.costFromStart > maxLength) {
+				Deque<Position> path = new ArrayDeque<>();
+				reconstructPath(path, currentNode, unitType);
 				return path;
 			}
 			// Move the node from the open set to the closed set
 			closedSet.add(currentNode);
 			// Add all neigbors to the open set
 			for (Node neighbor : getNeighbors(currentNode.x, currentNode.y)) {
-				if (closedSet.contains(neighbor) || !neighbor.walkable) {
+				if (closedSet.contains(neighbor) || unitDoesNotFit(unitType, neighbor.clearance)) {
 					continue;
 				}
 
@@ -199,10 +232,11 @@ public final class PathingManager {
 			}
 		}
 
+		latestClosedSet = closedSet;
 		throw new NoPathFoundException();
 	}
 
-	public static Queue<WalkPosition> findSafeAirPath(int startx, int starty, int endx, int endy, double[][] threatMap,
+	public static Queue<Position> findSafeAirPath(int startx, int starty, int endx, int endy, double[][] threatMap,
 			int length) {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
@@ -226,8 +260,8 @@ public final class PathingManager {
 			Node currentNode = openSet.remove();
 			// Base case
 			if ((currentNode.x == endWx && currentNode.y == endWy) || currentNode.costFromStart > length) {
-				Deque<WalkPosition> path = new ArrayDeque<>();
-				reconstructPath(path, currentNode);
+				Deque<Position> path = new ArrayDeque<>();
+				reconstructAirPath(path, currentNode);
 				return path;
 			}
 			// Move the node from the open set to the closed set
@@ -240,7 +274,7 @@ public final class PathingManager {
 
 				double tentative_g_score = currentNode.costFromStart
 						+ Point.distance(currentNode.x, currentNode.y, neighbor.x, neighbor.y);
-				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart + AIR_EPSILON) {
+				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
 					neighbor.parent = currentNode;
 					neighbor.costFromStart = tentative_g_score;
 					neighbor.predictedTotalCost = tentative_g_score
@@ -292,17 +326,70 @@ public final class PathingManager {
 		return neighbors;
 	}
 
-	private static Deque<WalkPosition> reconstructPath(Deque<WalkPosition> path, Node finalNode) {
-		path.push(new WalkPosition(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
+	private static Deque<Position> reconstructPath(Deque<Position> path, Node finalNode, UnitType unitType) {
+		path.push(new Position(finalNode.x * 8 + unitType.width() / 2, finalNode.y * 8 + unitType.height() / 2));
 
 		// Base case
 		if (finalNode.parent == null) {
 			return path;
 		}
-		return reconstructPath(path, finalNode.parent);
+		return reconstructPath(path, finalNode.parent, unitType);
+	}
+
+	private static Deque<Position> reconstructAirPath(Deque<Position> path, Node finalNode) {
+		path.push(new Position(finalNode.x * 8 + 4, finalNode.y * 8 + 4));
+
+		// Base case
+		if (finalNode.parent == null) {
+			return path;
+		}
+		return reconstructAirPath(path, finalNode.parent);
 	}
 
 	public static void registerDebugFunctions() {
+		// Clearance values
+		DebugManager.createDebugModule("clearance").setDraw(() -> {
+			try {
+				for (int wx = 0; wx < 100; wx++) {
+					for (int wy = mapWalkHeight - 100; wy < mapWalkHeight; wy++) {
+						Node n = walkableNodes.get(wx).get(wy);
+						// DrawEngine.drawTextMap(n.x * 8, n.y * 8,
+						// String.valueOf(n.clearance));
+						if (n.clearance == 0) {
+							DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8, Color.Red, true);
+						} else if (n.clearance == 1) {
+							DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8, Color.Orange, true);
+						} else if (n.clearance == 2) {
+							DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8, Color.Yellow, true);
+						} else if (n.clearance == 3) {
+							DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8, Color.Green, true);
+						}
+					}
+				}
+
+				GameHandler.getAllUnits().stream().filter(u -> u.getType() == UnitType.Zerg_Ultralisk).forEach(u -> {
+					try {
+						try {
+							Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
+									new Position(1158, 4038), u.getType());
+							for (Position w : path) {
+								DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2,
+										Color.Cyan, false);
+							}
+						} catch (NoPathFoundException e) {
+							for (Node w : latestClosedSet) {
+								DrawEngine.drawBoxMap(w.x * 8, w.y * 8, w.x * 8 + 8, w.y * 8 + 8, Color.Red, false);
+							}
+						}
+					} catch (ShapeOverflowException s) {
+						System.out.println("Shape overflow!");
+					}
+				});
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+
 		DebugModule chokeDM = DebugManager.createDebugModule("choke");
 		// Label all chokes
 		chokeDM.addSubmodule("draw").setDraw(() -> {

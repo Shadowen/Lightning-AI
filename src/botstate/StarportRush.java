@@ -10,6 +10,7 @@ import bwapi.UnitType;
 import datastructure.BaseManager;
 import datastructure.BuildManager;
 import datastructure.Worker;
+import datastructure.WorkerTask;
 
 public class StarportRush extends BotState {
 
@@ -24,8 +25,7 @@ public class StarportRush extends BotState {
 		// Check the build order
 		int supply = GameHandler.getSelfPlayer().supplyUsed() / 2;
 		if (supply > 30) {
-			if (GameHandler.getSelfPlayer().supplyTotal()
-					- GameHandler.getSelfPlayer().supplyUsed() < 4) {
+			if (GameHandler.getSelfPlayer().supplyTotal() - GameHandler.getSelfPlayer().supplyUsed() < 4) {
 				if (!BuildManager.isInQueue(UnitType.Terran_Supply_Depot)) {
 					BuildManager.addToQueue(UnitType.Terran_Supply_Depot);
 				}
@@ -40,8 +40,7 @@ public class StarportRush extends BotState {
 				BuildManager.addToQueue(UnitType.Terran_Vulture, 2);
 			} else if (supply > 14) {
 				BuildManager.setMinimum(UnitType.Terran_Marine, 2);
-				BaseManager.getFreeWorker().ifPresent(
-						w -> MicroManager.setScoutingUnit(w.getUnit()));
+				BaseManager.getFreeWorker().ifPresent(w -> MicroManager.setScoutingUnit(w.getUnit()));
 			} else if (supply > 13) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 2);
 			} else if (supply > 12) {
@@ -51,11 +50,10 @@ public class StarportRush extends BotState {
 				if (!MicroManager.isScouting()) {
 					Optional<Worker> w = BaseManager.getFreeWorker();
 					if (!w.isPresent()) {
-						GameHandler
-								.sendText("Can't scout since no workers available!");
+						GameHandler.sendText("Can't scout since no workers available!");
 					} else {
-						// w.get().setTask(WorkerTask.SCOUTING, null);
-						// microManager.setScoutingUnit(w.get().getUnit());
+						w.get().setTask(WorkerTask.SCOUTING);
+						MicroManager.setScoutingUnit(w.get().getUnit());
 					}
 				}
 			} else if (supply > 9) {
@@ -73,9 +71,8 @@ public class StarportRush extends BotState {
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (unitType.isRefinery()) {
 				for (int i = 0; i < 3; i++) {
-					BaseManager.getFreeWorker().ifPresent(
-							w -> BaseManager.getResource(unit).ifPresent(
-									r -> w.gather(r)));
+					BaseManager.getFreeWorker()
+							.ifPresent(w -> BaseManager.getResource(unit).ifPresent(r -> w.gather(r)));
 				}
 			}
 		}

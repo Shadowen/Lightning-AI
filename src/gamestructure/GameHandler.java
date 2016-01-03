@@ -32,7 +32,7 @@ public final class GameHandler {
 
 		myUnitsHash = -1;
 		enemyUnitsHash = -1;
-
+		
 		System.out.println("Success!");
 	}
 

@@ -73,8 +73,8 @@ public final class MicroManager {
 		// Move scouting unit(s)
 		if (!scoutingTarget.isPresent()
 				|| GameHandler.isVisible(scoutingTarget.get().getX() / 32, scoutingTarget.get().getY() / 32)) {
-			GameHandler.sendText("Looking for new target");
-			scoutingTarget = getScoutingTarget();
+			// GameHandler.sendText("Looking for new scouting target");
+			// scoutingTarget = getScoutingTarget(); TODO
 		}
 		if (scoutingUnit.isPresent() && scoutingTarget.isPresent()) {
 			// Acquire a target if necessary
@@ -163,11 +163,13 @@ public final class MicroManager {
 				GameHandler.getEnemyUnits().stream()
 						.sorted((u1, u2) -> u2.getPosition().getApproxDistance(u.getPosition())
 								- u1.getPosition().getApproxDistance(u.getPosition()))
-						.filter(e -> u.getPosition().getApproxDistance(e.getPosition()) < u.getType().groundWeapon()
-								.maxRange())
 						.findFirst().ifPresent(e -> {
-							ua.task = UnitTask.FIRING;
-							ua.timeout = 100;
+							u.move(e.getPosition());
+							if (u.getPosition().getApproxDistance(e.getPosition()) < u.getType().groundWeapon()
+									.maxRange()) {
+								ua.task = UnitTask.FIRING;
+								ua.timeout = 100;
+							}
 						});
 				break;
 			case FIRING:
@@ -181,7 +183,8 @@ public final class MicroManager {
 				// Go safe when threshold is reached
 				if (unitsByType.get(UnitType.Terran_Wraith).size() < 3) {
 					ua.task = UnitTask.SCOUTING;
-				} else if (u.getGroundWeaponCooldown() <= 0) {
+				}
+				if (u.getGroundWeaponCooldown() <= 0) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
@@ -208,7 +211,7 @@ public final class MicroManager {
 				}
 			}
 
-			WalkPosition moveTarget;
+			Position moveTarget;
 			double distanceToCheckPoint;
 			while (true) {
 				moveTarget = ua.path.element();
@@ -229,7 +232,7 @@ public final class MicroManager {
 			}
 
 			// Issue a movement command
-			ua.unit.move(new Position(moveTarget.getX(), moveTarget.getY()));
+			ua.unit.move(moveTarget);
 		} catch (NoPathFoundException e) {
 			GameHandler.sendText("Failed to find a ground path!");
 		}
@@ -358,10 +361,10 @@ public final class MicroManager {
 		// Pathing
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
-				final Iterator<WalkPosition> it = ua.path.iterator();
-				WalkPosition previous = it.hasNext() ? it.next() : null;
+				final Iterator<Position> it = ua.path.iterator();
+				Position previous = it.hasNext() ? it.next() : null;
 				while (it.hasNext()) {
-					final WalkPosition current = it.next();
+					final Position current = it.next();
 					DrawEngine.drawArrowMap(previous.getX(), previous.getY(), current.getX(), current.getY(),
 							Color.Yellow);
 					previous = current;

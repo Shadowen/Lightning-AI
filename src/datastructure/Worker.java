@@ -49,6 +49,10 @@ public class Worker {
 		return currentTask;
 	}
 
+	public void setTask(WorkerTask task) {
+		setTask(task, null);
+	}
+
 	public void setTask(WorkerTask task, Resource newResource) {
 		currentTask = task;
 

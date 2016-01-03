@@ -100,10 +100,8 @@ public class JavaBot implements BWEventListener {
 			// Auto economy
 			BaseManager.gatherResources();
 
-			BaseManager.getMyBases().stream()
-					.filter(b -> b.workers.size() < b.minerals.size() * 2)
-					.map(b -> b.commandCenter).filter(o -> o.isPresent())
-					.map(o -> o.get()).filter(c -> !c.isTraining())
+			BaseManager.getMyBases().stream().filter(b -> b.workers.size() < b.minerals.size() * 2)
+					.map(b -> b.commandCenter).filter(o -> o.isPresent()).map(o -> o.get()).filter(c -> !c.isTraining())
 					.forEach(c -> {
 						if (GameHandler.getSelfPlayer().minerals() >= 50)
 							c.train(UnitType.Terran_SCV);
@@ -115,27 +113,22 @@ public class JavaBot implements BWEventListener {
 					// TODO This can't go in the build queue since it is
 					// specific to
 					// a command center!
-						if (GameHandler.getSelfPlayer().minerals() >= 50
-								&& !c.isTraining()) {
-							for (Resource mineral : b.minerals) {
-								if (mineral.getNumGatherers() < 2) {
-									// Do training
-									c.train(UnitType.Terran_SCV);
-									break;
-								}
+					if (GameHandler.getSelfPlayer().minerals() >= 50 && !c.isTraining()) {
+						for (Resource mineral : b.minerals) {
+							if (mineral.getNumGatherers() < 2) {
+								// Do training
+								c.train(UnitType.Terran_SCV);
+								break;
 							}
 						}
-					});
+					}
+				});
 			}
 
 			// Auto build
-			BuildManager.buildingQueue
-					.stream()
-					.filter(b -> GameHandler.getSelfPlayer().minerals() >= b
-							.getType().mineralPrice())
-					.filter(b -> GameHandler.getSelfPlayer().gas() >= b
-							.getType().gasPrice())
-					.forEach(b -> {
+			BuildManager.buildingQueue.stream()
+					.filter(b -> GameHandler.getSelfPlayer().minerals() >= b.getType().mineralPrice())
+					.filter(b -> GameHandler.getSelfPlayer().gas() >= b.getType().gasPrice()).forEach(b -> {
 						if (b.hasBuilder()) {
 							// Has builder already
 							if (!b.builder.getUnit().isConstructing()) {
@@ -143,8 +136,7 @@ public class JavaBot implements BWEventListener {
 							}
 						} else {
 							// If it isn't being built yet
-							BaseManager.getFreeWorker().ifPresent(
-									w -> w.build(b));
+							BaseManager.getFreeWorker().ifPresent(w -> w.build(b));
 						}
 					});
 			// Auto train
@@ -155,18 +147,13 @@ public class JavaBot implements BWEventListener {
 				for (Unit u : GameHandler.getMyUnits()) {
 					// TODO find better way of comparing
 					if (u.getType().toString().equals(whatBuilds.toString())) {
-						if (GameHandler.getSelfPlayer().minerals() >= toTrain
-								.mineralPrice()
-								&& GameHandler.getSelfPlayer().gas() >= toTrain
-										.gasPrice()
+						if (GameHandler.getSelfPlayer().minerals() >= toTrain.mineralPrice()
+								&& GameHandler.getSelfPlayer().gas() >= toTrain.gasPrice()
 								&& GameHandler.getSelfPlayer().supplyTotal()
-										- GameHandler.getSelfPlayer()
-												.supplyUsed() >= toTrain
-											.supplyRequired()) {
+										- GameHandler.getSelfPlayer().supplyUsed() >= toTrain.supplyRequired()) {
 							if (!u.isTraining() && u.isCompleted()) {
 								u.train(toTrain);
 								it.remove();
-								// GameHandler.sendText("Removing " + toTrain);
 								break;
 							}
 						}
@@ -239,7 +226,8 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onUnitDestroy(Unit unit) {
 		try {
-			// If a unit is canceled from a build queue or building is cancelled
+			// If a unit is canceled from a build queue or building is
+			// cancelled
 			// under construction
 			BuildManager.unitsUnderConstruction.remove(unit);
 
@@ -275,8 +263,6 @@ public class JavaBot implements BWEventListener {
 	@Deprecated
 	@Override
 	public void onUnitComplete(Unit unit) {
-		// UnitType type = unit.getType();
-		// GameHandler.sendText("Unit complete: " + type);
 	}
 
 	/**
@@ -286,16 +272,12 @@ public class JavaBot implements BWEventListener {
 	 */
 	public void onUnitConstructed(Unit unit) {
 		try {
-			UnitType type = unit.getType();
-			// GameHandler.sendText("Unit constructed: " + type);
-
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
 				MicroManager.unitConstructed(unit);
 				BuildManager.unitComplete(unit);
 			}
 			BaseManager.unitComplete(unit);
 			botState = botState.unitComplete(unit);
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -305,8 +287,7 @@ public class JavaBot implements BWEventListener {
 	public void onSendText(String s) {
 		try {
 			if (s.startsWith("/")) {
-				List<String> command = new ArrayList<>(Arrays.asList(s
-						.substring(1).split(" ")));
+				List<String> command = new ArrayList<>(Arrays.asList(s.substring(1).split(" ")));
 				try {
 					DebugManager.onReceiveCommand(command);
 				} catch (InvalidCommandException e) {
@@ -325,42 +306,29 @@ public class JavaBot implements BWEventListener {
 	private void registerDebugFunctions() {
 		DebugModule stats = DebugManager.createDebugModule("stats");
 		final int yBottom = 285;
-		stats.addSubmodule("apm").setDraw(
-				() -> {
-					DrawEngine.drawTextScreen(10, yBottom, "APM: "
-							+ GameHandler.getAPM());
-					DrawEngine.drawTextScreen(10, yBottom - 15, "APMs: "
-							+ GameHandler.getAPM(true));
-				});
-		stats.addSubmodule("fps").setDraw(
-				() -> {
-					DrawEngine.drawTextScreen(10, yBottom - 15 * 4, "Frame: "
-							+ GameHandler.getFrameCount());
-					DrawEngine.drawTextScreen(10, yBottom - 15 * 3, "aFPS: "
-							+ GameHandler.getAverageFPS());
-					DrawEngine.drawTextScreen(10, yBottom - 15 * 2, "FPS: "
-							+ GameHandler.getFPS());
-				});
-		DebugManager.createDebugModule("botstate").setDraw(
-				() -> {
-					DrawEngine.drawTextScreen(5, 5, "Bot state: "
-							+ botState.getClass().toString());
-				});
-		DebugManager.createDebugModule("construction").setDraw(
-				() -> {
-					String uucString = "";
-					for (Unit u : BuildManager.unitsUnderConstruction) {
-						uucString += u.getType().toString() + ", ";
-					}
-					DrawEngine.drawTextScreen(5, 60, "unitsUnderConstruction: "
-							+ uucString);
-				});
-		DebugManager.createDebugModule("supply").setDraw(
-				() -> {
-					DrawEngine.drawTextScreen(550, 15, "Supply: "
-							+ GameHandler.getSelfPlayer().supplyUsed() + "/"
-							+ GameHandler.getSelfPlayer().supplyTotal());
-				});
+		stats.addSubmodule("apm").setDraw(() -> {
+			DrawEngine.drawTextScreen(10, yBottom, "APM: " + GameHandler.getAPM());
+			DrawEngine.drawTextScreen(10, yBottom - 15, "APMs: " + GameHandler.getAPM(true));
+		});
+		stats.addSubmodule("fps").setDraw(() -> {
+			DrawEngine.drawTextScreen(10, yBottom - 15 * 4, "Frame: " + GameHandler.getFrameCount());
+			DrawEngine.drawTextScreen(10, yBottom - 15 * 3, "aFPS: " + GameHandler.getAverageFPS());
+			DrawEngine.drawTextScreen(10, yBottom - 15 * 2, "FPS: " + GameHandler.getFPS());
+		});
+		DebugManager.createDebugModule("botstate").setDraw(() -> {
+			DrawEngine.drawTextScreen(5, 5, "Bot state: " + botState.getClass().toString());
+		});
+		DebugManager.createDebugModule("construction").setDraw(() -> {
+			String uucString = "";
+			for (Unit u : BuildManager.unitsUnderConstruction) {
+				uucString += u.getType().toString() + ", ";
+			}
+			DrawEngine.drawTextScreen(5, 60, "unitsUnderConstruction: " + uucString);
+		});
+		DebugManager.createDebugModule("supply").setDraw(() -> {
+			DrawEngine.drawTextScreen(550, 15, "Supply: " + GameHandler.getSelfPlayer().supplyUsed() + "/"
+					+ GameHandler.getSelfPlayer().supplyTotal());
+		});
 	}
 
 	@Override

@@ -3,7 +3,6 @@ package pathfinder;
 public class Node {
 	int x;
 	int y;
-	boolean walkable;
 	public double costFromStart;
 	public double predictedTotalCost;
 	public Node parent;
