@@ -21,20 +21,10 @@ public class DebugManager {
 		debugModules = new HashMap<String, DebugModule>();
 
 		// Debugger help
-		createDebugModule("help")
-				.addCommand(
-						null,
-						(c) -> {
-							GameHandler
-									.sendText("Type \"/help modules\" for a complete list of modules.");
-							GameHandler
-									.sendText("Type \"/help <name>\" for more information on a specific module.");
-						})
-				.addAlias("help")
-				.addCommand(
-						"modules",
-						(c) -> debugModules.forEach((k, v) -> GameHandler
-								.sendText(k)));
+		createDebugModule("help").addCommand(null, (c) -> {
+			GameHandler.sendText("Type \"/help modules\" for a complete list of modules.");
+			GameHandler.sendText("Type \"/help <name>\" for more information on a specific module.");
+		}).addAlias("help").addCommand("modules", (c) -> debugModules.forEach((k, v) -> GameHandler.sendText(k)));
 		System.out.println("Success!");
 	}
 
@@ -55,6 +45,7 @@ public class DebugManager {
 	 * {@link DebugModule#draw}.
 	 */
 	public static void draw() {
+		DrawEngine.updateScreenPosition();
 		// Try to draw all of the debugModules. If we are interrupted by too
 		// many objects attempting to draw, then print the stack trace.
 		for (DebugModule d : debugModules.values()) {
@@ -80,8 +71,7 @@ public class DebugManager {
 	 * @throws InvalidCommandException
 	 *             if the command cannot be parsed
 	 */
-	public static void onReceiveCommand(List<String> command)
-			throws InvalidCommandException {
+	public static void onReceiveCommand(List<String> command) throws InvalidCommandException {
 		// Null terminate the command
 		command.add(null);
 		System.out.println("Received command " + command);
@@ -95,8 +85,7 @@ public class DebugManager {
 			}
 		} else {
 			if (debugModules.containsKey(first)) {
-				debugModules.get(first).onReceiveCommand(
-						command.subList(1, command.size()));
+				debugModules.get(first).onReceiveCommand(command.subList(1, command.size()));
 			}
 		}
 	}

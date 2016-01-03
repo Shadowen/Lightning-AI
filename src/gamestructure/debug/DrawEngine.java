@@ -1,19 +1,28 @@
 package gamestructure.debug;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 
 import bwapi.Color;
 import bwapi.Game;
+import bwapi.Position;
 
 public class DrawEngine {
 	/** The game being acted on **/
 	private static Game game;
-	/***
+	/**
+	 * Current coordinates of the screen. Only draw things currently inside the
+	 * viewport.
+	 */
+	private static Rectangle viewport = new Rectangle(640, 480);
+
+	/**
 	 * The number of shapes drawn so far in the current frame. If
 	 * {@link #MAX_SHAPES} is exceeded, a {@link ShapeOverflowException} is
 	 * thrown.
-	 ***/
+	 **/
 	private static int shapeCount = 0;
+	private static int shapesRejected = 0;
 	/**
 	 * The maximum amount of shapes that can be drawn by {@link DebugManager}
 	 * before errors start occurring. This should be between 26000 and 39000
@@ -26,9 +35,11 @@ public class DrawEngine {
 		game = igame;
 		// Debugger debugger
 		DebugManager.createDebugModule("shapecount").setDraw(() -> {
-			DrawEngine.drawTextScreen(400, 100, "Debug Shapes: " + String.valueOf(shapeCount + 1) + "/" + MAX_SHAPES);
+			DrawEngine.drawTextScreen(400, 100, "Debug Shapes: " + String.valueOf(shapeCount + 1) + "/" + MAX_SHAPES
+					+ " (" + String.valueOf(shapesRejected) + " rejected)");
 			// Reset the shapecount
 			shapeCount = 0;
+			shapesRejected = 0;
 		});
 		System.out.println("Success!");
 	}
@@ -40,9 +51,19 @@ public class DrawEngine {
 	}
 
 	/**
+	 * Updates the screen coordinates of the {@link DrawEngine}. Must be called
+	 * once per frame for optimal performance.
+	 * 
+	 */
+	public static void updateScreenPosition() {
+		Position screenPosition = game.getScreenPosition();
+		viewport.setLocation(screenPosition.getX(), screenPosition.getY());
+	}
+
+	/**
 	 * Draws a rectangular box on the map using the {@link javabot.JNIBWAPI}
 	 * native methods. Coordinates are relative to the top left corner of the
-	 * map.
+	 * map. The shape is only drawn if it falls inside the current viewport.
 	 * 
 	 * @param left
 	 *            The x coordinate of the left side in pixels.
@@ -62,10 +83,14 @@ public class DrawEngine {
 	 */
 	public static void drawBoxMap(int left, int top, int right, int bottom, Color color, boolean fill)
 			throws ShapeOverflowException {
-		game.drawBoxMap(left, top, right, bottom, color, fill);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException(shapeCount);
+		if (viewport.intersects(left, top, right - left, bottom - top)) {
+			game.drawBoxMap(left, top, right, bottom, color, fill);
+			shapeCount++;
+			if (shapeCount > MAX_SHAPES) {
+				throw new ShapeOverflowException(shapeCount);
+			}
+		} else {
+			shapesRejected++;
 		}
 	}
 
@@ -101,7 +126,8 @@ public class DrawEngine {
 
 	/**
 	 * Draws a circle on the map using the {@link javabot.JNIBWAPI} native
-	 * methods. Coordinates are relative to the top left corner of the map.
+	 * methods. Coordinates are relative to the top left corner of the map. The
+	 * shape is only drawn if it falls inside the current viewport.
 	 * 
 	 * @param x
 	 *            The x coordinate of the center of the circle in pixels.
@@ -119,10 +145,14 @@ public class DrawEngine {
 	 */
 	public static void drawCircleMap(int x, int y, int radius, Color color, boolean fill)
 			throws ShapeOverflowException {
-		game.drawCircleMap(x, y, radius, color, fill);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException(shapeCount);
+		if (viewport.intersects(x, y, 2 * radius, 2 * radius)) {
+			game.drawCircleMap(x, y, radius, color, fill);
+			shapeCount++;
+			if (shapeCount > MAX_SHAPES) {
+				throw new ShapeOverflowException(shapeCount);
+			}
+		} else {
+			shapesRejected++;
 		}
 	}
 
@@ -330,6 +360,7 @@ public class DrawEngine {
 
 	/**
 	 * Draws text on the map using the {@link javabot.JNIBWAPI} native methods.
+	 * The shape is only drawn if it is inside the current viewport.
 	 * 
 	 * @param x
 	 *            The x coordinate to start drawing from in pixels.
@@ -342,15 +373,21 @@ public class DrawEngine {
 	 *             shapes.
 	 */
 	public static void drawTextMap(int x, int y, String message) throws ShapeOverflowException {
-		game.drawTextMap(x, y, message);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException(shapeCount);
+		// TODO find a better bounding box
+		if (viewport.intersects(x, y, 15 * message.length(), 15)) {
+			game.drawTextMap(x, y, message);
+			shapeCount++;
+			if (shapeCount > MAX_SHAPES) {
+				throw new ShapeOverflowException(shapeCount);
+			}
+		} else {
+			shapesRejected++;
 		}
 	}
 
 	/**
 	 * Draws text on the map using the {@link javabot.JNIBWAPI} native methods.
+	 * The shape is only drawn if it is inside the current viewport.
 	 * 
 	 * @param x
 	 *            The x coordinate to start drawing from in pixels.
@@ -363,11 +400,7 @@ public class DrawEngine {
 	 *             shapes.
 	 */
 	public static void drawTextMap(int x, int y, Object message) throws ShapeOverflowException {
-		game.drawTextMap(x, y, message.toString());
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException(shapeCount);
-		}
+		drawTextMap(x, y, message.toString());
 	}
 
 	/**

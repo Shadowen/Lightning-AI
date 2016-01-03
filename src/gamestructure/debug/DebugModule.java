@@ -27,7 +27,7 @@ public class DebugModule {
 	 * When this is true, the DebugModule will paint. When this is false, it
 	 * will not. This is checked in {@link #drawIfActive}.<br>
 	 */
-	private boolean active = false;
+	private boolean active = true;
 	/**
 	 * Commands to be executed if seen. Commands mapped to <b>null</b> will be
 	 * executed if there are no commands following the name of the debug module.
