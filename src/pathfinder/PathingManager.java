@@ -54,7 +54,10 @@ public final class PathingManager {
 				walkableNodes.get(wx).add(new Node(wx, wy));
 			}
 		}
+		final long startTime = System.currentTimeMillis();
 		refreshWalkableMap();
+		final long endTime = System.currentTimeMillis();
+		System.out.println("Total execution time: " + (endTime - startTime) + "ms");
 
 		registerDebugFunctions();
 
@@ -68,45 +71,32 @@ public final class PathingManager {
 	}
 
 	public static void refreshWalkableMap() {
-		// Avoid terrain
-		for (int wx = 0; wx < 200; wx++) {
-			for (int wy = mapWalkHeight - 150; wy < mapWalkHeight; wy++) {
-				walkableNodes.get(wx).get(wy).clearance = getTrueClearance(wx, wy);
+		// Infinity-norm
+		for (int d = Math.max(mapWalkHeight, mapWalkWidth) - 1; d >= 0; d--) {
+			// Right to left across the bottom: (wx, d)
+			for (int wx = d; wx >= 0; wx--) {
+				walkableNodes.get(wx).get(d).clearance = getTrueClearance(wx, d);
 			}
-			System.out.println("Refreshing map... " + (double) wx / mapWalkWidth + "%");
+			// Up the right side: (d, wy)
+			for (int wy = d - 1; wy >= 0; wy--) {
+				walkableNodes.get(d).get(wy).clearance = getTrueClearance(d, wy);
+			}
 		}
-		// // Avoid buildings
-		// for (Unit u : GameHandler.getAllUnits()) {
-		// UnitType utype = u.getType();
-		// if (utype.isBuilding() && !utype.isFlyingBuilding()) {
-		// int uwidth = utype.tileWidth();
-		// int uheight = utype.tileHeight();
-		// int tx = u.getTilePosition().getX();
-		// int ty = u.getTilePosition().getY();
-		// for (int wx = tx * 4; wx < (ty + uwidth) * 4; wx++) {
-		// for (int wy = tx * 4; wy < (ty + uheight) * 4; wy++) {
-		// walkableNodes.get(wx).get(wy).walkable = false;
-		// }
-		// }
-		// }
-		// }
 	}
 
 	/**
 	 * Finds the true clearance for a certain walk tile
 	 **/
 	private static int getTrueClearance(int wx, int wy) {
-		int d = 0;
-		for (; d < Math.min(mapWalkWidth - wx, mapWalkWidth - wy); d++) {
-			for (int dx = 0; dx < d; dx++) {
-				for (int dy = 0; dy < d; dy++) {
-					if (!GameHandler.isWalkable(wx + dx, wy + dy)) {
-						return d - 1;
-					}
-				}
-			}
+		// Current tile is not walkable
+		if (!GameHandler.isWalkable(wx, wy)) {
+			return 0;
 		}
-		return d;
+		int bottomLeft = wy + 1 < mapWalkHeight ? walkableNodes.get(wx).get(wy + 1).clearance : 0;
+		int topRight = wx + 1 < mapWalkWidth ? walkableNodes.get(wx + 1).get(wy).clearance : 0;
+		int bottomRight = wy + 1 < mapWalkHeight && wx + 1 < mapWalkWidth
+				? walkableNodes.get(wx + 1).get(wy + 1).clearance : 0;
+		return Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1;
 	}
 
 	public static void findChokeToMain() throws NoPathFoundException {
@@ -350,8 +340,9 @@ public final class PathingManager {
 		// Clearance values
 		DebugManager.createDebugModule("clearance").setDraw(() -> {
 			try {
-				for (int wx = 0; wx < 100; wx++) {
-					for (int wy = mapWalkHeight - 100; wy < mapWalkHeight; wy++) {
+				// Show clearance values
+				for (int wx = 0; wx < mapWalkWidth; wx++) {
+					for (int wy = 0; wy < mapWalkHeight; wy++) {
 						Node n = walkableNodes.get(wx).get(wy);
 						if (n.clearance == 0) {
 							DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8, Color.Red, true);
@@ -364,28 +355,30 @@ public final class PathingManager {
 						}
 					}
 				}
-
-				GameHandler.getSelectedUnits().stream().forEach(u -> {
-					try {
-						try {
-							Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
-									GameHandler.getMousePositionOnMap(), u.getType());
-							for (Position w : path) {
-								DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2,
-										Color.Cyan, false);
-							}
-						} catch (NoPathFoundException e) {
-							for (Node w : latestClosedSet) {
-								DrawEngine.drawBoxMap(w.x * 8, w.y * 8, w.x * 8 + 8, w.y * 8 + 8, Color.Red, false);
-							}
-						}
-					} catch (ShapeOverflowException s) {
-						System.out.println("Shape overflow!");
-					}
-				});
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		});
+		DebugManager.createDebugModule("pathing").setDraw(() -> {
+			// Projected paths
+			GameHandler.getSelectedUnits().stream().forEach(u -> {
+				try {
+					try {
+						Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
+								GameHandler.getMousePositionOnMap(), u.getType());
+						for (Position w : path) {
+							DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2, Color.Cyan,
+									false);
+						}
+					} catch (NoPathFoundException e) {
+						for (Node w : latestClosedSet) {
+							DrawEngine.drawBoxMap(w.x * 8, w.y * 8, w.x * 8 + 8, w.y * 8 + 8, Color.Red, false);
+						}
+					}
+				} catch (ShapeOverflowException s) {
+					System.out.println("Shape overflow!");
+				}
+			});
 		});
 
 		DebugModule chokeDM = DebugManager.createDebugModule("choke");
