@@ -353,8 +353,6 @@ public final class PathingManager {
 				for (int wx = 0; wx < 100; wx++) {
 					for (int wy = mapWalkHeight - 100; wy < mapWalkHeight; wy++) {
 						Node n = walkableNodes.get(wx).get(wy);
-						// DrawEngine.drawTextMap(n.x * 8, n.y * 8,
-						// String.valueOf(n.clearance));
 						if (n.clearance == 0) {
 							DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8, Color.Red, true);
 						} else if (n.clearance == 1) {
@@ -367,11 +365,11 @@ public final class PathingManager {
 					}
 				}
 
-				GameHandler.getAllUnits().stream().filter(u -> u.getType() == UnitType.Zerg_Ultralisk).forEach(u -> {
+				GameHandler.getSelectedUnits().stream().forEach(u -> {
 					try {
 						try {
 							Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
-									new Position(1158, 4038), u.getType());
+									GameHandler.getMousePositionOnMap(), u.getType());
 							for (Position w : path) {
 								DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2,
 										Color.Cyan, false);

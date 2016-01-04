@@ -13,6 +13,7 @@ import datastructure.BuildingPlan;
 import bwapi.Bullet;
 import bwapi.Game;
 import bwapi.Player;
+import bwapi.Position;
 import bwapi.Region;
 import bwapi.TechType;
 import bwapi.TilePosition;
@@ -32,7 +33,7 @@ public final class GameHandler {
 
 		myUnitsHash = -1;
 		enemyUnitsHash = -1;
-		
+
 		System.out.println("Success!");
 	}
 
@@ -382,5 +383,15 @@ public final class GameHandler {
 
 	public static void sendText(String message) {
 		game.sendText(message);
+	}
+
+	public static List<Unit> getSelectedUnits() {
+		return game.getSelectedUnits();
+	}
+
+	public static Position getMousePositionOnMap() {
+		Position sp = game.getScreenPosition();
+		Position mp = game.getMousePosition();
+		return new Position(sp.getX() + mp.getX(), sp.getY() + mp.getY());
 	}
 }
