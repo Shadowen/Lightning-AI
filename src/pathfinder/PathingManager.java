@@ -54,16 +54,12 @@ public final class PathingManager {
 				walkableNodes.get(wx).add(new Node(wx, wy));
 			}
 		}
-		final long startTime = System.currentTimeMillis();
 		refreshWalkableMap();
-		final long endTime = System.currentTimeMillis();
-		System.out.println("Total execution time: " + (endTime - startTime) + "ms");
 
 		registerDebugFunctions();
 
 		// findChokeToMain();
 		System.out.println("Success!");
-
 	}
 
 	/** This constructor should never be used. */
@@ -71,13 +67,14 @@ public final class PathingManager {
 	}
 
 	public static void refreshWalkableMap() {
-		// Infinity-norm
+		// Evaluate nodes in reverse infinity-norm distance order
 		for (int d = Math.max(mapWalkHeight, mapWalkWidth) - 1; d >= 0; d--) {
+			// Need to expand diagonally back towards the origin
 			// Right to left across the bottom: (wx, d)
 			for (int wx = d; wx >= 0; wx--) {
 				walkableNodes.get(wx).get(d).clearance = getTrueClearance(wx, d);
 			}
-			// Up the right side: (d, wy)
+			// Bottom to top up the right side: (d, wy)
 			for (int wy = d - 1; wy >= 0; wy--) {
 				walkableNodes.get(d).get(wy).clearance = getTrueClearance(d, wy);
 			}
@@ -92,6 +89,8 @@ public final class PathingManager {
 		if (!GameHandler.isWalkable(wx, wy)) {
 			return 0;
 		}
+		// True clearance is one larger than the minimum of the three true
+		// clearances below, to the right, and below-right
 		int bottomLeft = wy + 1 < mapWalkHeight ? walkableNodes.get(wx).get(wy + 1).clearance : 0;
 		int topRight = wx + 1 < mapWalkWidth ? walkableNodes.get(wx + 1).get(wy).clearance : 0;
 		int bottomRight = wy + 1 < mapWalkHeight && wx + 1 < mapWalkWidth
@@ -99,62 +98,13 @@ public final class PathingManager {
 		return Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1;
 	}
 
-	public static void findChokeToMain() throws NoPathFoundException {
-		Chokepoint choke = BWTA.getNearestChokepoint(BaseManager.main.getLocation().getTilePosition());
-		// Find the path into the main
-		pathIntoMain = findGroundPath(choke.getCenter(), BaseManager.main.getLocation().getPosition(),
-				UnitType.Zerg_Zergling);
-
-		// Find top of ramp
-		for (Position p : pathIntoMain) {
-			if (GameHandler.isBuildable(p.getX() / 32, p.getY() / 32, false)) {
-				topOfRamp = new WalkPosition(p.getX() / 8, p.getY() / 8);
-				break;
-			}
-		}
-
-		// Mark entire ramp
-		chokeRampWalkTiles = new ArrayList<WalkPosition>();
-		Queue<WalkPosition> rampWalkTileOpenSet = new PriorityQueue<>(1, new Comparator<WalkPosition>() {
-			@Override
-			public int compare(WalkPosition p1, WalkPosition p2) {
-				WalkPosition topOfRampWalkTile = new WalkPosition(topOfRamp.getX() / 8, topOfRamp.getY() / 8);
-				return (int) (p1.getApproxDistance(topOfRampWalkTile) - p2.getApproxDistance(topOfRampWalkTile));
-			}
-		});
-		rampWalkTileOpenSet.add(new WalkPosition(choke.getCenter().getX() / 8, choke.getCenter().getY() / 8));
-		while (!rampWalkTileOpenSet.isEmpty()) {
-			WalkPosition currentNode = rampWalkTileOpenSet.poll();
-			if (GameHandler.isWalkable(currentNode)
-					&& !GameHandler.isBuildable(currentNode.getX() / 4, currentNode.getY() / 4, false)) {
-				chokeRampWalkTiles.add(new WalkPosition(currentNode.getX(), currentNode.getY()));
-				WalkPosition nextNode;
-				nextNode = new WalkPosition(currentNode.getX() - 1, currentNode.getY());
-				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-				nextNode = new WalkPosition(currentNode.getX() + 1, currentNode.getY());
-				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-				nextNode = new WalkPosition(currentNode.getX(), currentNode.getY() - 1);
-				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-				nextNode = new WalkPosition(currentNode.getX(), currentNode.getY() + 1);
-				if (!chokeRampWalkTiles.contains(nextNode) && !rampWalkTileOpenSet.contains(nextNode)) {
-					rampWalkTileOpenSet.add(nextNode);
-				}
-			}
-
-			// Safety to prevent the whole map from being interpreted as
-			// a ramp
-			if (chokeRampWalkTiles.size() >= MAX_RAMP_WALK_TILES) {
-				break;
-			}
-		}
-	}
-
+	/**
+	 * Check if a {@link UnitType} fits into a given clearance
+	 * 
+	 * @param type
+	 * @param clearance
+	 * @return <b>true</b> if the unit does not fit, <b>false</b> otherwise.
+	 */
 	private static boolean unitDoesNotFit(UnitType type, int clearance) {
 		// Unit size is in pixels, clearance is is walk-tiles
 		// TODO use pixels to allow units to walk between buildings?
@@ -392,35 +342,5 @@ public final class PathingManager {
 				i++;
 			}
 		});
-		// Draw the path from the choke point into the main
-		// chokeDM.addSubmodule("path").setDraw(
-		// () -> {
-		// for (WalkPosition location : pathIntoMain) {
-		// DrawEngine.drawBoxMap(location.getX() + 1,
-		// location.getY() + 1, location.getX() + 6,
-		// location.getY() + 6, Color.Grey, false);
-		// }
-		// DrawEngine.drawBoxMap(topOfRamp.getX() + 1,
-		// topOfRamp.getY() + 1, topOfRamp.getX() + 6,
-		// topOfRamp.getY() + 6, Color.Red, false);
-		// });
-		// Highlight the tiles of the main ramp
-		// chokeDM.addSubmodule("ramp").setDraw(
-		// () -> {
-		// for (WalkPosition location : chokeRampWalkTiles) {
-		// DrawEngine.drawBoxMap(location.getX() * 8,
-		// location.getY() * 8, location.getX() * 8 + 8,
-		// location.getY() * 8 + 8, Color.Green, false);
-		// }
-		// });
-		// DebugManager.createDebugModule("walkable").setDraw(() -> {
-		// for (int wx = 0; wx < mapWalkWidth; wx++) {
-		// for (int wy = 0; wy < mapWalkHeight; wy++) {
-		// Node n = walkableNodes.get(wx).get(wy);
-		// DrawEngine.drawXMap(n.x * 8, n.y * 8, n.walkable ? Color.Green :
-		// Color.Red);
-		// }
-		// }
-		// });
 	}
 }
