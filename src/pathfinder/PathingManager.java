@@ -27,19 +27,9 @@ import bwta.Chokepoint;
 import datastructure.BaseManager;
 
 public final class PathingManager {
-	private static final int MAX_RAMP_WALK_TILES = 500;
-
 	private static ArrayList<ArrayList<Node>> walkableNodes;
 	private static int mapWalkWidth;
 	private static int mapWalkHeight;
-
-	// A list of tiles detailing a path into the main from the choke
-	private static Queue<Position> pathIntoMain = new ArrayDeque<>();
-	private static WalkPosition topOfRamp;
-	private static List<WalkPosition> chokeRampWalkTiles = new ArrayList<>();;
-
-	// TODO
-	private static Set<Node> latestClosedSet;
 
 	public static void init() {
 		System.out.print("Starting PathingManager... ");
@@ -173,8 +163,6 @@ public final class PathingManager {
 				}
 			}
 		}
-
-		latestClosedSet = closedSet;
 		throw new NoPathFoundException();
 	}
 
@@ -284,54 +272,45 @@ public final class PathingManager {
 	}
 
 	public static void registerDebugFunctions() {
-		// // Clearance values
-		// DebugManager.createDebugModule("clearance").setDraw(() -> {
-		// try {
-		// // Show clearance values
-		// for (int wx = 0; wx < mapWalkWidth; wx++) {
-		// for (int wy = 0; wy < mapWalkHeight; wy++) {
-		// Node n = walkableNodes.get(wx).get(wy);
-		// if (n.clearance == 0) {
-		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
-		// Color.Red, true);
-		// } else if (n.clearance == 1) {
-		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
-		// Color.Orange, true);
-		// } else if (n.clearance == 2) {
-		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
-		// Color.Yellow, true);
-		// } else if (n.clearance == 3) {
-		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
-		// Color.Green, true);
-		// }
-		// }
-		// }
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// }
-		// });
-		// DebugManager.createDebugModule("pathing").setDraw(() -> {
-		// // Projected paths
-		// GameHandler.getSelectedUnits().stream().forEach(u -> {
-		// try {
-		// try {
-		// Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
-		// GameHandler.getMousePositionOnMap(), u.getType());
-		// for (Position w : path) {
-		// DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2,
-		// w.getY() + 2, Color.Cyan,
-		// false);
-		// }
-		// } catch (NoPathFoundException e) {
-		// for (Node w : latestClosedSet) {
-		// DrawEngine.drawBoxMap(w.x * 8, w.y * 8, w.x * 8 + 8, w.y * 8 + 8,
-		// Color.Red, false);
-		// }
-		// }
-		// } catch (ShapeOverflowException s) {
-		// System.out.println("Shape overflow!");
-		// }
-		// });
-		// });
+		// Clearance values
+		DebugManager.createDebugModule("clearance").setDraw(() -> {
+			try {
+				// Show clearance values
+				for (int wx = 0; wx < mapWalkWidth; wx++) {
+					for (int wy = 0; wy < mapWalkHeight; wy++) {
+						Node n = walkableNodes.get(wx).get(wy);
+						if (n.clearance == 0) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
+						} else if (n.clearance == 1) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Orange, true);
+						} else if (n.clearance == 2) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Yellow, true);
+						} else if (n.clearance == 3) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Green, true);
+						}
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+		DebugManager.createDebugModule("pathing").setDraw(() -> {
+			// Projected paths
+			GameHandler.getSelectedUnits().stream().forEach(u -> {
+				try {
+					try {
+						Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
+								GameHandler.getMousePositionOnMap(), u.getType());
+						for (Position w : path) {
+							DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2, Color.Cyan,
+									false);
+						}
+					} catch (NoPathFoundException e) {
+					}
+				} catch (ShapeOverflowException s) {
+					System.out.println("Shape overflow!");
+				}
+			});
+		});
 	}
 }
