@@ -31,9 +31,6 @@ public final class GameHandler {
 		// allow me to manually control units during the game
 		game.enableFlag(1);
 
-		myUnitsHash = -1;
-		enemyUnitsHash = -1;
-
 		System.out.println("Success!");
 	}
 
@@ -160,45 +157,20 @@ public final class GameHandler {
 	}
 
 	/**
-	 * A cache keeping track of my units. Recomputed every time allUnits
-	 * changes.
-	 */
-	private static Set<Unit> myUnits;
-	/** The hash code of allUnits at the time myUnits was last computed. */
-	private static int myUnitsHash;
-
-	/**
-	 * Get the set of units owned by me. Caches myUnits internally and
-	 * recomputes if allUnits has changed since the last invocation.
+	 * Get a list of all units owned by me.
 	 * 
 	 * @return my units
 	 */
-	public static Set<Unit> getMyUnits() {
-		final List<Unit> allUnits = game.getAllUnits();
-		final int hashCode = allUnits.hashCode();
-		if (hashCode != myUnitsHash) {
-			myUnits = allUnits.stream().filter(u -> u.getPlayer() == getSelfPlayer()).collect(Collectors.toSet());
-			myUnitsHash = hashCode;
-		}
-		return myUnits;
+	public static List<Unit> getMyUnits() {
+		return game.self().getUnits();
 	}
 
 	public static List<Unit> getNeutralUnits() {
 		return game.getNeutralUnits();
 	}
 
-	private static List<Unit> enemyUnitsList;
-	private static int enemyUnitsHash;
-
 	public static List<Unit> getEnemyUnits() {
-		final List<Unit> allUnits = game.getAllUnits();
-		final int hashCode = allUnits.hashCode();
-		if (enemyUnitsHash != hashCode) {
-			enemyUnitsList = allUnits.stream().filter(u -> u.getPlayer() == getEnemyPlayer())
-					.collect(Collectors.toList());
-			enemyUnitsHash = hashCode;
-		}
-		return enemyUnitsList;
+		return game.enemies().stream().flatMap(p -> p.getUnits().stream()).collect(Collectors.toList());
 	}
 
 	public List<Unit> getMinerals() {
