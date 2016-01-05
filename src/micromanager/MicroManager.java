@@ -67,6 +67,8 @@ public final class MicroManager {
 		registerDebugFunctions();
 		System.out.println("Wraith range: " + UnitType.Terran_Wraith.groundWeapon().maxRange());
 		System.out.println("Wraith size: " + UnitType.Terran_Wraith.width() + ", " + UnitType.Terran_Wraith.height());
+		System.out.println("Mutalisk range: " + UnitType.Zerg_Mutalisk.groundWeapon().maxRange());
+		System.out.println("Mutalisk size: " + UnitType.Zerg_Mutalisk.width() + ", " + UnitType.Zerg_Mutalisk.height());
 		System.out.println("Marine range: " + UnitType.Terran_Marine.airWeapon().maxRange());
 		System.out.println("Marine: " + UnitType.Terran_Marine.width() + ", " + UnitType.Terran_Marine.height());
 		System.out.println("Success!");
@@ -84,7 +86,7 @@ public final class MicroManager {
 		if (!scoutingTarget.isPresent()
 				|| GameHandler.isVisible(scoutingTarget.get().getX() / 32, scoutingTarget.get().getY() / 32)) {
 			// GameHandler.sendText("Looking for new scouting target");
-			// scoutingTarget = getScoutingTarget(); TODO
+			// scoutingTarget = getScoutingTarget(); // TODO
 		}
 		if (scoutingUnit.isPresent() && scoutingTarget.isPresent()) {
 			// Acquire a target if necessary
@@ -153,10 +155,9 @@ public final class MicroManager {
 
 	private static void micro() {
 		for (UnitAgent ua : unitsByType.get(UnitType.Terran_Wraith)) {
-			Unit u = ua.unit;
-			int x = (int) (u.getX() + u.getVelocityX());
-			int y = (int) (u.getY() + u.getVelocityY());
-			Position predictedPosition = new Position(x, y);
+			final Unit u = ua.unit;
+			final Position predictedPosition = new Position((int) (u.getX() + u.getVelocityX()),
+					(int) (u.getY() + u.getVelocityY()));
 
 			switch (ua.task) {
 			case IDLE:
@@ -180,7 +181,11 @@ public final class MicroManager {
 						.findFirst().ifPresent(e -> {
 							ua.target = e;
 							u.move(e.getPosition());
-							if (predictedPosition.getDistance(e.getPosition()) <= 205) {
+							// 205 for Wraith
+							final int unitSize = Math.min(u.getType().width(), u.getType().height());
+							final int range = u.getType().groundWeapon().maxRange();
+							final int enemySize = Math.min(e.getType().width(), e.getType().height());
+							if (predictedPosition.getDistance(e.getPosition()) <= unitSize + range + enemySize / 2) {
 								System.out.println(GameHandler.getFrameCount() + ":" + "Firing initiated: "
 										+ predictedPosition.getDistance(ua.target.getPosition()));
 								ua.task = UnitTask.FIRING;
@@ -188,8 +193,6 @@ public final class MicroManager {
 						});
 				break;
 			case FIRING:
-				// System.out.println("Firing @ " +
-				// GameHandler.getFrameCount());
 				u.attack(new PositionOrUnit(ua.target));
 				System.out.println(GameHandler.getFrameCount() + ":" + "Firing at: "
 						+ predictedPosition.getDistance(ua.target.getPosition()));
@@ -205,12 +208,13 @@ public final class MicroManager {
 				// System.out.println(GameHandler.getFrameCount() + ":" +
 				// "Retreat begun at "
 				// + u.getPosition().getDistance(ua.target.getPosition()));
-				int dx = 10 * (ua.unit.getX() - ua.target.getX());
-				int dy = 10 * (ua.unit.getY() - ua.target.getY()) + 500;
+				final int dx = 10 * (ua.unit.getX() - ua.target.getX());
+				final int dy = 10 * (ua.unit.getY() - ua.target.getY()) + 500;
 				ua.unit.move(new Position(ua.unit.getX() + dx, ua.unit.getY() + dy));
 				ua.timeout--;
 				// Go safe when threshold is reached
-				if (ua.timeout <= 0 && u.getGroundWeaponCooldown() <= 0) {
+				if (ua.timeout <= 0
+						&& u.getGroundWeaponCooldown() <= u.getType().groundWeapon().damageCooldown() * 1 / 3) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
