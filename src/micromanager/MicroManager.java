@@ -1,17 +1,21 @@
 package micromanager;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
+import com.sun.javafx.geom.Shape;
+
 import bwapi.Color;
+import bwapi.Game;
 import bwapi.Position;
+import bwapi.PositionOrUnit;
 import bwapi.Unit;
 import bwapi.UnitType;
-import bwapi.WalkPosition;
 import datastructure.Base;
 import datastructure.BaseManager;
 import datastructure.Worker;
@@ -23,7 +27,9 @@ import pathfinder.NoPathFoundException;
 import pathfinder.PathingManager;
 
 public final class MicroManager {
+	/** The width of the map in build tiles */
 	private static int mapWidth;
+	/** The height of the map in build tiles */
 	private static int mapHeight;
 	private static double[][] targetMap;
 	private static double[][] threatMap;
@@ -59,6 +65,10 @@ public final class MicroManager {
 		scoutingUnit = Optional.empty();
 
 		registerDebugFunctions();
+		System.out.println("Wraith range: " + UnitType.Terran_Wraith.groundWeapon().maxRange());
+		System.out.println("Wraith size: " + UnitType.Terran_Wraith.width() + ", " + UnitType.Terran_Wraith.height());
+		System.out.println("Marine range: " + UnitType.Terran_Marine.airWeapon().maxRange());
+		System.out.println("Marine: " + UnitType.Terran_Marine.width() + ", " + UnitType.Terran_Marine.height());
 		System.out.println("Success!");
 	}
 
@@ -104,6 +114,7 @@ public final class MicroManager {
 			if (unitType.isWorker()) {
 				targetValue = 1;
 			}
+			/** Attack range in build tiles */
 			int radius = 10;
 			int startX = Math.max(x - radius, 0);
 			int endX = Math.min(x + radius, mapWidth);
@@ -117,8 +128,8 @@ public final class MicroManager {
 			}
 
 			// Update threat map
-			double threatValue = 1;
-			radius = u.getType().airWeapon().maxRange() / 32;
+			double threatValue = 20;
+			radius = u.getType().airWeapon().maxRange() / 32 + 10;
 			startX = Math.max(x - radius, 0);
 			endX = Math.min(x + radius, mapWidth);
 			for (int cx = startX; cx < endX; cx++) {
@@ -126,7 +137,7 @@ public final class MicroManager {
 				int startY = Math.max(y - remainingRadius, 0);
 				int endY = Math.min(y + remainingRadius, mapHeight);
 				for (int cy = startY; cy < endY; cy++) {
-					threatMap[cx][cy] += threatValue * Math.max(radius - Point.distance(x, y, cx, cy), 0);
+					threatMap[cx][cy] += threatValue * Math.max(1 - Point.distance(x, y, cx, cy) / radius, 0);
 				}
 			}
 		}
@@ -143,8 +154,10 @@ public final class MicroManager {
 	private static void micro() {
 		for (UnitAgent ua : unitsByType.get(UnitType.Terran_Wraith)) {
 			Unit u = ua.unit;
-			int x = u.getX();
-			int y = u.getY();
+			int x = (int) (u.getX() + u.getVelocityX());
+			int y = (int) (u.getY() + u.getVelocityY());
+			Position predictedPosition = new Position(x, y);
+
 			switch (ua.task) {
 			case IDLE:
 				ua.task = UnitTask.SCOUTING;
@@ -155,36 +168,49 @@ public final class MicroManager {
 					scout(ua, scoutingTarget.get());
 				}
 				// Go aggro when threshold is reached
-				if (unitsByType.get(UnitType.Terran_Wraith).size() > 5) {
+				if (unitsByType.get(UnitType.Terran_Wraith).size() > 0) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
 			case ATTACK_RUN:
 				GameHandler.getEnemyUnits().stream()
-						.sorted((u1, u2) -> u2.getPosition().getApproxDistance(u.getPosition())
-								- u1.getPosition().getApproxDistance(u.getPosition()))
+						.sorted((u1,
+								u2) -> (int) (u1.getPosition().getDistance(u.getPosition())
+										- u2.getPosition().getDistance(u.getPosition())) * 1000)
 						.findFirst().ifPresent(e -> {
+							ua.target = e;
 							u.move(e.getPosition());
-							if (u.getPosition().getApproxDistance(e.getPosition()) < u.getType().groundWeapon()
-									.maxRange()) {
+							if (predictedPosition.getDistance(e.getPosition()) <= 205) {
+								System.out.println(GameHandler.getFrameCount() + ":" + "Firing initiated: "
+										+ predictedPosition.getDistance(ua.target.getPosition()));
 								ua.task = UnitTask.FIRING;
-								ua.timeout = 100;
 							}
 						});
 				break;
 			case FIRING:
-				ua.timeout--;
-				if (ua.timeout <= 0) {
-					ua.task = UnitTask.RETREATING;
-				}
+				// System.out.println("Firing @ " +
+				// GameHandler.getFrameCount());
+				u.attack(new PositionOrUnit(ua.target));
+				System.out.println(GameHandler.getFrameCount() + ":" + "Firing at: "
+						+ predictedPosition.getDistance(ua.target.getPosition()));
+				ua.task = UnitTask.RETREATING;
+				ua.timeout = 3;
 				break;
 			case RETREATING:
-				u.move(new Position(x + movementMap[x / 32][y / 32].x, y + movementMap[x / 32][y / 32].y));
+				// System.out.println("Retreating @ " +
+				// GameHandler.getFrameCount());
+				// ua.path = PathingManager.findSafeAirPath(u.getX(), u.getY(),
+				// threatMap, 20);
+				// ua.followPath();
+				// System.out.println(GameHandler.getFrameCount() + ":" +
+				// "Retreat begun at "
+				// + u.getPosition().getDistance(ua.target.getPosition()));
+				int dx = 10 * (ua.unit.getX() - ua.target.getX());
+				int dy = 10 * (ua.unit.getY() - ua.target.getY()) + 500;
+				ua.unit.move(new Position(ua.unit.getX() + dx, ua.unit.getY() + dy));
+				ua.timeout--;
 				// Go safe when threshold is reached
-				if (unitsByType.get(UnitType.Terran_Wraith).size() < 3) {
-					ua.task = UnitTask.SCOUTING;
-				}
-				if (u.getGroundWeaponCooldown() <= 0) {
+				if (ua.timeout <= 0 && u.getGroundWeaponCooldown() <= 0) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
@@ -199,40 +225,14 @@ public final class MicroManager {
 		try {
 			if (ua.path.size() < 15) {
 				// Path planned is short
-				if (ua.unit.getType().isFlyer()) {
-					ua.path = PathingManager.findSafeAirPath(ua.unit.getX(), ua.unit.getY(), target.getX(),
-							target.getY(), threatMap, 256);
-				} else {
-					ua.path = PathingManager.findGroundPath(ua.unit.getX(), ua.unit.getY(), target.getX(),
-							target.getY(), ua.unit.getType(), 256);
-				}
+				ua.path = PathingManager.findGroundPath(ua.unit.getX(), ua.unit.getY(), target.getX(), target.getY(),
+						ua.unit.getType(), 256);
 				if (ua.path.size() == 0) {
 					System.out.println("Pathfinder failed to find a path...");
 				}
 			}
 
-			Position moveTarget;
-			double distanceToCheckPoint;
-			while (true) {
-				moveTarget = ua.path.element();
-				distanceToCheckPoint = ua.unit.getPosition()
-						.getApproxDistance(new Position(moveTarget.getX(), moveTarget.getY()));
-
-				if (distanceToCheckPoint > 128) {
-					// Recalculate a path
-					ua.path.clear();
-					return;
-				} else if (distanceToCheckPoint > 64) {
-					// Keep following existing path
-					break;
-				} else {
-					// Checkpoint
-					ua.path.remove();
-				}
-			}
-
-			// Issue a movement command
-			ua.unit.move(moveTarget);
+			ua.followPath();
 		} catch (NoPathFoundException e) {
 			GameHandler.sendText("Failed to find a ground path!");
 		}
@@ -277,10 +277,10 @@ public final class MicroManager {
 
 	public static void unitDestroyed(Unit unit) {
 		UnitAgent ua = unitAgents.get(unit);
-		unitsByType.get(unit.getType()).remove(ua);
-		if (scoutingUnit.filter(su -> su.equals(unit)).isPresent()) {
-			scoutingUnit = Optional.empty();
-		}
+		// unitsByType.get(unit.getType()).remove(ua);
+		// if (scoutingUnit.filter(su -> su.equals(unit)).isPresent()) {
+		// scoutingUnit = Optional.empty();
+		// }
 	}
 
 	public static void registerDebugFunctions() {
@@ -289,17 +289,34 @@ public final class MicroManager {
 				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), ua.task);
 			}
 		});
+		// Enemy units
+		DebugManager.createDebugModule("enemies").setDraw(() -> {
+			for (Unit e : GameHandler.getEnemyUnits()) {
+				DrawEngine.drawCircleMap(e.getX(), e.getY(), 3, Color.Red, true);
+			}
+		});
 		// // Threat map
 		// DebugManager.createDebugModule("threats").setDraw(() -> {
 		// // Actually draw
-		// for (int x = 1; x < mapWidth; x++) {
-		// for (int y = 1; y < mapHeight; y++) {
-		// DrawEngine.drawCircleMap(x * 32, y * 32,
-		// (int) Math.round(threatMap[x][y]), Color.Red,
-		// false);
+		// final double scalingFactor = 1;
+		// for (int x = 0; x < mapWidth; x++) {
+		// for (int y = 0; y < mapHeight; y++) {
+		// DrawEngine.drawBoxMap(x * 32 + 16, y * 32 + 16,
+		// x * 32 + 16 + (int) (threatMap[x][y] * scalingFactor),
+		// y * 32 + 16 + (int) (threatMap[x][y] * scalingFactor), Color.Red,
+		// true);
 		// }
 		// }
 		// });
+		// Wraith firing range
+		DebugManager.createDebugModule("wraithrange").setDraw(() -> {
+			for (UnitAgent a : unitsByType.get(UnitType.Terran_Wraith)) {
+				DrawEngine.drawCircleMap(a.unit.getX(), a.unit.getY(), 180, Color.Orange, false);
+				if (a.target != null) {
+					DrawEngine.drawLineMap(a.unit.getX(), a.unit.getY(), a.target.getX(), a.target.getY(), Color.Red);
+				}
+			}
+		});
 		// // Movement map
 		// DebugManager.createDebugModule("movement").setDraw(
 		// () -> {

@@ -1,20 +1,21 @@
 package pathfinder;
 
 public class Node {
-	int x;
-	int y;
+	int wx;
+	int wy;
+	public int distanceFromStart;
 	public double costFromStart;
 	public double predictedTotalCost;
 	public Node parent;
 	public int clearance;
 
 	public Node(int ix, int iy) {
-		x = ix;
-		y = iy;
+		wx = ix;
+		wy = iy;
 		clearance = 0;
 	}
 
 	public String toString() {
-		return "(" + x + ", " + y + ")";
+		return "(" + wx + ", " + wy + ")";
 	}
 }
