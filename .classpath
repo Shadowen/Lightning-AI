@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="lib" path="lib/bwmirror_v2_3.jar" sourcepath="C:/Users/wesley/git/BWMirror"/>
+	<classpathentry kind="lib" path="C:/Users/wesley/workspace/Lightning-AI/lib/bwmirror_v2_4.jar" sourcepath="C:/Users/wesley/git/BWMirror"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
