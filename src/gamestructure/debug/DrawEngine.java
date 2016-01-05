@@ -145,7 +145,7 @@ public class DrawEngine {
 	 */
 	public static void drawCircleMap(int x, int y, int radius, Color color, boolean fill)
 			throws ShapeOverflowException {
-		if (viewport.intersects(x, y, 2 * radius, 2 * radius)) {
+		if (viewport.intersects(x - radius, y - radius, 2 * radius, 2 * radius)) {
 			game.drawCircleMap(x, y, radius, color, fill);
 			shapeCount++;
 			if (shapeCount > MAX_SHAPES) {
