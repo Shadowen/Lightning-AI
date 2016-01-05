@@ -186,16 +186,19 @@ public final class MicroManager {
 							final int range = u.getType().groundWeapon().maxRange();
 							final int enemySize = Math.min(e.getType().width(), e.getType().height());
 							if (predictedPosition.getDistance(e.getPosition()) <= unitSize + range + enemySize / 2) {
-								System.out.println(GameHandler.getFrameCount() + ":" + "Firing initiated: "
-										+ predictedPosition.getDistance(ua.target.getPosition()));
+								// System.out.println(GameHandler.getFrameCount()
+								// + ":" + "Firing initiated: "
+								// +
+								// predictedPosition.getDistance(ua.target.getPosition()));
 								ua.task = UnitTask.FIRING;
 							}
 						});
 				break;
 			case FIRING:
 				u.attack(new PositionOrUnit(ua.target));
-				System.out.println(GameHandler.getFrameCount() + ":" + "Firing at: "
-						+ predictedPosition.getDistance(ua.target.getPosition()));
+				// System.out.println(GameHandler.getFrameCount() + ":" +
+				// "Firing at: "
+				// + predictedPosition.getDistance(ua.target.getPosition()));
 				ua.task = UnitTask.RETREATING;
 				ua.timeout = 3;
 				break;

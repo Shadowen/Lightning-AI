@@ -2,6 +2,8 @@ package gamestructure.debug;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.Iterator;
+import java.util.Queue;
 
 import bwapi.Color;
 import bwapi.Game;
@@ -478,5 +480,15 @@ public class DrawEngine {
 	public static void drawXMap(int x, int y, Color colour) throws ShapeOverflowException {
 		drawLineMap(x - 10, y - 10, x + 10, y + 10, colour);
 		drawLineMap(x + 10, y - 10, x - 10, y + 10, colour);
+	}
+
+	public static void drawPath(Queue<Position> path) throws ShapeOverflowException {
+		final Iterator<Position> it = path.iterator();
+		Position previous = it.hasNext() ? it.next() : null;
+		while (it.hasNext()) {
+			final Position current = it.next();
+			drawArrowMap(previous.getX(), previous.getY(), current.getX(), current.getY(), Color.Yellow);
+			previous = current;
+		}
 	}
 }

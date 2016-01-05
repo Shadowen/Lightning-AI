@@ -70,13 +70,15 @@ public final class PathingManager {
 		// Evaluate nodes in reverse infinity-norm distance order
 		for (int d = Math.max(mapWalkHeight, mapWalkWidth) - 1; d >= 0; d--) {
 			// Need to expand diagonally back towards the origin
+			int width = Math.min(mapWalkWidth - 1, d);
+			int height = Math.min(mapWalkHeight - 1, d);
 			// Right to left across the bottom: (wx, d)
-			for (int wx = d; wx >= 0; wx--) {
-				walkableNodes.get(wx).get(d).clearance = getTrueClearance(wx, d);
+			for (int wx = width; wx >= 0; wx--) {
+				walkableNodes.get(wx).get(height).clearance = getTrueClearance(wx, d);
 			}
 			// Bottom to top up the right side: (d, wy)
-			for (int wy = d - 1; wy >= 0; wy--) {
-				walkableNodes.get(d).get(wy).clearance = getTrueClearance(d, wy);
+			for (int wy = height; wy >= 0; wy--) {
+				walkableNodes.get(width).get(wy).clearance = getTrueClearance(d, wy);
 			}
 		}
 	}
@@ -331,17 +333,5 @@ public final class PathingManager {
 		// }
 		// });
 		// });
-
-		DebugModule chokeDM = DebugManager.createDebugModule("choke");
-		// Label all chokes
-		chokeDM.addSubmodule("draw").setDraw(() -> {
-			int i = 0;
-			for (Chokepoint choke : BWTA.getChokepoints()) {
-				DrawEngine.drawTextMap(choke.getCenter().getX() - 10, choke.getCenter().getY() - 20, "Choke " + i);
-				DrawEngine.drawTextMap(choke.getCenter().getX() - 10, choke.getCenter().getY() - 10,
-						"Radius " + choke.getWidth());
-				i++;
-			}
-		});
 	}
 }

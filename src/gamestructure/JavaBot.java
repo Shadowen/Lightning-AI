@@ -7,11 +7,9 @@ import gamestructure.debug.InvalidCommandException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-
+import Waller.Waller;
 import micromanager.MicroManager;
 import pathfinder.PathingManager;
 import botstate.BotState;
@@ -63,6 +61,7 @@ public class JavaBot implements BWEventListener {
 			MicroManager.init();
 			PathingManager.init();
 			botState = new FirstFrameState();
+			Waller.init();
 
 			// Start all the modules
 			registerDebugFunctions();

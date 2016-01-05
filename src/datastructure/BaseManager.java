@@ -25,6 +25,7 @@ public final class BaseManager {
 	private static Map<Unit, Worker> workers;
 	private static Set<Unit> enemyBuildings;
 	public static Base main;
+	public static Base natural;
 	/**
 	 * The radius the bot looks around a potential base location to determine if
 	 * it is occupied
@@ -59,7 +60,18 @@ public final class BaseManager {
 		}
 		System.out.print("Searching for main... ");
 		// First base is main
-		main = getMyBases().stream().findAny().orElse(null);
+		try {
+			main = getMyBases().stream().findAny().orElseThrow(() -> new NoMainFoundException());
+			natural = bases.values().stream().filter(b -> main != b)
+					.sorted((b1,
+							b2) -> (int) (b1.getLocation().getGroundDistance(main.getLocation())
+									- b2.getLocation().getGroundDistance(main.getLocation())) * 1000)
+					.findFirst().orElseThrow(() -> new NoNaturalFoundException());
+		} catch (NoMainFoundException e) {
+			e.printStackTrace();
+		} catch (NoNaturalFoundException e) {
+			e.printStackTrace();
+		}
 
 		enemyBuildings = new HashSet<>();
 
@@ -218,7 +230,10 @@ public final class BaseManager {
 		DebugModule bases = DebugManager.createDebugModule("bases");
 		bases.addSubmodule("main").setDraw(() -> {
 			if (main != null) {
-				DrawEngine.drawTextMap(main.getX(), main.getY(), "Main");
+				DrawEngine.drawTextMap(main.getX() - 50, main.getY() - 50, "Main");
+			}
+			if (natural != null) {
+				DrawEngine.drawTextMap(natural.getX() - 50, natural.getY() - 50, "Natural");
 			}
 		});
 		bases.addSubmodule("status").setDraw(() -> {
