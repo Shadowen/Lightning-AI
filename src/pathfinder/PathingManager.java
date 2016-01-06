@@ -33,7 +33,7 @@ public final class PathingManager {
 		// Init walkable map
 		walkNodes = new Quadtree<WalkNode>(qtdim);
 		for (int wx = 0; wx < mapWalkWidth; wx++) {
-			for (int wy = 0; wy < mapWalkHeight; wy++) {
+			for (int wy = 0; wy < 8; wy++) {
 				WalkNode wn = new WalkNode(wx * 8, wy * 8, 8);
 				// TODO actual clearance calculation
 				if (!GameHandler.isWalkable(wx, wy)) {
@@ -44,6 +44,7 @@ public final class PathingManager {
 				walkNodes.insert(wn);
 			}
 		}
+		compressMap();
 		// refreshWalkableMap();
 
 		registerDebugFunctions();
@@ -56,7 +57,24 @@ public final class PathingManager {
 	private PathingManager() {
 	}
 
-	public static void refreshWalkableMap() {
+	private static void compressMap() {
+		System.out.println("Before compression, QTNodes: " + walkNodes.stream().count());
+		walkNodes.recurseFromLeaves((node, childResults) -> {
+			if (childResults.size() == 0) {
+				return node.objects.stream().mapToInt(o -> o.clearance).min().getAsInt();
+			}
+			int sum = childResults.stream().mapToInt(r -> (int) r).sum();
+			if (sum == 0 || sum == 1) {
+				node.merge((a, b) -> {
+					return b;
+				});
+			}
+			return 1;
+		});
+		System.out.println("After compression, QTNodes: " + walkNodes.stream().count());
+	}
+
+	public static void refreshClearanceMap() {
 		// Evaluate nodes in reverse infinity-norm distance order
 		for (int d = Math.max(mapWalkHeight, mapWalkWidth) - 1; d >= 0; d--) {
 			// Need to expand diagonally back towards the origin
@@ -370,15 +388,14 @@ public final class PathingManager {
 			// }
 			// }
 			// });
-			// walkNodes.stream().forEach(w -> {
-			// Color c = w.clearance > 0 ? Color.Green : Color.Red;
-			// try {
-			// DrawEngine.drawBoxMap(w.x + 1, w.y + 1, w.x + w.width - 1, w.y +
-			// w.height - 1, c, true);
-			// } catch (Exception e) {
-			// e.printStackTrace();
-			// }
-			// });
+			walkNodes.stream().forEach(w -> {
+				Color c = w.clearance > 0 ? Color.Green : Color.Red;
+				try {
+					DrawEngine.drawBoxMap(w.x + 1, w.y + 1, w.x + w.width - 1, w.y + w.height - 1, c, true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
 		}).setActive(true);
 	}
 }

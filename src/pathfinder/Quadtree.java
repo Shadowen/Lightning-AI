@@ -6,10 +6,13 @@ import java.awt.Shape;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,20 +24,16 @@ import java.util.stream.Stream;
  *            The type of element the Quadtree is to store.
  */
 public class Quadtree<T extends Shape> {
-	/** Stores the {@link QTElement} corresponding to each item stored. */
-	private Map<T, QTElement<T>> elements;
-
 	/** Root level of the Quadtree. */
 	private QTNode<T> root;
 	/**
 	 * Shapes that were inserted into the quadtree that are out of bounds of the
 	 * root level.
 	 */
-	private Set<QTElement<T>> outOfBounds;
+	private Set<T> outOfBounds;
 
 	/** Create a new Quadtree. It has no elements initially. */
 	public Quadtree(int w) {
-		elements = new HashMap<>();
 		root = new QTNode<>(new Rectangle(0, 0, w, w));
 		outOfBounds = new HashSet<>();
 	}
@@ -53,9 +52,9 @@ public class Quadtree<T extends Shape> {
 		root = new QTNode<T>(newBounds);
 
 		// Add all the shapes to the new root
-		Iterator<QTElement<T>> it = outOfBounds.iterator();
+		Iterator<T> it = outOfBounds.iterator();
 		while (it.hasNext()) {
-			QTElement<T> s = it.next();
+			T s = it.next();
 			if (root.insert(s)) {
 				it.remove();
 			}
@@ -70,10 +69,8 @@ public class Quadtree<T extends Shape> {
 	 *            the shape to be added
 	 */
 	public void insert(T t) {
-		QTElement<T> e = new QTElement<T>(t);
-		elements.put(t, e);
-		if (!root.insert(e)) {
-			outOfBounds.add(e);
+		if (!root.insert(t)) {
+			outOfBounds.add(t);
 		}
 	}
 
@@ -85,11 +82,10 @@ public class Quadtree<T extends Shape> {
 	 * @return <b>true</b> if the element was succesfully removed
 	 */
 	public boolean remove(T t) {
-		QTElement<T> e = elements.get(t);
-		if (outOfBounds.remove(e)) {
+		if (outOfBounds.remove(t)) {
 			return true;
 		}
-		return root.remove(e);
+		return root.remove(t);
 	}
 
 	/**
@@ -100,6 +96,16 @@ public class Quadtree<T extends Shape> {
 	 */
 	public void processNodes(Consumer<QTNode<T>> consumer) {
 		root.processNodes(consumer);
+	}
+
+	/**
+	 * Recurse from the leaves back to the root.
+	 * 
+	 * @param function
+	 *            the function that processes the nodes
+	 */
+	public <R> R recurseFromLeaves(BiFunction<QTNode<T>, List<R>, R> function) {
+		return root.recurseFromLeaves(function);
 	}
 
 	/**
@@ -117,7 +123,7 @@ public class Quadtree<T extends Shape> {
 	 * @return an {@link Optional} containing the element
 	 */
 	public Optional<T> getAt(Point point) {
-		return root.getAt(point).map(e -> e.payload);
+		return root.getAt(point);
 	}
 
 	public Set<T> getDownAndRight() {
@@ -128,12 +134,10 @@ public class Quadtree<T extends Shape> {
 	public Set<T> getNeighbors(T currentElement) {
 		Set<T> toReturn = new HashSet<T>();
 		// TODO
-		toReturn.addAll(elements.get(currentElement).containingNode.parent.objects.stream().map(o -> o.payload)
-				.collect(Collectors.toList()));
 		return toReturn;
 	}
 
 	public Stream<T> stream() {
-		return root.stream().map(e -> e.payload);
+		return root.stream();
 	}
 }

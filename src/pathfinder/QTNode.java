@@ -3,10 +3,16 @@ package pathfinder;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Shape;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 /**
@@ -35,7 +41,7 @@ public class QTNode<T extends Shape> {
 	/** The number of levels above this node to the root. */
 	private final int depth;
 	/** Objects contained at the leaf level of the Quadtree */
-	public Set<QTElement<T>> objects;
+	public Set<T> objects;
 	public Rectangle bounds;
 	public QTNode<T> parent;
 	public Set<QTNode<T>> nodes;
@@ -84,7 +90,7 @@ public class QTNode<T extends Shape> {
 		nodes.add(new QTNode<T>(this, new Rectangle(x, y + subHeight, subWidth, subHeight), depth + 1));
 
 		// Reinsert all shapes into children
-		for (QTElement<T> o : objects) {
+		for (T o : objects) {
 			insert(o);
 		}
 		objects.clear();
@@ -99,27 +105,22 @@ public class QTNode<T extends Shape> {
 	 *         <b>false</b> if the insertion failed because the object does not
 	 *         belong in this level of the quad tree.
 	 */
-	public boolean insert(QTElement<T> e) {
+	public boolean insert(T t) {
 		// Does the shape fit into this level?
-		if (!bounds.intersects(e.getBounds())) {
+		if (!bounds.intersects(t.getBounds())) {
 			return false;
-		}
-
-		// Is this shape contained by this level?
-		if (bounds.contains(e.getBounds())) {
-			e.containingNode = this;
 		}
 
 		// No split, add to existing children
 		if (!nodes.isEmpty()) {
 			for (QTNode<T> st : nodes) {
-				st.insert(e);
+				st.insert(t);
 			}
 			return true;
 		}
 
 		// Add to current node (leaf)
-		objects.add(e);
+		objects.add(t);
 		// Split
 		if (objects.size() > MAX_OBJECTS && depth < MAX_DEPTH) {
 			split();
@@ -128,16 +129,16 @@ public class QTNode<T extends Shape> {
 		return true;
 	}
 
-	public boolean remove(QTElement<T> e) {
+	public boolean remove(T t) {
 		// Does the shape fit into this level?
-		if (!e.getBounds().intersects(bounds)) {
+		if (!t.getBounds().intersects(bounds)) {
 			return false;
 		}
 
 		// Find it
 		if (!nodes.isEmpty()) {
 			for (QTNode<T> st : nodes) {
-				st.remove(e);
+				st.remove(t);
 			}
 			// Merge
 			if (objects.size() < MIN_OBJECTS) {
@@ -146,15 +147,27 @@ public class QTNode<T extends Shape> {
 			return true;
 		}
 
-		objects.remove(e);
+		objects.remove(t);
 		return true;
 	}
 
-	private void merge() {
-		for (QTNode<T> n : nodes) {
-			objects.addAll(n.objects);
+	/**
+	 * Merge the children of this node, performing the given reduction operation
+	 * on the objects found.
+	 * 
+	 * @param collector
+	 */
+	public void merge(Collector<? super QTNode<T>, ?, ?> collector) {
+		if (collector != null) {
+			for (QTNode<T> n : nodes) {
+				nodes.stream().collect(collector);
+			}
 		}
 		nodes.clear();
+	}
+
+	public void merge() {
+		merge(null);
 	}
 
 	/**
@@ -195,11 +208,26 @@ public class QTNode<T extends Shape> {
 		}
 	}
 
+	/**
+	 * Applies a consumer to the tree from leaves to root. Each node
+	 * additionally accepts a list of its children's results.
+	 * 
+	 * @param function
+	 *            the function to apply
+	 */
+	public <R> R recurseFromLeaves(BiFunction<QTNode<T>, List<R>, R> function) {
+		List<R> results = new ArrayList<>(4);
+		for (QTNode<T> node : nodes) {
+			results.add(node.recurseFromLeaves(function));
+		}
+		return function.apply(this, results);
+	}
+
 	public Rectangle getBounds() {
 		return (Rectangle) bounds.clone();
 	}
 
-	public Optional<QTElement<T>> getAt(Point point) {
+	public Optional<T> getAt(Point point) {
 		// Does the shape fit into this level?
 		if (!bounds.contains(point)) {
 			return Optional.empty();
@@ -207,12 +235,12 @@ public class QTNode<T extends Shape> {
 
 		// Find it
 		for (QTNode<T> st : nodes) {
-			Optional<QTElement<T>> sto = st.getAt(point);
+			Optional<T> sto = st.getAt(point);
 			if (sto.isPresent()) {
 				return sto;
 			}
 		}
-		for (QTElement<T> e : objects) {
+		for (T e : objects) {
 			if (e.contains(point)) {
 				return Optional.of(e);
 			}
@@ -221,7 +249,7 @@ public class QTNode<T extends Shape> {
 		return Optional.empty();
 	}
 
-	public Stream<QTElement<T>> stream() {
+	public Stream<T> stream() {
 		return Stream.concat(objects.stream(), nodes.stream().flatMap(n -> n.stream()));
 	}
 }
