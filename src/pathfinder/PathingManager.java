@@ -2,36 +2,25 @@ package pathfinder;
 
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
-import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.ShapeOverflowException;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.TilePosition;
-import bwapi.Unit;
 import bwapi.UnitType;
-import bwapi.WalkPosition;
-import bwta.BWTA;
-import bwta.Chokepoint;
-import datastructure.BaseManager;
 
 public final class PathingManager {
-	private static ArrayList<ArrayList<Node>> walkableNodes;
+	private static Quadtree<WalkNode> walkNodes;
 	private static int mapWalkWidth;
 	private static int mapWalkHeight;
 
@@ -40,15 +29,22 @@ public final class PathingManager {
 		mapWalkWidth = GameHandler.getMapWalkWidth();
 		mapWalkHeight = GameHandler.getMapWalkHeight();
 
+		int qtdim = Math.max(mapWalkWidth * 8, mapWalkHeight * 8);
 		// Init walkable map
-		walkableNodes = new ArrayList<ArrayList<Node>>(mapWalkWidth);
+		walkNodes = new Quadtree<WalkNode>(qtdim);
 		for (int wx = 0; wx < mapWalkWidth; wx++) {
-			walkableNodes.add(new ArrayList<Node>(mapWalkHeight));
 			for (int wy = 0; wy < mapWalkHeight; wy++) {
-				walkableNodes.get(wx).add(new Node(wx, wy));
+				WalkNode wn = new WalkNode(wx * 8, wy * 8, 8);
+				// TODO actual clearance calculation
+				if (!GameHandler.isWalkable(wx, wy)) {
+					wn.clearance = 0;
+				} else {
+					wn.clearance = 1;
+				}
+				walkNodes.insert(wn);
 			}
 		}
-		refreshWalkableMap();
+		// refreshWalkableMap();
 
 		registerDebugFunctions();
 
@@ -68,11 +64,11 @@ public final class PathingManager {
 			int height = Math.min(mapWalkHeight - 1, d);
 			// Right to left across the bottom: (wx, d)
 			for (int wx = width; wx >= 0; wx--) {
-				walkableNodes.get(wx).get(height).clearance = getTrueClearance(wx, d);
+				walkNodes.getAt(new Point(wx, height)).ifPresent(n -> n.clearance = getTrueClearance(n));
 			}
 			// Bottom to top up the right side: (d, wy)
 			for (int wy = height; wy >= 0; wy--) {
-				walkableNodes.get(width).get(wy).clearance = getTrueClearance(d, wy);
+				walkNodes.getAt(new Point(width, wy)).ifPresent(n -> n.clearance = getTrueClearance(n));
 			}
 		}
 	}
@@ -80,18 +76,14 @@ public final class PathingManager {
 	/**
 	 * Finds the true clearance for a certain walk tile
 	 **/
-	private static int getTrueClearance(int wx, int wy) {
+	private static int getTrueClearance(WalkNode node) {
 		// Current tile is not walkable
-		if (!GameHandler.isWalkable(wx, wy)) {
+		if (!GameHandler.isWalkable(node.x, node.y)) {
 			return 0;
 		}
 		// True clearance is one larger than the minimum of the three true
 		// clearances below, to the right, and below-right
-		int bottomLeft = wy + 1 < mapWalkHeight ? walkableNodes.get(wx).get(wy + 1).clearance : 0;
-		int topRight = wx + 1 < mapWalkWidth ? walkableNodes.get(wx + 1).get(wy).clearance : 0;
-		int bottomRight = wy + 1 < mapWalkHeight && wx + 1 < mapWalkWidth
-				? walkableNodes.get(wx + 1).get(wy + 1).clearance : 0;
-		return Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1;
+		return walkNodes.getDownAndRight().stream().mapToInt(n -> n.clearance).min().orElse(0) + 1;
 	}
 
 	/**
@@ -127,23 +119,24 @@ public final class PathingManager {
 		int endWx = (endx - unitType.width() / 2) / 8;
 		int endWy = (endy - unitType.height() / 2) / 8;
 
-		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
+		Queue<WalkNode> openSet = new PriorityQueue<WalkNode>(1, new Comparator<WalkNode>() {
 			@Override
-			public int compare(Node n1, Node n2) {
+			public int compare(WalkNode n1, WalkNode n2) {
 				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
 			}
 		});
-		walkableNodes.get(startWx).get(startWy).parent = null;
-		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
-		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point.distance(startWx, startWy, endWx, endWy);
-		openSet.add(walkableNodes.get(startWx).get(startWy));
-		Set<Node> closedSet = new HashSet<Node>();
+		WalkNode startNode = walkNodes.getAt(new Point(startx, starty)).orElseThrow(() -> new NullPointerException());
+		startNode.parent = null;
+		startNode.costFromStart = 0;
+		startNode.predictedTotalCost = Point.distance(startWx, startWy, endWx, endWy);
+		openSet.add(startNode);
+		Set<WalkNode> closedSet = new HashSet<WalkNode>();
 
 		// Iterate
 		while (openSet.size() > 0) {
-			Node currentNode = openSet.remove();
+			WalkNode currentNode = openSet.remove();
 			// Base case
-			if ((currentNode.wx == endWx && currentNode.wy == endWy) || currentNode.costFromStart > maxLength) {
+			if ((currentNode.x == endWx && currentNode.y == endWy) || currentNode.costFromStart > maxLength) {
 				Deque<Position> path = new ArrayDeque<>();
 				reconstructPath(path, currentNode, unitType);
 				return path;
@@ -151,18 +144,18 @@ public final class PathingManager {
 			// Move the node from the open set to the closed set
 			closedSet.add(currentNode);
 			// Add all neigbors to the open set
-			for (Node neighbor : getNeighbors(currentNode.wx, currentNode.wy)) {
+			for (WalkNode neighbor : walkNodes.getNeighbors(currentNode)) {
 				if (closedSet.contains(neighbor) || unitDoesNotFit(unitType, neighbor.clearance)) {
 					continue;
 				}
 
 				double tentative_g_score = currentNode.costFromStart
-						+ Point.distance(currentNode.wx, currentNode.wy, neighbor.wx, neighbor.wy);
+						+ Point.distance(currentNode.x, currentNode.y, neighbor.x, neighbor.y);
 				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
 					neighbor.parent = currentNode;
 					neighbor.costFromStart = tentative_g_score;
 					neighbor.predictedTotalCost = tentative_g_score
-							+ Point.distance(neighbor.wx, neighbor.wy, endWx, endWy);
+							+ Point.distance(neighbor.x, neighbor.y, endWx, endWy);
 					openSet.add(neighbor);
 				}
 			}
@@ -170,93 +163,60 @@ public final class PathingManager {
 		throw new NoPathFoundException();
 	}
 
-	public static Deque<Position> findSafeAirPath(int startx, int starty, double[][] threatMap, int length) {
-		int startWx = startx / 8;
-		int startWy = starty / 8;
+	// public static Deque<Position> findSafeAirPath(int startx, int starty,
+	// double[][] threatMap, int length) {
+	// int startWx = startx / 8;
+	// int startWy = starty / 8;
+	//
+	// Queue<WalkNode> openSet = new PriorityQueue<WalkNode>(1, new
+	// Comparator<WalkNode>() {
+	// @Override
+	// public int compare(WalkNode n1, WalkNode n2) {
+	// return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) *
+	// 100);
+	// }
+	// });
+	// WalkNode currentNode = walkNodes.get(startWx).get(startWy);
+	// currentNode.parent = null;
+	// currentNode.costFromStart = 0;
+	// currentNode.distanceFromStart = 0;
+	// currentNode.predictedTotalCost = threatMap[startWx / 4][startWy / 4];
+	// openSet.add(currentNode);
+	// Set<WalkNode> closedSet = new HashSet<WalkNode>();
+	//
+	// // Iterate
+	// while (currentNode.distanceFromStart < length) {
+	// currentNode = openSet.remove();
+	// // Move the node from the open set to the closed set
+	// closedSet.add(currentNode);
+	// // Add all neigbors to the open set
+	// for (WalkNode neighbor : currentNode.neighbors) {
+	// if (closedSet.contains(neighbor)) {
+	// continue;
+	// }
+	//
+	// double tentative_g_score = currentNode.costFromStart
+	// + Point.distance(currentNode.wx, currentNode.wy, neighbor.wx,
+	// neighbor.wy);
+	// if (!openSet.contains(neighbor) || tentative_g_score <
+	// neighbor.costFromStart) {
+	// neighbor.parent = currentNode;
+	// neighbor.costFromStart = tentative_g_score;
+	// neighbor.predictedTotalCost = tentative_g_score + threatMap[neighbor.wx /
+	// 4][neighbor.wy / 4];
+	// neighbor.distanceFromStart = currentNode.distanceFromStart + 1;
+	// openSet.add(neighbor);
+	// }
+	// }
+	// }
+	//
+	// Deque<Position> path = new ArrayDeque<>();
+	// reconstructAirPath(path, currentNode);
+	// return path;
+	// }
 
-		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
-			@Override
-			public int compare(Node n1, Node n2) {
-				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
-			}
-		});
-		Node currentNode = walkableNodes.get(startWx).get(startWy);
-		currentNode.parent = null;
-		currentNode.costFromStart = 0;
-		currentNode.distanceFromStart = 0;
-		currentNode.predictedTotalCost = threatMap[startWx / 4][startWy / 4];
-		openSet.add(currentNode);
-		Set<Node> closedSet = new HashSet<Node>();
-
-		// Iterate
-		while (currentNode.distanceFromStart < length) {
-			currentNode = openSet.remove();
-			// Move the node from the open set to the closed set
-			closedSet.add(currentNode);
-			// Add all neigbors to the open set
-			for (Node neighbor : getNeighbors(currentNode.wx, currentNode.wy)) {
-				if (closedSet.contains(neighbor)) {
-					continue;
-				}
-
-				double tentative_g_score = currentNode.costFromStart
-						+ Point.distance(currentNode.wx, currentNode.wy, neighbor.wx, neighbor.wy);
-				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
-					neighbor.parent = currentNode;
-					neighbor.costFromStart = tentative_g_score;
-					neighbor.predictedTotalCost = tentative_g_score + threatMap[neighbor.wx / 4][neighbor.wy / 4];
-					neighbor.distanceFromStart = currentNode.distanceFromStart + 1;
-					openSet.add(neighbor);
-				}
-			}
-		}
-
-		Deque<Position> path = new ArrayDeque<>();
-		reconstructAirPath(path, currentNode);
-		return path;
-	}
-
-	private static List<Node> getNeighbors(int x, int y) {
-		List<Node> neighbors = new ArrayList<Node>();
-
-		// NORTH
-		if (y + 1 < walkableNodes.get(x).size()) {
-			neighbors.add(walkableNodes.get(x).get(y + 1));
-			// NORTH-EAST
-			if (x + 1 < walkableNodes.size()) {
-				neighbors.add(walkableNodes.get(x + 1).get(y + 1));
-			}
-			// NORTH-WEST
-			if (x - 1 >= 0) {
-				neighbors.add(walkableNodes.get(x - 1).get(y + 1));
-			}
-		}
-		// EAST
-		if (x + 1 < walkableNodes.size()) {
-			neighbors.add(walkableNodes.get(x + 1).get(y));
-		}
-		// SOUTH
-		if (y - 1 >= 0) {
-			neighbors.add(walkableNodes.get(x).get(y - 1));
-			// SOUTH-EAST
-			if (x + 1 < walkableNodes.size()) {
-				neighbors.add(walkableNodes.get(x + 1).get(y - 1));
-			}
-			// SOUTH-WEST
-			if (x - 1 >= 0) {
-				neighbors.add(walkableNodes.get(x - 1).get(y - 1));
-			}
-		}
-		// WEST
-		if (x - 1 >= 0) {
-			neighbors.add(walkableNodes.get(x - 1).get(y));
-		}
-
-		return neighbors;
-	}
-
-	private static Deque<Position> reconstructPath(Deque<Position> path, Node finalNode, UnitType unitType) {
-		path.push(new Position(finalNode.wx * 8 + unitType.width() / 2, finalNode.wy * 8 + unitType.height() / 2));
+	private static Deque<Position> reconstructPath(Deque<Position> path, WalkNode finalNode, UnitType unitType) {
+		path.push(new Position(finalNode.x * 8 + unitType.width() / 2, finalNode.y * 8 + unitType.height() / 2));
 
 		// Base case
 		if (finalNode.parent == null) {
@@ -265,39 +225,44 @@ public final class PathingManager {
 		return reconstructPath(path, finalNode.parent, unitType);
 	}
 
-	private static Deque<Position> reconstructAirPath(Deque<Position> path, Node finalNode) {
-		path.push(new Position(finalNode.wx * 8 + 4, finalNode.wy * 8 + 4));
-
-		// Base case
-		if (finalNode.parent == null) {
-			return path;
-		}
-		return reconstructAirPath(path, finalNode.parent);
-	}
+	// private static Deque<Position> reconstructAirPath(Deque<Position> path,
+	// WalkNode finalNode) {
+	// path.push(new Position(finalNode.wx * 8 + 4, finalNode.wy * 8 + 4));
+	//
+	// // Base case
+	// if (finalNode.parent == null) {
+	// return path;
+	// }
+	// return reconstructAirPath(path, finalNode.parent);
+	// }
 
 	public static void registerDebugFunctions() {
-		// Clearance values
-		DebugManager.createDebugModule("clearance").setDraw(() -> {
-			try {
-				// Show clearance values
-				for (int wx = 0; wx < mapWalkWidth; wx++) {
-					for (int wy = 0; wy < mapWalkHeight; wy++) {
-						final Node n = walkableNodes.get(wx).get(wy);
-						if (n.clearance == 0) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
-						} else if (n.clearance == 1) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Orange, true);
-						} else if (n.clearance == 2) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Yellow, true);
-						} else if (n.clearance == 3) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Green, true);
-						}
-					}
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
+		// // Clearance values
+		// DebugManager.createDebugModule("clearance").setDraw(() -> {
+		// try {
+		// // Show clearance values
+		// for (int wx = 0; wx < mapWalkWidth; wx++) {
+		// for (int wy = 0; wy < mapWalkHeight; wy++) {
+		// final WalkNode n = walkNodes.getAt(new Point(wx * 8, wy * 8)).get();
+		// if (n.clearance == 0) {
+		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
+		// Color.Red, true);
+		// } else if (n.clearance == 1) {
+		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
+		// Color.Orange, true);
+		// } else if (n.clearance == 2) {
+		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
+		// Color.Yellow, true);
+		// } else if (n.clearance == 3) {
+		// DrawEngine.drawBoxMap(n.x * 8, n.y * 8, n.x * 8 + 8, n.y * 8 + 8,
+		// Color.Green, true);
+		// }
+		// }
+		// }
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+		// });
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			// Projected paths
 			GameHandler.getSelectedUnits().stream().forEach(u -> {
@@ -327,67 +292,93 @@ public final class PathingManager {
 					e.printStackTrace();
 				}
 			});
+		}).setActive(false);
+		// // Building gaps
+		// DebugManager.createDebugModule("buildinggaps").setDraw(() -> {
+		// GameHandler.getAllUnits().stream().filter(u ->
+		// GameHandler.getSelectedUnits().contains(u))
+		// .filter(u -> u.getType().isBuilding() && !u.isFlying()).forEach(u ->
+		// {
+		// try {
+		// for (Unit b : u.getUnitsInRadius(32).stream().filter(x ->
+		// x.getType().isBuilding() && !u.isFlying())
+		// .collect(Collectors.toList())) {
+		// if (b == u) {
+		// continue;
+		// }
+		// // u and b share an edge
+		// int utx = u.getTilePosition().getX();
+		// int uty = u.getTilePosition().getY();
+		// int btx = b.getTilePosition().getX();
+		// int bty = b.getTilePosition().getY();
+		// UnitType utype = u.getType();
+		// UnitType btype = b.getType();
+		//
+		// // b to the left of u (including diagonals)
+		// if (btx + b.getType().tileWidth() <= utx) {
+		// DrawEngine
+		// .drawTextMap(u.getX() - 20, u.getY() - 10,
+		// "L:" + "("
+		// + ((utype.tileWidth() * 32 / 2 - utype.dimensionLeft()) + ","
+		// + (btype.tileWidth() * 32 / 2 - btype.dimensionRight() - 1))
+		// + ")");
+		// }
+		// // b to the right of u (including diagonals)
+		// else if (btx >= utx + u.getType().tileWidth()) {
+		// DrawEngine
+		// .drawTextMap(u.getX() + 20, u.getY() + 10,
+		// "R:" + "("
+		// + ((utype.tileWidth() * 32 / 2 - utype.dimensionRight() - 1) + ","
+		// + (btype.tileWidth() * 32 / 2 - btype.dimensionLeft()))
+		// + ")");
+		// }
+		// // b atop u
+		// else if (bty + b.getType().tileHeight() <= uty) {
+		// DrawEngine
+		// .drawTextMap(u.getX() - 10, u.getY() - 20,
+		// "T:" + "("
+		// + ((utype.tileHeight() * 32 / 2 - utype.dimensionUp()) + ","
+		// + (btype.tileHeight() * 32 / 2 - btype.dimensionDown() - 1))
+		// + ")");
+		// }
+		// // b below u
+		// else if (bty >= uty + u.getType().tileHeight()) {
+		// DrawEngine
+		// .drawTextMap(u.getX() - 10, u.getY() + 20,
+		// "B:" + "("
+		// + ((utype.tileHeight() * 32 / 2 - utype.dimensionDown() - 1) + ","
+		// + (btype.tileHeight() * 32 / 2 - btype.dimensionUp()))
+		// + ")");
+		// }
+		// }
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+		// });
+		// }).setActive(true);
+		DebugManager.createDebugModule("quadtree").setDraw(() -> {
+			DrawEngine.drawTextScreen(100, 100, "QT Depth: " + walkNodes.getTotalDepth());
+			// walkNodes.processNodes(tree -> {
+			// Rectangle bounds = tree.getBounds();
+			// if (tree.getDepthBelow() < 2) {
+			// try {
+			// DrawEngine.drawBoxMap(bounds.x, bounds.y, bounds.x +
+			// bounds.width, bounds.y + bounds.height,
+			// Color.Grey, false);
+			// } catch (Exception e) {
+			// e.printStackTrace();
+			// }
+			// }
+			// });
+			// walkNodes.stream().forEach(w -> {
+			// Color c = w.clearance > 0 ? Color.Green : Color.Red;
+			// try {
+			// DrawEngine.drawBoxMap(w.x + 1, w.y + 1, w.x + w.width - 1, w.y +
+			// w.height - 1, c, true);
+			// } catch (Exception e) {
+			// e.printStackTrace();
+			// }
+			// });
 		}).setActive(true);
-		// Building gaps
-		DebugManager.createDebugModule("buildinggaps").setDraw(() -> {
-			GameHandler.getAllUnits().stream().filter(u -> GameHandler.getSelectedUnits().contains(u))
-					.filter(u -> u.getType().isBuilding() && !u.isFlying()).forEach(u -> {
-				try {
-					for (Unit b : u.getUnitsInRadius(32).stream().filter(x -> x.getType().isBuilding() && !u.isFlying())
-							.collect(Collectors.toList())) {
-						if (b == u) {
-							continue;
-						}
-						// u and b share an edge
-						int utx = u.getTilePosition().getX();
-						int uty = u.getTilePosition().getY();
-						int btx = b.getTilePosition().getX();
-						int bty = b.getTilePosition().getY();
-						UnitType utype = u.getType();
-						UnitType btype = b.getType();
-
-						// b to the left of u (including diagonals)
-						if (btx + b.getType().tileWidth() <= utx) {
-							DrawEngine
-									.drawTextMap(u.getX() - 20, u.getY() - 10,
-											"L:" + "("
-													+ ((utype.tileWidth() * 32 / 2 - utype.dimensionLeft()) + ","
-															+ (btype.tileWidth() * 32 / 2 - btype.dimensionRight() - 1))
-													+ ")");
-						}
-						// b to the right of u (including diagonals)
-						else if (btx >= utx + u.getType().tileWidth()) {
-							DrawEngine
-									.drawTextMap(u.getX() + 20, u.getY() + 10,
-											"R:" + "("
-													+ ((utype.tileWidth() * 32 / 2 - utype.dimensionRight() - 1) + ","
-															+ (btype.tileWidth() * 32 / 2 - btype.dimensionLeft()))
-													+ ")");
-						}
-						// b atop u
-						else if (bty + b.getType().tileHeight() <= uty) {
-							DrawEngine
-									.drawTextMap(u.getX() - 10, u.getY() - 20,
-											"T:" + "("
-													+ ((utype.tileHeight() * 32 / 2 - utype.dimensionUp()) + ","
-															+ (btype.tileHeight() * 32 / 2 - btype.dimensionDown() - 1))
-													+ ")");
-						}
-						// b below u
-						else if (bty >= uty + u.getType().tileHeight()) {
-							DrawEngine
-									.drawTextMap(u.getX() - 10, u.getY() + 20,
-											"B:" + "("
-													+ ((utype.tileHeight() * 32 / 2 - utype.dimensionDown() - 1) + ","
-															+ (btype.tileHeight() * 32 / 2 - btype.dimensionUp()))
-													+ ")");
-						}
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			});
-		}).setActive(true);
-		;
 	}
 }
