@@ -9,6 +9,7 @@ import gamestructure.debug.ShapeOverflowException;
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
@@ -16,9 +17,12 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import bwapi.Color;
 import bwapi.Position;
+import bwapi.TilePosition;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwapi.WalkPosition;
@@ -106,17 +110,17 @@ public final class PathingManager {
 		return false;
 	}
 
-	public static Queue<Position> findGroundPath(Position start, Position end, UnitType unitType)
+	public static Deque<Position> findGroundPath(Position start, Position end, UnitType unitType)
 			throws NoPathFoundException {
 		return findGroundPath(start.getX(), start.getY(), end.getX(), end.getY(), unitType);
 	}
 
-	public static Queue<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
+	public static Deque<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
 			throws NoPathFoundException {
 		return findGroundPath(startx, starty, endx, endy, unitType, Integer.MAX_VALUE);
 	}
 
-	public static Queue<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType,
+	public static Deque<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType,
 			int maxLength) throws NoPathFoundException {
 		int startWx = (startx - unitType.width() / 2) / 8;
 		int startWy = (starty - unitType.height() / 2) / 8;
@@ -166,7 +170,7 @@ public final class PathingManager {
 		throw new NoPathFoundException();
 	}
 
-	public static Queue<Position> findSafeAirPath(int startx, int starty, double[][] threatMap, int length) {
+	public static Deque<Position> findSafeAirPath(int startx, int starty, double[][] threatMap, int length) {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
 
@@ -278,7 +282,7 @@ public final class PathingManager {
 				// Show clearance values
 				for (int wx = 0; wx < mapWalkWidth; wx++) {
 					for (int wy = 0; wy < mapWalkHeight; wy++) {
-						Node n = walkableNodes.get(wx).get(wy);
+						final Node n = walkableNodes.get(wx).get(wy);
 						if (n.clearance == 0) {
 							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
 						} else if (n.clearance == 1) {
@@ -312,5 +316,78 @@ public final class PathingManager {
 				}
 			});
 		});
+		// Buildings
+		DebugManager.createDebugModule("buildings").setDraw(() -> {
+			GameHandler.getAllUnits().stream().filter(u -> u.getType().isBuilding() && !u.isFlying()).forEach(u -> {
+				try {
+					TilePosition tp = u.getTilePosition();
+					DrawEngine.drawBoxMap(tp.getX() * 32, tp.getY() * 32, tp.getX() * 32 + u.getType().tileWidth() * 32,
+							tp.getY() * 32 + u.getType().tileHeight() * 32, Color.Cyan, false);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+		}).setActive(true);
+		// Building gaps
+		DebugManager.createDebugModule("buildinggaps").setDraw(() -> {
+			GameHandler.getAllUnits().stream().filter(u -> GameHandler.getSelectedUnits().contains(u))
+					.filter(u -> u.getType().isBuilding() && !u.isFlying()).forEach(u -> {
+				try {
+					for (Unit b : u.getUnitsInRadius(32).stream().filter(x -> x.getType().isBuilding() && !u.isFlying())
+							.collect(Collectors.toList())) {
+						if (b == u) {
+							continue;
+						}
+						// u and b share an edge
+						int utx = u.getTilePosition().getX();
+						int uty = u.getTilePosition().getY();
+						int btx = b.getTilePosition().getX();
+						int bty = b.getTilePosition().getY();
+						UnitType utype = u.getType();
+						UnitType btype = b.getType();
+
+						// b to the left of u (including diagonals)
+						if (btx + b.getType().tileWidth() <= utx) {
+							DrawEngine
+									.drawTextMap(u.getX() - 20, u.getY() - 10,
+											"L:" + "("
+													+ ((utype.tileWidth() * 32 / 2 - utype.dimensionLeft()) + ","
+															+ (btype.tileWidth() * 32 / 2 - btype.dimensionRight() - 1))
+													+ ")");
+						}
+						// b to the right of u (including diagonals)
+						else if (btx >= utx + u.getType().tileWidth()) {
+							DrawEngine
+									.drawTextMap(u.getX() + 20, u.getY() + 10,
+											"R:" + "("
+													+ ((utype.tileWidth() * 32 / 2 - utype.dimensionRight() - 1) + ","
+															+ (btype.tileWidth() * 32 / 2 - btype.dimensionLeft()))
+													+ ")");
+						}
+						// b atop u
+						else if (bty + b.getType().tileHeight() <= uty) {
+							DrawEngine
+									.drawTextMap(u.getX() - 10, u.getY() - 20,
+											"T:" + "("
+													+ ((utype.tileHeight() * 32 / 2 - utype.dimensionUp()) + ","
+															+ (btype.tileHeight() * 32 / 2 - btype.dimensionDown() - 1))
+													+ ")");
+						}
+						// b below u
+						else if (bty >= uty + u.getType().tileHeight()) {
+							DrawEngine
+									.drawTextMap(u.getX() - 10, u.getY() + 20,
+											"B:" + "("
+													+ ((utype.tileHeight() * 32 / 2 - utype.dimensionDown() - 1) + ","
+															+ (btype.tileHeight() * 32 / 2 - btype.dimensionUp()))
+													+ ")");
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+		}).setActive(true);
+		;
 	}
 }
