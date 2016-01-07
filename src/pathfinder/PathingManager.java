@@ -27,7 +27,7 @@ import bwta.Chokepoint;
 import datastructure.BaseManager;
 
 public final class PathingManager {
-	private static ArrayList<ArrayList<Node>> walkableNodes;
+	private static Node[][] walkableNodes;
 	private static int mapWalkWidth;
 	private static int mapWalkHeight;
 
@@ -37,11 +37,11 @@ public final class PathingManager {
 		mapWalkHeight = GameHandler.getMapWalkHeight();
 
 		// Init walkable map
-		walkableNodes = new ArrayList<ArrayList<Node>>(mapWalkWidth);
+		walkableNodes = new Node[mapWalkWidth][mapWalkHeight];
 		for (int wx = 0; wx < mapWalkWidth; wx++) {
-			walkableNodes.add(new ArrayList<Node>(mapWalkHeight));
+			walkableNodes[wx] = new Node[mapWalkHeight];
 			for (int wy = 0; wy < mapWalkHeight; wy++) {
-				walkableNodes.get(wx).add(new Node(wx, wy));
+				walkableNodes[wx][wy] = new Node(wx, wy);
 			}
 		}
 		refreshWalkableMap();
@@ -64,11 +64,11 @@ public final class PathingManager {
 			int height = Math.min(mapWalkHeight - 1, d);
 			// Right to left across the bottom: (wx, d)
 			for (int wx = width; wx >= 0; wx--) {
-				walkableNodes.get(wx).get(height).clearance = getTrueClearance(wx, d);
+				walkableNodes[wx][height].clearance = getTrueClearance(wx, d);
 			}
 			// Bottom to top up the right side: (d, wy)
 			for (int wy = height; wy >= 0; wy--) {
-				walkableNodes.get(width).get(wy).clearance = getTrueClearance(d, wy);
+				walkableNodes[width][wy].clearance = getTrueClearance(d, wy);
 			}
 		}
 	}
@@ -78,15 +78,15 @@ public final class PathingManager {
 	 **/
 	private static int getTrueClearance(int wx, int wy) {
 		// Current tile is not walkable
-		if (!GameHandler.isWalkable(wx, wy)) {
+		if (!GameHandler.isWalkable(wx, wy)
+				|| GameHandler.getUnitsOnTile(wx / 4, wy / 4).stream().anyMatch(u -> u.getType().isBuilding())) {
 			return 0;
 		}
 		// True clearance is one larger than the minimum of the three true
 		// clearances below, to the right, and below-right
-		int bottomLeft = wy + 1 < mapWalkHeight ? walkableNodes.get(wx).get(wy + 1).clearance : 0;
-		int topRight = wx + 1 < mapWalkWidth ? walkableNodes.get(wx + 1).get(wy).clearance : 0;
-		int bottomRight = wy + 1 < mapWalkHeight && wx + 1 < mapWalkWidth
-				? walkableNodes.get(wx + 1).get(wy + 1).clearance : 0;
+		int bottomLeft = wy + 1 < mapWalkHeight ? walkableNodes[wx][wy + 1].clearance : 0;
+		int topRight = wx + 1 < mapWalkWidth ? walkableNodes[wx + 1][wy].clearance : 0;
+		int bottomRight = wy + 1 < mapWalkHeight && wx + 1 < mapWalkWidth ? walkableNodes[wx + 1][wy + 1].clearance : 0;
 		return Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1;
 	}
 
@@ -129,10 +129,11 @@ public final class PathingManager {
 				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
 			}
 		});
-		walkableNodes.get(startWx).get(startWy).parent = null;
-		walkableNodes.get(startWx).get(startWy).costFromStart = 0;
-		walkableNodes.get(startWx).get(startWy).predictedTotalCost = Point.distance(startWx, startWy, endWx, endWy);
-		openSet.add(walkableNodes.get(startWx).get(startWy));
+		Node startNode = walkableNodes[startWx][startWy];
+		startNode.parent = null;
+		startNode.costFromStart = 0;
+		startNode.predictedTotalCost = Point.distance(startWx, startWy, endWx, endWy);
+		openSet.add(startNode);
 		Set<Node> closedSet = new HashSet<Node>();
 
 		// Iterate
@@ -166,86 +167,91 @@ public final class PathingManager {
 		throw new NoPathFoundException();
 	}
 
-	public static Queue<Position> findSafeAirPath(int startx, int starty, double[][] threatMap, int length) {
-		int startWx = startx / 8;
-		int startWy = starty / 8;
-
-		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
-			@Override
-			public int compare(Node n1, Node n2) {
-				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
-			}
-		});
-		Node currentNode = walkableNodes.get(startWx).get(startWy);
-		currentNode.parent = null;
-		currentNode.costFromStart = 0;
-		currentNode.distanceFromStart = 0;
-		currentNode.predictedTotalCost = threatMap[startWx / 4][startWy / 4];
-		openSet.add(currentNode);
-		Set<Node> closedSet = new HashSet<Node>();
-
-		// Iterate
-		while (currentNode.distanceFromStart < length) {
-			currentNode = openSet.remove();
-			// Move the node from the open set to the closed set
-			closedSet.add(currentNode);
-			// Add all neigbors to the open set
-			for (Node neighbor : getNeighbors(currentNode.wx, currentNode.wy)) {
-				if (closedSet.contains(neighbor)) {
-					continue;
-				}
-
-				double tentative_g_score = currentNode.costFromStart
-						+ Point.distance(currentNode.wx, currentNode.wy, neighbor.wx, neighbor.wy);
-				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
-					neighbor.parent = currentNode;
-					neighbor.costFromStart = tentative_g_score;
-					neighbor.predictedTotalCost = tentative_g_score + threatMap[neighbor.wx / 4][neighbor.wy / 4];
-					neighbor.distanceFromStart = currentNode.distanceFromStart + 1;
-					openSet.add(neighbor);
-				}
-			}
-		}
-
-		Deque<Position> path = new ArrayDeque<>();
-		reconstructAirPath(path, currentNode);
-		return path;
-	}
+	// public static Queue<Position> findSafeAirPath(int startx, int starty,
+	// double[][] threatMap, int length) {
+	// int startWx = startx / 8;
+	// int startWy = starty / 8;
+	//
+	// Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
+	// @Override
+	// public int compare(Node n1, Node n2) {
+	// return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) *
+	// 100);
+	// }
+	// });
+	// Node currentNode = walkableNodes.get(startWx).get(startWy);
+	// currentNode.parent = null;
+	// currentNode.costFromStart = 0;
+	// currentNode.distanceFromStart = 0;
+	// currentNode.predictedTotalCost = threatMap[startWx / 4][startWy / 4];
+	// openSet.add(currentNode);
+	// Set<Node> closedSet = new HashSet<Node>();
+	//
+	// // Iterate
+	// while (currentNode.distanceFromStart < length) {
+	// currentNode = openSet.remove();
+	// // Move the node from the open set to the closed set
+	// closedSet.add(currentNode);
+	// // Add all neigbors to the open set
+	// for (Node neighbor : getNeighbors(currentNode.wx, currentNode.wy)) {
+	// if (closedSet.contains(neighbor)) {
+	// continue;
+	// }
+	//
+	// double tentative_g_score = currentNode.costFromStart
+	// + Point.distance(currentNode.wx, currentNode.wy, neighbor.wx,
+	// neighbor.wy);
+	// if (!openSet.contains(neighbor) || tentative_g_score <
+	// neighbor.costFromStart) {
+	// neighbor.parent = currentNode;
+	// neighbor.costFromStart = tentative_g_score;
+	// neighbor.predictedTotalCost = tentative_g_score + threatMap[neighbor.wx /
+	// 4][neighbor.wy / 4];
+	// neighbor.distanceFromStart = currentNode.distanceFromStart + 1;
+	// openSet.add(neighbor);
+	// }
+	// }
+	// }
+	//
+	// Deque<Position> path = new ArrayDeque<>();
+	// reconstructAirPath(path, currentNode);
+	// return path;
+	// }
 
 	private static List<Node> getNeighbors(int x, int y) {
 		List<Node> neighbors = new ArrayList<Node>();
 
 		// NORTH
-		if (y + 1 < walkableNodes.get(x).size()) {
-			neighbors.add(walkableNodes.get(x).get(y + 1));
+		if (y + 1 < walkableNodes[x].length) {
+			neighbors.add(walkableNodes[x][y + 1]);
 			// NORTH-EAST
-			if (x + 1 < walkableNodes.size()) {
-				neighbors.add(walkableNodes.get(x + 1).get(y + 1));
+			if (x + 1 < walkableNodes.length) {
+				neighbors.add(walkableNodes[x + 1][y + 1]);
 			}
 			// NORTH-WEST
 			if (x - 1 >= 0) {
-				neighbors.add(walkableNodes.get(x - 1).get(y + 1));
+				neighbors.add(walkableNodes[x - 1][y + 1]);
 			}
 		}
 		// EAST
-		if (x + 1 < walkableNodes.size()) {
-			neighbors.add(walkableNodes.get(x + 1).get(y));
+		if (x + 1 < walkableNodes.length) {
+			neighbors.add(walkableNodes[x + 1][y]);
 		}
 		// SOUTH
 		if (y - 1 >= 0) {
-			neighbors.add(walkableNodes.get(x).get(y - 1));
+			neighbors.add(walkableNodes[x][y - 1]);
 			// SOUTH-EAST
-			if (x + 1 < walkableNodes.size()) {
-				neighbors.add(walkableNodes.get(x + 1).get(y - 1));
+			if (x + 1 < walkableNodes.length) {
+				neighbors.add(walkableNodes[x + 1][y - 1]);
 			}
 			// SOUTH-WEST
 			if (x - 1 >= 0) {
-				neighbors.add(walkableNodes.get(x - 1).get(y - 1));
+				neighbors.add(walkableNodes[x - 1][y - 1]);
 			}
 		}
 		// WEST
 		if (x - 1 >= 0) {
-			neighbors.add(walkableNodes.get(x - 1).get(y));
+			neighbors.add(walkableNodes[x - 1][y]);
 		}
 
 		return neighbors;
@@ -278,22 +284,32 @@ public final class PathingManager {
 				// Show clearance values
 				for (int wx = 0; wx < mapWalkWidth; wx++) {
 					for (int wy = 0; wy < mapWalkHeight; wy++) {
-						Node n = walkableNodes.get(wx).get(wy);
+						Node n = walkableNodes[wx][wy];
 						if (n.clearance == 0) {
 							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
-						} else if (n.clearance == 1) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Orange, true);
-						} else if (n.clearance == 2) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Yellow, true);
-						} else if (n.clearance == 3) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Green, true);
 						}
+						// else if (n.clearance == 1) {
+						// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
+						// 8, n.wy * 8 + 8, Color.Orange, true);
+						// } else if (n.clearance == 2) {
+						// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
+						// 8, n.wy * 8 + 8, Color.Yellow, true);
+						// } else if (n.clearance == 3) {
+						// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
+						// 8, n.wy * 8 + 8, Color.Green, true);
+						// }
 					}
+				}
+				Position mousePosition = GameHandler.getMousePositionOnMap();
+				if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() / 8 < mapWalkHeight) {
+					Node thisCell = walkableNodes[mousePosition.getX() / 8][mousePosition.getY() / 8];
+					DrawEngine.drawBoxMap(thisCell.wx * 8, thisCell.wy * 8, (thisCell.wx + thisCell.clearance) * 8,
+							(thisCell.wy + thisCell.clearance) * 8, Color.Yellow, false);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		});
+		}).setActive(true);
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			// Projected paths
 			GameHandler.getSelectedUnits().stream().forEach(u -> {
