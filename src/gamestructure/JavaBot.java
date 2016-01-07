@@ -61,7 +61,7 @@ public class JavaBot implements BWEventListener {
 			MicroManager.init();
 			PathingManager.init();
 			botState = new FirstFrameState();
-			Waller.init();
+			// Waller.init();
 
 			// Start all the modules
 			registerDebugFunctions();

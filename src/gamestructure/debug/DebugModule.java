@@ -15,7 +15,7 @@ import java.util.Map;
  * @author wesley
  *
  */
-public class DebugModule {
+public final class DebugModule {
 	/**
 	 * The name of this DebugModule. It must be and can only be set during
 	 * construction. This is used when parsing commands to the
@@ -27,7 +27,7 @@ public class DebugModule {
 	 * When this is true, the DebugModule will paint. When this is false, it
 	 * will not. This is checked in {@link #drawIfActive}.<br>
 	 */
-	private boolean active = true;
+	private boolean active = false;
 	/**
 	 * Commands to be executed if seen. Commands mapped to <b>null</b> will be
 	 * executed if there are no commands following the name of the debug module.
@@ -71,6 +71,7 @@ public class DebugModule {
 	 */
 	DebugModule(String iname) {
 		name = iname;
+		active = false;
 		commands.put(null, (c) -> active = !active);
 	}
 
@@ -138,13 +139,13 @@ public class DebugModule {
 	 *            The line of commands received. The line is separated by
 	 *            whitespace into the array.
 	 *            <ul>
-	 *            <li><b>command[0]</b> is either the module's name or "all".</li>
+	 *            <li><b>command[0]</b> is either the module's name or "all".
+	 *            </li>
 	 *            </ul>
 	 * @throws InvalidCommandException
 	 *             if the command cannot be parsed
 	 */
-	final void onReceiveCommand(List<String> command)
-			throws InvalidCommandException {
+	final void onReceiveCommand(List<String> command) throws InvalidCommandException {
 		System.out.println(name + " is parsing command..." + command);
 		// All
 		if (command.size() > 1 && command.get(0).equals("all")) {
@@ -162,11 +163,18 @@ public class DebugModule {
 		}
 		// A submodule in my list
 		if (subModules.containsKey(command.get(0))) {
-			subModules.get(command.get(0)).onReceiveCommand(
-					command.subList(1, command.size()));
+			subModules.get(command.get(0)).onReceiveCommand(command.subList(1, command.size()));
 			return;
 		}
 
 		throw new InvalidCommandException(name, command);
+	}
+
+	/**
+	 * 
+	 */
+	public final void setActive(boolean setTo) {
+		// TODO
+		active = setTo;
 	}
 }

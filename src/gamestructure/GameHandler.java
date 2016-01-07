@@ -366,4 +366,9 @@ public final class GameHandler {
 		Position mp = game.getMousePosition();
 		return new Position(sp.getX() + mp.getX(), sp.getY() + mp.getY());
 	}
+
+	public static List<Unit> getAllGroundedBuildings() {
+		return getAllUnits().stream().filter(u -> u.getType().isBuilding() && !u.isFlying())
+				.collect(Collectors.toList());
+	}
 }
