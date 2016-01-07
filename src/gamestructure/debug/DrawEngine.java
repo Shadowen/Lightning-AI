@@ -42,7 +42,7 @@ public class DrawEngine {
 			// Reset the shapecount
 			shapeCount = 0;
 			shapesRejected = 0;
-		});
+		}).setActive(true);
 		System.out.println("Success!");
 	}
 
@@ -187,6 +187,7 @@ public class DrawEngine {
 
 	/**
 	 * Draws a dot on the map using the {@link Game.drawDotMap} native methods.
+	 * The dot is only drawn if it falls inside the current viewport.
 	 * 
 	 * @param x
 	 *            The x coordinate in pixels.
@@ -199,10 +200,14 @@ public class DrawEngine {
 	 *             shapes.
 	 */
 	public static void drawDotMap(int x, int y, Color color) throws ShapeOverflowException {
-		game.drawDotMap(x, y, color);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException(shapeCount);
+		if (viewport.contains(x, y)) {
+			game.drawDotMap(x, y, color);
+			shapeCount++;
+			if (shapeCount > MAX_SHAPES) {
+				throw new ShapeOverflowException(shapeCount);
+			}
+		} else {
+			shapesRejected++;
 		}
 	}
 
@@ -230,7 +235,8 @@ public class DrawEngine {
 
 	/**
 	 * Draws an ellipse on the map using the {@link javabot.JNIBWAPI} native
-	 * methods. Coordinates are relative to the top left corner of the map.
+	 * methods. Coordinates are relative to the top left corner of the map. The
+	 * ellipse is only drawn if it falls inside the current viewport.
 	 * 
 	 * @param x
 	 *            The x coordinate of the center of the ellipse in pixels.
@@ -250,10 +256,14 @@ public class DrawEngine {
 	 */
 	public static void drawEllipseMap(int x, int y, int xrad, int yrad, Color color, boolean fill)
 			throws ShapeOverflowException {
-		game.drawEllipseMap(x, y, xrad, yrad, color, fill);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException(shapeCount);
+		if (viewport.intersects(x - xrad, y - yrad, 2 * xrad, 2 * yrad)) {
+			game.drawEllipseMap(x, y, xrad, yrad, color, fill);
+			shapeCount++;
+			if (shapeCount > MAX_SHAPES) {
+				throw new ShapeOverflowException(shapeCount);
+			}
+		} else {
+			shapesRejected++;
 		}
 	}
 
@@ -288,7 +298,8 @@ public class DrawEngine {
 
 	/**
 	 * Draws a line on the map using the {@link javabot.JNIBWAPI} native
-	 * methods. Coordinates are relative to the top left corner of the map.
+	 * methods. Coordinates are relative to the top left corner of the map. The
+	 * line is only drawn if it falls inside the current viewport.
 	 * 
 	 * @param x1
 	 *            The start x coordinate in pixels.
@@ -305,10 +316,14 @@ public class DrawEngine {
 	 *             shapes.
 	 */
 	public static void drawLineMap(int x1, int y1, int x2, int y2, Color color) throws ShapeOverflowException {
-		game.drawLineMap(x1, y1, x2, y2, color);
-		shapeCount++;
-		if (shapeCount > MAX_SHAPES) {
-			throw new ShapeOverflowException(shapeCount);
+		if (viewport.intersectsLine(x1, y1, x2, y2)) {
+			game.drawLineMap(x1, y1, x2, y2, color);
+			shapeCount++;
+			if (shapeCount > MAX_SHAPES) {
+				throw new ShapeOverflowException(shapeCount);
+			}
+		} else {
+			shapesRejected++;
 		}
 	}
 
@@ -385,24 +400,6 @@ public class DrawEngine {
 		} else {
 			shapesRejected++;
 		}
-	}
-
-	/**
-	 * Draws text on the map using the {@link javabot.JNIBWAPI} native methods.
-	 * The shape is only drawn if it is inside the current viewport.
-	 * 
-	 * @param x
-	 *            The x coordinate to start drawing from in pixels.
-	 * @param y
-	 *            The y coordinate of the bottom of the line of text in pixels.
-	 * @param message
-	 *            The {@link Object} to be displayed.
-	 * @throws ShapeOverflowException
-	 *             Thrown if the {@link DebugManager} tries to draw too many
-	 *             shapes.
-	 */
-	public static void drawTextMap(int x, int y, Object message) throws ShapeOverflowException {
-		drawTextMap(x, y, message.toString());
 	}
 
 	/**

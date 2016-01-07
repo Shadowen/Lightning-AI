@@ -293,7 +293,7 @@ public final class MicroManager {
 	public static void registerDebugFunctions() {
 		DebugManager.createDebugModule("tasks").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
-				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), ua.task);
+				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), ua.task.toString());
 			}
 		});
 		// Enemy units

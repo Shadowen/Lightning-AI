@@ -4,7 +4,6 @@ import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.ShapeOverflowException;
-import utils.Utils;
 
 import java.awt.Point;
 import java.util.ArrayDeque;
@@ -16,6 +15,7 @@ import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 import bwapi.Color;
 import bwapi.Position;
@@ -71,76 +71,59 @@ public final class PathingManager {
 
 		// Buildings
 		for (Unit u : GameHandler.getAllGroundedBuildings()) {
+			UnitType type = u.getType();
+			Position p = u.getPosition();
 			TilePosition tp = u.getTilePosition();
-			for (int wx = tp.getX() * 4; wx < (tp.getX() + u.getType().tileWidth()) * 4; wx++) {
-				for (int wy = tp.getY() * 4; wy < (tp.getY() + u.getType().tileHeight()) * 4; wy++) {
-					WalkNodeData[][] data = new WalkNodeData[8][8];
-					for (int px = 0; px < 8; px++) {
-						data[px] = new WalkNodeData[8];
-						for (int py = 0; py < 8; py++) {
-							data[px][py] = new WalkNodeData(wx * 8 + px, wy * 8 + py, 1);
-							data[px][py].clearance = 0;
-						}
-					}
-					walkableNodes[wx][wy] = new WalkNode1(data);
+			// Interior
+			for (int wx = tp.getX() * 4 + 1; wx < (tp.getX() + u.getType().tileWidth()) * 4 - 1; wx++) {
+				for (int wy = tp.getY() * 4 + 1; wy < (tp.getY() + u.getType().tileHeight()) * 4 - 1; wy++) {
+					walkableNodes[wx][wy].getCell(0, 0).clearance = 0;
 				}
 			}
-			// GameHandler.getAllUnits().stream().filter(u ->
-			// GameHandler.getSelectedUnits().contains(u))
-			// .filter(u -> u.getType().isBuilding() && !u.isFlying()).forEach(u
-			// -> {
-			// for (Unit b : u.getUnitsInRadius(32).stream()
-			// .filter(x -> x.getType().isBuilding() &&
-			// !u.isFlying()).collect(Collectors.toList())) {
-			// if (b == u) {
-			// continue;
-			// }
-			// // u and b share an edge
-			// int utx = u.getTilePosition().getX();
-			// int uty = u.getTilePosition().getY();
-			// int btx = b.getTilePosition().getX();
-			// int bty = b.getTilePosition().getY();
-			// UnitType utype = u.getType();
-			// UnitType btype = b.getType();
-			//
-			// // b to the left of u (including diagonals)
-			// if (btx + b.getType().tileWidth() <= utx) {
-			// DrawEngine.drawTextMap(u.getX() - 20, u.getY() - 10,
-			// "L:" + "("
-			// + ((utype.tileWidth() * 32 / 2 - utype.dimensionLeft()) + ","
-			// + (btype.tileWidth() * 32 / 2 - btype.dimensionRight() - 1))
-			// + ")");
-			// }
-			// // b to the right of u (including diagonals)
-			// else if (btx >= utx + u.getType().tileWidth()) {
-			// DrawEngine
-			// .drawTextMap(u.getX() + 20, u.getY() + 10,
-			// "R:" + "("
-			// + ((utype.tileWidth() * 32 / 2 - utype.dimensionRight() - 1)
-			// + ","
-			// + (btype.tileWidth() * 32 / 2 - btype.dimensionLeft()))
-			// + ")");
-			// }
-			// // b atop u
-			// else if (bty + b.getType().tileHeight() <= uty) {
-			// DrawEngine.drawTextMap(u.getX() - 10, u.getY() - 20,
-			// "T:" + "("
-			// + ((utype.tileHeight() * 32 / 2 - utype.dimensionUp()) + ","
-			// + (btype.tileHeight() * 32 / 2 - btype.dimensionDown() - 1))
-			// + ")");
-			// }
-			// // b below u
-			// else if (bty >= uty + u.getType().tileHeight()) {
-			// DrawEngine
-			// .drawTextMap(u.getX() - 10, u.getY() + 20,
-			// "B:" + "("
-			// + ((utype.tileHeight() * 32 / 2 - utype.dimensionDown() - 1)
-			// + ","
-			// + (btype.tileHeight() * 32 / 2 - btype.dimensionUp()))
-			// + ")");
-			// }
-			// }
+			// Left and Right
+			int leftWx = tp.getX() * 4;
+			int rightWx = (tp.getX() + u.getType().tileWidth()) * 4 - 1;
+			int leftClearance = type.tileWidth() * 32 / 2 - type.dimensionLeft();
+			int rightClearance = type.tileWidth() * 32 / 2 - type.dimensionRight() - 1;
+			for (int wy = tp.getY() * 4; wy < (tp.getY() + u.getType().tileHeight()) * 4; wy++) {
+				// Left
+				for (int wx = leftWx; wx < leftWx + (leftClearance + 7) / 8; wx++) {
+					refineWalkNode(wx, wy, (px, py) -> px < p.getX() - type.dimensionLeft() ? 1 : 0);
+				}
+				// Right
+				for (int wx = rightWx; wx > rightWx - (rightClearance + 7) / 8; wx--) {
+					refineWalkNode(wx, wy, (px, py) -> px > p.getX() + type.dimensionRight() ? 1 : 0);
+				}
+			}
+			// Top and Bottom
+			int topWy = tp.getY() * 4;
+			int bottomWy = (tp.getY() + u.getType().tileHeight()) * 4 - 1;
+			int topClearance = type.tileHeight() * 32 / 2 - type.dimensionUp();
+			int bottomClearance = type.tileHeight() * 32 / 2 - type.dimensionDown() - 1;
+			for (int wx = tp.getX() * 4 + 1; wx < (tp.getX() + u.getType().tileWidth()) * 4 - 1; wx++) {
+				// Top
+				for (int wy = topWy; wy < topWy + (topClearance + 7) / 8; wy++) {
+					refineWalkNode(wx, wy, (px, py) -> py < p.getY() - type.dimensionUp() ? 1 : 0);
+				}
+				// Bottom
+				for (int wy = bottomWy; wy > bottomWy - (bottomClearance + 7) / 8; wy--) {
+					refineWalkNode(wx, wy, (px, py) -> py > p.getY() + type.dimensionDown() ? 1 : 0);
+				}
+			}
 		}
+
+	}
+
+	private static void refineWalkNode(int wx, int wy, BiFunction<Integer, Integer, Integer> checkClear) {
+		WalkNodeData[][] data = new WalkNodeData[8][8];
+		for (int px = 0; px < 8; px++) {
+			data[px] = new WalkNodeData[8];
+			for (int py = 0; py < 8; py++) {
+				data[px][py] = new WalkNodeData(wx * 8 + px, wy * 8 + py, 1);
+				data[px][py].clearance = checkClear.apply(wx * 8 + px, wy * 8 + py);
+			}
+		}
+		walkableNodes[wx][wy] = new WalkNode1(data);
 	}
 
 	/**
@@ -403,6 +386,13 @@ public final class PathingManager {
 				// }
 				// }
 				// }
+				for (int wx = 0; wx < GameHandler.getMapWalkWidth(); wx++) {
+					for (int wy = 0; wy < GameHandler.getMapWalkHeight(); wy++) {
+						if (walkableNodes[wx][wy].getCell(0, 0).size == 1) {
+							DrawEngine.drawBoxMap(wx * 8, wy * 8, wx * 8 + 8, wy * 8 + 8, Color.Grey, false);
+						}
+					}
+				}
 				Position mousePosition = GameHandler.getMousePositionOnMap();
 				if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() / 8 < mapWalkHeight) {
 					WalkNodeData thisCell = walkableNodes[mousePosition.getX() / 8][mousePosition.getY() / 8]
@@ -412,21 +402,11 @@ public final class PathingManager {
 					DrawEngine.drawBoxMap(thisCell.x, thisCell.y, thisCell.x + thisCell.clearance,
 							thisCell.y + thisCell.clearance, Color.Yellow, false);
 					for (WalkNodeData n : getNeighbors(thisCell)) {
-						DrawEngine.drawBoxMap(n.x, n.y, n.x + n.size, n.y + n.size, Color.Red, true);
+						Color c = n.clearance == 0 ? Color.Red : Color.Green;
+						DrawEngine.drawBoxMap(n.x, n.y, n.x + n.size, n.y + n.size, c, true);
 					}
 					DrawEngine.drawTextMap(mousePosition.getX() + 20, mousePosition.getY(),
 							mousePosition.getX() + ", " + mousePosition.getY());
-				}
-				int i = 0;
-				for (int wx = 0; wx < mapWalkWidth; wx++) {
-					for (int wy = 0; wy < mapWalkHeight; wy++) {
-						for (WalkNodeData n : walkableNodes[wx][wy])
-							if (n.size == 1) {
-								DrawEngine.drawDotMap(wx * 8, wy * 8, Color.Purple);
-							}
-						if (i++ > 100)
-							break;
-					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
