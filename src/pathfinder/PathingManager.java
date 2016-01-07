@@ -386,13 +386,18 @@ public final class PathingManager {
 				// }
 				// }
 				// }
-				for (int wx = 0; wx < GameHandler.getMapWalkWidth(); wx++) {
-					for (int wy = 0; wy < GameHandler.getMapWalkHeight(); wy++) {
-						if (walkableNodes[wx][wy].getCell(0, 0).size == 1) {
-							DrawEngine.drawBoxMap(wx * 8, wy * 8, wx * 8 + 8, wy * 8 + 8, Color.Grey, false);
-						}
-					}
-				}
+				// for (int wx = 0; wx < GameHandler.getMapWalkWidth(); wx++) {
+				// for (int wy = 0; wy < GameHandler.getMapWalkHeight(); wy++) {
+				// walkableNodes[wx][wy].forEach(n -> {
+				// Color c = n.clearance == 0 ? Color.Red : Color.Green;
+				// try {
+				// DrawEngine.drawDotMap(n.x, n.y, c);
+				// } catch (Exception e) {
+				// e.printStackTrace();
+				// }
+				// });
+				// }
+				// }
 				Position mousePosition = GameHandler.getMousePositionOnMap();
 				if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() / 8 < mapWalkHeight) {
 					WalkNodeData thisCell = walkableNodes[mousePosition.getX() / 8][mousePosition.getY() / 8]
@@ -402,8 +407,10 @@ public final class PathingManager {
 					DrawEngine.drawBoxMap(thisCell.x, thisCell.y, thisCell.x + thisCell.clearance,
 							thisCell.y + thisCell.clearance, Color.Yellow, false);
 					for (WalkNodeData n : getNeighbors(thisCell)) {
-						Color c = n.clearance == 0 ? Color.Red : Color.Green;
-						DrawEngine.drawBoxMap(n.x, n.y, n.x + n.size, n.y + n.size, c, true);
+						for (WalkNodeData w : walkableNodes[n.x / 8][n.y / 8]) {
+							Color c = w.clearance == 0 ? Color.Red : Color.Green;
+							DrawEngine.drawBoxMap(w.x, w.y, w.x + w.size, w.y + w.size, c, true);
+						}
 					}
 					DrawEngine.drawTextMap(mousePosition.getX() + 20, mousePosition.getY(),
 							mousePosition.getX() + ", " + mousePosition.getY());
