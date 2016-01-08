@@ -3,19 +3,16 @@ package datastructure;
 import bwapi.Position;
 import bwapi.Unit;
 import gamestructure.GameHandler;
+import micromanager.UnitAgent;
+import micromanager.UnitTask;
 
-public class Worker {
-
-	private Unit unit;
-
+public class Worker extends UnitAgent {
 	private Resource currentResource;
-
-	private WorkerTask currentTask;
 	private Base base;
 
 	public Worker(Unit u) {
-		unit = u;
-		currentTask = WorkerTask.TRAINING;
+		super(u);
+		task = UnitTask.IDLE;
 	}
 
 	public boolean isIdle() {
@@ -30,62 +27,46 @@ public class Worker {
 		unit.gather(r.getUnit());
 
 		if (r instanceof MineralResource) {
-			setTask(WorkerTask.MINERALS, r);
+			setTask(UnitTask.MINERALS, r);
 		} else if (r instanceof GasResource) {
-			setTask(WorkerTask.GAS, r);
+			setTask(UnitTask.GAS, r);
 		} else {
 			GameHandler.sendText("Error in gathering");
-			setTask(WorkerTask.SCOUTING, null);
+			setTask(UnitTask.SCOUTING, null);
 		}
 	}
 
 	public void build(BuildingPlan toBuild) {
 		unit.build(toBuild.getType(), toBuild.getTilePosition());
 		toBuild.setBuilder(this);
-		currentTask = WorkerTask.CONSTRUCTING;
+		task = UnitTask.CONSTRUCTING;
 	}
 
-	public WorkerTask getTask() {
-		return currentTask;
+	public UnitTask getTask() {
+		return task;
 	}
 
-	public void setTask(WorkerTask task) {
+	public void setTask(UnitTask task) {
 		setTask(task, null);
 	}
 
-	public void setTask(WorkerTask task, Resource newResource) {
-		currentTask = task;
+	public void setTask(UnitTask task, Resource newResource) {
+		this.task = task;
 
-		if (task == WorkerTask.MINERALS || task == WorkerTask.GAS) {
+		if (task == UnitTask.MINERALS || task == UnitTask.GAS) {
 			if (currentResource != null) {
 				currentResource.removeGatherer();
 			}
 			if (newResource != null) {
 				newResource.addGatherer();
 			}
-		} else if (task == WorkerTask.SCOUTING) {
+		} else if (task == UnitTask.SCOUTING) {
 			if (base != null) {
 				base.removeWorker(this);
 			}
 		}
 
 		currentResource = newResource;
-	}
-
-	public int getX() {
-		return unit.getX();
-	}
-
-	public int getY() {
-		return unit.getY();
-	}
-
-	public int getID() {
-		return unit.getID();
-	}
-
-	public Unit getUnit() {
-		return unit;
 	}
 
 	public void setBase(Base b) {

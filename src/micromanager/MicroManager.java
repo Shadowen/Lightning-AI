@@ -16,7 +16,6 @@ import bwapi.UnitType;
 import datastructure.Base;
 import datastructure.BaseManager;
 import datastructure.Worker;
-import datastructure.WorkerTask;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
@@ -33,7 +32,6 @@ public final class MicroManager {
 	private static Point[][] movementMap;
 
 	private static Optional<Position> scoutingTarget;
-	private static Optional<UnitAgent> scoutingUnit;
 
 	public static Map<UnitType, HashSet<UnitAgent>> unitsByType;
 	private static Map<Unit, UnitAgent> unitAgents;
@@ -59,7 +57,6 @@ public final class MicroManager {
 		unitAgents = new HashMap<Unit, UnitAgent>();
 
 		scoutingTarget = Optional.empty();
-		scoutingUnit = Optional.empty();
 
 		registerDebugFunctions();
 		System.out.println("Wraith range: " + UnitType.Terran_Wraith.groundWeapon().maxRange());
@@ -82,12 +79,15 @@ public final class MicroManager {
 		// Move scouting unit(s)
 		if (!scoutingTarget.isPresent()
 				|| GameHandler.isVisible(scoutingTarget.get().getX() / 32, scoutingTarget.get().getY() / 32)) {
-			// GameHandler.sendText("Looking for new scouting target");
-			// scoutingTarget = getScoutingTarget(); // TODO
+			GameHandler.sendText("Looking for new scouting target");
+			scoutingTarget = getScoutingTarget();
 		}
-		if (scoutingUnit.isPresent() && scoutingTarget.isPresent()) {
+		if (scoutingTarget.isPresent()) {
 			// Acquire a target if necessary
-			scout(scoutingUnit.get(), scoutingTarget.get());
+			for (UnitAgent ua : unitAgents.values().stream().filter(ua -> ua.task == UnitTask.SCOUTING)
+					.collect(Collectors.toList())) {
+				scout(ua);
+			}
 		}
 	}
 
@@ -162,11 +162,9 @@ public final class MicroManager {
 				break;
 			case SCOUTING:
 				// Scout the base...
-				if (scoutingTarget.isPresent()) {
-					scout(ua, scoutingTarget.get());
-				}
+				scout(ua);
 				// Go aggro when threshold is reached
-				if (unitsByType.get(UnitType.Terran_Wraith).size() > 0) {
+				if (unitsByType.get(UnitType.Terran_Wraith).size() > 2) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
@@ -183,31 +181,16 @@ public final class MicroManager {
 							final int enemySize = Math.min(e.getType().width(), e.getType().height());
 							// 205 distance seems good for Wraith
 							if (predictedPosition.getDistance(e.getPosition()) <= unitSize + range + enemySize / 2) {
-								// System.out.println(GameHandler.getFrameCount()
-								// + ":" + "Firing initiated: "
-								// +
-								// predictedPosition.getDistance(ua.target.getPosition()));
 								ua.task = UnitTask.FIRING;
 							}
 						});
 				break;
 			case FIRING:
 				u.attack(new PositionOrUnit(ua.target));
-				// System.out.println(GameHandler.getFrameCount() + ":" +
-				// "Firing at: "
-				// + predictedPosition.getDistance(ua.target.getPosition()));
 				ua.task = UnitTask.RETREATING;
 				ua.timeout = 3;
 				break;
 			case RETREATING:
-				// System.out.println("Retreating @ " +
-				// GameHandler.getFrameCount());
-				// ua.path = PathingManager.findSafeAirPath(u.getX(), u.getY(),
-				// threatMap, 20);
-				// ua.followPath();
-				// System.out.println(GameHandler.getFrameCount() + ":" +
-				// "Retreat begun at "
-				// + u.getPosition().getDistance(ua.target.getPosition()));
 				final int dx = 10 * (ua.unit.getX() - ua.target.getX());
 				final int dy = 10 * (ua.unit.getY() - ua.target.getY());
 				ua.unit.move(new Position(ua.unit.getX() + dx, ua.unit.getY() + dy));
@@ -234,16 +217,14 @@ public final class MicroManager {
 				break;
 			case SCOUTING:
 				// Scout the base...
-				if (scoutingTarget.isPresent()) {
-					scout(ua, scoutingTarget.get());
-				}
+				scout(ua);
 				ua.target = GameHandler.getEnemyUnits().stream()
 						.sorted((u1,
 								u2) -> (int) (u1.getPosition().getDistance(u.getPosition())
 										- u2.getPosition().getDistance(u.getPosition())) * 1000)
 						.findFirst().orElse(null);
 				// Go aggro when threshold is reached
-				if (unitsByType.get(UnitType.Terran_Vulture).size() > 0 && ua.target != null) {
+				if (unitsByType.get(UnitType.Terran_Vulture).size() > 2 && ua.target != null) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
@@ -263,13 +244,18 @@ public final class MicroManager {
 					final Vector fv = Vector.fromAngle(ua.unit.getAngle());
 					final Vector av = new Vector(ua.unit.getPosition(), ua.target.getPosition()).normalize();
 					// Firing angle of 2.5 rad seems to work for vultures
-					if (predictedPosition.getDistance(ua.target.getPosition()) <= unitSize + range + enemySize / 2
+					if (predictedPosition.getDistance(ua.target.getPosition()) <= range + enemySize
 							&& Vector.angleBetween(fv, av) < 2.5) {
 						// TODO remember to check weapon cooldown here too! may
 						// need to switch back to retreating state?
 						ua.task = UnitTask.FIRING;
 					} else {
-						u.move(ua.target.getPosition());
+						try {
+							ua.path = PathingManager.findGroundPath(u, ua.target.getPosition());
+							ua.followPath();
+						} catch (NoPathFoundException e) {
+							System.err.println("No path found for vulture!");
+						}
 						break;
 					}
 				}
@@ -327,15 +313,20 @@ public final class MicroManager {
 		}
 	}
 
-	private static void scout(UnitAgent ua, Position target) {
-		ua.task = UnitTask.SCOUTING;
+	public static UnitAgent getAgentForUnit(Unit u) {
+		return unitAgents.get(u);
+	}
+
+	private static void scout(UnitAgent ua) {
 		try {
 			if (ua.path.size() < 15) {
 				// Path planned is short
-				ua.path = PathingManager.findGroundPath(ua.unit.getX(), ua.unit.getY(), target.getX(), target.getY(),
-						ua.unit.getType(), 256);
+				if (scoutingTarget.isPresent()) {
+					ua.path = PathingManager.findGroundPath(ua.unit.getX(), ua.unit.getY(), scoutingTarget.get().getX(),
+							scoutingTarget.get().getY(), ua.unit.getType(), 256);
+				}
 				if (ua.path.size() == 0) {
-					System.out.println("Pathfinder failed to find a path...");
+					System.out.println("Pathfinder failed to find a scouting path...");
 				}
 			}
 
@@ -363,31 +354,32 @@ public final class MicroManager {
 		return Optional.ofNullable(target).map(t -> t.getLocation().getPosition());
 	}
 
-	public static void setScoutingUnit(Unit unit) {
-		scoutingUnit = Optional.of(unitAgents.get(unit));
-
-		Optional<Worker> ow = BaseManager.getWorker(unit);
-		ow.ifPresent(w -> w.setTask(WorkerTask.SCOUTING, null));
-	}
-
-	public static boolean isScouting() {
-		return scoutingUnit.isPresent();
-	}
-
-	public static void unitConstructed(Unit unit) {
-		UnitType type = unit.getType();
-		UnitAgent ua = new UnitAgent(unit);
-		unitsByType.putIfAbsent(type, new HashSet<UnitAgent>());
-		unitsByType.get(type).add(ua);
-		unitAgents.put(unit, ua);
+	public static void unitCreated(Unit unit) {
+		if (!unitAgents.containsKey(unit)) {
+			UnitType type = unit.getType();
+			UnitAgent ua;
+			// TODO is there a way to clean up this if statement?
+			if (type.isWorker()) {
+				ua = new Worker(unit);
+			} else {
+				ua = new UnitAgent(unit);
+			}
+			unitsByType.putIfAbsent(type, new HashSet<UnitAgent>());
+			unitsByType.get(type).add(ua);
+			unitAgents.put(unit, ua);
+		} else {
+			System.err.println("Duplicated unit found!");
+		}
 	}
 
 	public static void unitDestroyed(Unit unit) {
-		UnitAgent ua = unitAgents.get(unit);
-		// unitsByType.get(unit.getType()).remove(ua);
-		// if (scoutingUnit.filter(su -> su.equals(unit)).isPresent()) {
-		// scoutingUnit = Optional.empty();
-		// }
+		UnitAgent ua = unitAgents.remove(unit);
+		if (ua != null) {
+			HashSet<UnitAgent> typeSet = unitsByType.get(unit.getType());
+			if (typeSet != null) {
+				typeSet.remove(ua);
+			}
+		}
 	}
 
 	public static void registerDebugFunctions() {
@@ -487,9 +479,7 @@ public final class MicroManager {
 		// }
 		// });
 		// Weapon cooldown bars
-		DebugManager.createDebugModule("cooldowns").setDraw(() ->
-
-		{
+		DebugManager.createDebugModule("cooldowns").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
 				Unit u = ua.unit;
 				UnitType unitType = u.getType();
@@ -504,9 +494,7 @@ public final class MicroManager {
 			}
 		}).setActive(true);
 		// Scouting Target
-		DebugManager.createDebugModule("scouting").setDraw(() ->
-
-		{
+		DebugManager.createDebugModule("scouting").setDraw(() -> {
 			if (scoutingTarget.isPresent()) {
 				int x = scoutingTarget.get().getX();
 				int y = scoutingTarget.get().getY();
@@ -515,9 +503,7 @@ public final class MicroManager {
 			}
 		});
 		// Pathing
-		DebugManager.createDebugModule("pathing").setDraw(() ->
-
-		{
+		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
 				final Iterator<Position> it = ua.path.iterator();
 				Position previous = it.hasNext() ? it.next() : null;
@@ -526,6 +512,44 @@ public final class MicroManager {
 					DrawEngine.drawArrowMap(previous.getX(), previous.getY(), current.getX(), current.getY(),
 							Color.Yellow);
 					previous = current;
+				}
+			}
+		}).setActive(true);
+		// Tasks
+		DebugManager.createDebugModule("tasks").setDraw(() -> {
+			for (UnitAgent ua : unitAgents.values()) {
+				switch (ua.task) {
+				case CONSTRUCTING:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Construction");
+					break;
+				case GAS:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Gas");
+					DrawEngine.drawLineMap(ua.unit.getX(), ua.unit.getY(), ((Worker) ua).getCurrentResource().getX(),
+							((Worker) ua).getCurrentResource().getY(), Color.Green);
+					break;
+				case MINERALS:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Minerals");
+					DrawEngine.drawLineMap(ua.unit.getX(), ua.unit.getY(), ((Worker) ua).getCurrentResource().getX(),
+							((Worker) ua).getCurrentResource().getY(), Color.Blue);
+					break;
+				case SCOUTING:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Scouting");
+					break;
+				case ATTACK_RUN:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Attack run");
+					break;
+				case FIRING:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Firing");
+					break;
+				case IDLE:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Idle");
+					break;
+				case RETREATING:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Retreating");
+					break;
+				default:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Unknown");
+					break;
 				}
 			}
 		}).setActive(true);

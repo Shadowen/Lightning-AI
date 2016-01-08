@@ -106,6 +106,10 @@ public final class PathingManager {
 		return false;
 	}
 
+	public static Queue<Position> findGroundPath(Unit u, Position end) throws NoPathFoundException {
+		return findGroundPath(u.getX(), u.getY(), end.getX(), end.getY(), u.getType());
+	}
+
 	public static Queue<Position> findGroundPath(Position start, Position end, UnitType unitType)
 			throws NoPathFoundException {
 		return findGroundPath(start.getX(), start.getY(), end.getX(), end.getY(), unitType);

@@ -1,16 +1,14 @@
 package botstate;
 
-import gamestructure.GameHandler;
-
 import java.util.Optional;
 
-import micromanager.MicroManager;
 import bwapi.Unit;
 import bwapi.UnitType;
 import datastructure.BaseManager;
 import datastructure.BuildManager;
 import datastructure.Worker;
-import datastructure.WorkerTask;
+import gamestructure.GameHandler;
+import micromanager.UnitTask;
 
 public class StarportRush extends BotState {
 
@@ -30,39 +28,36 @@ public class StarportRush extends BotState {
 					BuildManager.addToQueue(UnitType.Terran_Supply_Depot);
 				}
 			}
-		} else if (previousSupply < supply) {
-			if (supply > 22) {
+		} else {
+			if (previousSupply < 22 && supply >= 22) {
 				BuildManager.setMinimum(UnitType.Terran_Starport, 2);
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 3);
 				BuildManager.setMinimum(UnitType.Terran_Wraith, 24);
-			} else if (supply > 16) {
+			} else if (previousSupply < 16 && supply >= 16) {
 				BuildManager.setMinimum(UnitType.Terran_Factory, 1);
 				BuildManager.addToQueue(UnitType.Terran_Vulture, 2);
-			} else if (supply > 14) {
+			} else if (previousSupply < 14 && supply >= 14) {
 				BuildManager.setMinimum(UnitType.Terran_Marine, 2);
-				BaseManager.getFreeWorker().ifPresent(w -> MicroManager.setScoutingUnit(w.getUnit()));
-			} else if (supply > 13) {
+			} else if (previousSupply < 13 && supply >= 13) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 2);
-			} else if (supply > 12) {
+			} else if (previousSupply < 12 && supply >= 12) {
 				BuildManager.setMinimum(UnitType.Terran_Refinery, 1);
-			} else if (supply > 11) {
+			} else if (previousSupply < 11 && supply >= 11) {
 				BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
-				if (!MicroManager.isScouting()) {
-					Optional<Worker> w = BaseManager.getFreeWorker();
-					if (!w.isPresent()) {
-						GameHandler.sendText("Can't scout since no workers available!");
-					} else {
-						w.get().setTask(WorkerTask.SCOUTING);
-						MicroManager.setScoutingUnit(w.get().getUnit());
-					}
+				Optional<Worker> w = BaseManager.getFreeWorker();
+				if (!w.isPresent()) {
+					GameHandler.sendText("Can't scout since no workers available!");
+				} else {
+					w.get().setTask(UnitTask.SCOUTING);
 				}
-			} else if (supply > 9) {
+			} else if (previousSupply < 9 && supply >= 9) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
 			}
 		}
 		previousSupply = supply;
 
 		return this;
+
 	}
 
 	@Override

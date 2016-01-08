@@ -1,6 +1,7 @@
 package datastructure;
 
 import gamestructure.GameHandler;
+import micromanager.UnitTask;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -51,10 +52,12 @@ public class Base {
 	public void gatherResources() {
 		// Idle workers
 		for (Worker worker : workers) {
-			WorkerTask currentTask = worker.getTask();
+			UnitTask currentTask = worker.getTask();
 			if (worker.isIdle()) {
-				if (currentTask == WorkerTask.MINERALS
-						|| currentTask == WorkerTask.GAS) {
+				if (currentTask == UnitTask.IDLE) {
+					worker.setTask(UnitTask.MINERALS);
+				}
+				if (currentTask == UnitTask.MINERALS || currentTask == UnitTask.GAS) {
 					// Get back to work
 					if (worker.getCurrentResource() != null) {
 						Resource r = worker.getCurrentResource();
@@ -76,8 +79,7 @@ public class Base {
 						for (MineralResource m : minerals) {
 							if (m.getNumGatherers() < maxMiners) {
 								// Find closest mineral patch
-								double newDistance = Point.distance(
-										worker.getX(), worker.getY(), m.getX(),
+								double newDistance = Point.distance(worker.unit.getX(), worker.unit.getY(), m.getX(),
 										m.getY());
 								if (mineral == null || newDistance < distance) {
 									mineral = m;
@@ -94,8 +96,7 @@ public class Base {
 					// Worker could not be assigned a patch as the base is
 					// supersaturated
 					if (!workerAssigned) {
-						GameHandler
-								.sendText("Warning: Base is supersaturated!");
+						GameHandler.sendText("Warning: Base is supersaturated!");
 					}
 				}
 			}
@@ -104,7 +105,12 @@ public class Base {
 
 	public Worker getFreeWorker() {
 		for (Worker w : workers) {
-			if (w.getTask() == WorkerTask.MINERALS) {
+			if (w.getTask() == UnitTask.IDLE) {
+				return w;
+			}
+		}
+		for (Worker w : workers) {
+			if (w.getTask() == UnitTask.MINERALS) {
 				return w;
 			}
 		}
@@ -118,7 +124,7 @@ public class Base {
 	public int getMineralWorkerCount() {
 		int i = 0;
 		for (Worker w : workers) {
-			if (w.getTask() == WorkerTask.MINERALS) {
+			if (w.getTask() == UnitTask.MINERALS) {
 				i++;
 			}
 		}

@@ -4,9 +4,8 @@ import java.util.Optional;
 
 import datastructure.BaseManager;
 import datastructure.Worker;
-import datastructure.WorkerTask;
 import gamestructure.GameHandler;
-import micromanager.MicroManager;
+import micromanager.UnitTask;
 
 public class FirstFrameState extends BotState {
 	public FirstFrameState() {
@@ -18,15 +17,13 @@ public class FirstFrameState extends BotState {
 	@Override
 	public BotState act() {
 		// TODO get scouting pathing working
-		if (!MicroManager.isScouting()) {
-			Optional<Worker> w = BaseManager.getFreeWorker();
-			if (!w.isPresent()) {
-				GameHandler.sendText("Can't scout since no workers available!");
-			} else {
-				w.get().setTask(WorkerTask.SCOUTING);
-				MicroManager.setScoutingUnit(w.get().getUnit());
-			}
+		Optional<Worker> w = BaseManager.getFreeWorker();
+		if (!w.isPresent()) {
+			GameHandler.sendText("Can't scout since no workers available!");
+		} else {
+			w.get().setTask(UnitTask.SCOUTING);
 		}
+		System.out.println("Sent one worker scouting");
 		return new StarportRush(this);
 	}
 }

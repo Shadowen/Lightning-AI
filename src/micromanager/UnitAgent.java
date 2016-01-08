@@ -44,4 +44,8 @@ public class UnitAgent {
 			unit.move(moveTarget);
 		}
 	}
+
+	public String toString() {
+		return unit.getType() + " @ (" + unit.getX() + ", " + unit.getY() + ")";
+	}
 }

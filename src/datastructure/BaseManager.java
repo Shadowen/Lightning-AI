@@ -4,6 +4,8 @@ import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
+import micromanager.MicroManager;
+import micromanager.UnitTask;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,7 +24,6 @@ import bwta.BaseLocation;
 
 public final class BaseManager {
 	private static Map<BaseLocation, Base> bases;
-	private static Map<Unit, Worker> workers;
 	private static Set<Unit> enemyBuildings;
 	public static Base main;
 	public static Base natural;
@@ -34,7 +35,6 @@ public final class BaseManager {
 
 	public static void init() {
 		System.out.print("Starting BaseManager... ");
-		workers = new HashMap<>();
 		bases = new HashMap<>();
 		// Add bases
 		for (BaseLocation location : BWTA.getBaseLocations()) {
@@ -51,10 +51,8 @@ public final class BaseManager {
 				} else if (type.equals(UnitType.Resource_Vespene_Geyser)) {
 					closestBase.get().gas.add(new GasResource(u));
 				} else if (type.isResourceDepot()) {
-					System.out.println("Found resource depot!");
 					closestBase.get().commandCenter = Optional.of(u);
 					closestBase.get().setPlayer(u.getPlayer());
-					System.out.println("Found a base for Player " + u.getPlayer().getID());
 				}
 			}
 		}
@@ -146,9 +144,7 @@ public final class BaseManager {
 	}
 
 	public static void unitCreated(Unit unit) {
-		if (unit.getType().isWorker() && unit.getPlayer() == GameHandler.getSelfPlayer()) {
-			workers.put(unit, new Worker(unit));
-		} else if (unit.getType().isResourceDepot()) {
+		if (unit.getType().isResourceDepot()) {
 			getClosestBase(unit.getPosition()).ifPresent(b -> {
 				b.commandCenter = Optional.of(unit);
 				b.setPlayer(unit.getPlayer());
@@ -169,12 +165,12 @@ public final class BaseManager {
 		}
 	}
 
-	public static void unitComplete(Unit u) {
+	public static void unitConstructed(Unit u) {
 		if (u.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (u.getType().isWorker()) {
-				Worker w = workers.get(u);
+				Worker w = (Worker) MicroManager.getAgentForUnit(u);
 				getClosestBase(u.getPosition()).ifPresent(b -> b.addWorker(w));
-				w.setTask(WorkerTask.MINERALS, null);
+				w.setTask(UnitTask.MINERALS, null);
 			}
 		}
 	}
@@ -182,10 +178,9 @@ public final class BaseManager {
 	public static void unitDestroyed(Unit unit) {
 		UnitType type = unit.getType();
 		if (type.isWorker()) {
-			Worker w = workers.get(unit);
+			Worker w = (Worker) MicroManager.getAgentForUnit(unit);
 			w.unitDestroyed();
 			w.getBase().removeWorker(w);
-			workers.remove(w);
 		} else if (type.isMineralField()) {
 			for (Base b : bases.values()) {
 				if (b.minerals.remove(unit)) {
@@ -208,10 +203,6 @@ public final class BaseManager {
 
 	public static Collection<Base> getBases() {
 		return bases.values();
-	}
-
-	public static Optional<Worker> getWorker(Unit u) {
-		return Optional.ofNullable(workers.get(u));
 	}
 
 	public static Optional<Resource> getResource(Unit u) {
@@ -297,35 +288,6 @@ public final class BaseManager {
 				// Miner counts
 				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 15, "Mineral Miners: " + b.getMineralWorkerCount());
 				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 25, "Mineral Fields: " + b.minerals.size());
-			}
-		});
-		bases.addSubmodule("workers").setDraw(() -> {
-			// Workers
-			for (Worker w : workers.values()) {
-				switch (w.getTask()) {
-				case CONSTRUCTING:
-					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Orange, true);
-					break;
-				case GAS:
-					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Green, true);
-					DrawEngine.drawLineMap(w.getX(), w.getY(), w.getCurrentResource().getX(),
-							w.getCurrentResource().getY(), Color.Green);
-					break;
-				case MINERALS:
-					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Blue, true);
-					DrawEngine.drawLineMap(w.getX(), w.getY(), w.getCurrentResource().getX(),
-							w.getCurrentResource().getY(), Color.Blue);
-					break;
-				case SCOUTING:
-					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.White, true);
-					break;
-				case TRAINING:
-					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Teal, true);
-					break;
-				default:
-					DrawEngine.drawCircleMap(w.getX(), w.getY(), 3, Color.Black, true);
-					break;
-				}
 			}
 		});
 	}

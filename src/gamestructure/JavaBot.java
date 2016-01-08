@@ -130,7 +130,7 @@ public class JavaBot implements BWEventListener {
 					.filter(b -> GameHandler.getSelfPlayer().gas() >= b.getType().gasPrice()).forEach(b -> {
 						if (b.hasBuilder()) {
 							// Has builder already
-							if (!b.builder.getUnit().isConstructing()) {
+							if (!b.builder.unit.isConstructing()) {
 								b.builder.build(b);
 							}
 						} else {
@@ -213,6 +213,7 @@ public class JavaBot implements BWEventListener {
 	public void onUnitCreate(Unit unit) {
 		try {
 			if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
+				MicroManager.unitCreated(unit);
 				BuildManager.unitsUnderConstruction.add(unit);
 			}
 			BaseManager.unitCreated(unit);
@@ -272,10 +273,9 @@ public class JavaBot implements BWEventListener {
 	public void onUnitConstructed(Unit unit) {
 		try {
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
-				MicroManager.unitConstructed(unit);
 				BuildManager.unitComplete(unit);
 			}
-			BaseManager.unitComplete(unit);
+			BaseManager.unitConstructed(unit);
 			botState = botState.unitComplete(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
