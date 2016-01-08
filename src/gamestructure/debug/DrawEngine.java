@@ -42,6 +42,7 @@ public class DrawEngine {
 			// Reset the shapecount
 			shapeCount = 0;
 			shapesRejected = 0;
+		}).addCommand(null, c -> {
 		}).setActive(true);
 		System.out.println("Success!");
 	}

@@ -12,6 +12,7 @@ import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
+import pathfinder.NoPathFoundException;
 import pathfinder.PathingManager;
 
 public final class Waller {
@@ -21,8 +22,12 @@ public final class Waller {
 
 	public static void init() {
 		System.out.print("Starting Waller... ");
-		findPaths();
-		firstChoke = findFirstChokeAlongPath(pathToEnemy);
+		try {
+			findPaths();
+			firstChoke = findFirstChokeAlongPath(pathToEnemy);
+		} catch (Exception e) {
+			System.err.println("Waller error");
+		}
 
 		registerDebugFunctions();
 		System.out.println("Success!");
@@ -32,17 +37,13 @@ public final class Waller {
 	private Waller() {
 	}
 
-	private static void findPaths() {
-		try {
-			pathToNat = PathingManager.findGroundPath(BaseManager.main.getLocation().getPoint(),
-					BaseManager.natural.getLocation().getPoint(), UnitType.Zerg_Zergling);
-			pathToEnemy = PathingManager.findGroundPath(BaseManager.main.getLocation().getPoint(),
-					BaseManager.getBases().stream().filter(b -> b.getPlayer() == GameHandler.getEnemyPlayer()).findAny()
-							.get().getLocation().getPoint(),
-					UnitType.Zerg_Zergling);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	private static void findPaths() throws Exception {
+		pathToNat = PathingManager.findGroundPath(BaseManager.main.getLocation().getPoint(),
+				BaseManager.natural.getLocation().getPoint(), UnitType.Zerg_Zergling);
+		pathToEnemy = PathingManager.findGroundPath(BaseManager.main.getLocation().getPoint(),
+				BaseManager.getBases().stream().filter(b -> b.getPlayer() == GameHandler.getEnemyPlayer()).findAny()
+						.get().getLocation().getPoint(),
+				UnitType.Zerg_Zergling);
 	}
 
 	private static Chokepoint findFirstChokeAlongPath(Queue<Position> path) {

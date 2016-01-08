@@ -1,17 +1,14 @@
 package micromanager;
 
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-
-import com.sun.javafx.geom.Shape;
+import java.util.stream.Collectors;
 
 import bwapi.Color;
-import bwapi.Game;
 import bwapi.Position;
 import bwapi.PositionOrUnit;
 import bwapi.Unit;
@@ -174,17 +171,17 @@ public final class MicroManager {
 				}
 				break;
 			case ATTACK_RUN:
-				GameHandler.getEnemyUnits().stream()
+				GameHandler.getEnemyUnits().stream().filter(e -> e.getType().canAttack())
 						.sorted((u1,
 								u2) -> (int) (u1.getPosition().getDistance(u.getPosition())
 										- u2.getPosition().getDistance(u.getPosition())) * 1000)
 						.findFirst().ifPresent(e -> {
 							ua.target = e;
 							u.move(e.getPosition());
-							// 205 for Wraith
 							final int unitSize = Math.min(u.getType().width(), u.getType().height());
 							final int range = u.getType().groundWeapon().maxRange();
 							final int enemySize = Math.min(e.getType().width(), e.getType().height());
+							// 205 distance seems good for Wraith
 							if (predictedPosition.getDistance(e.getPosition()) <= unitSize + range + enemySize / 2) {
 								// System.out.println(GameHandler.getFrameCount()
 								// + ":" + "Firing initiated: "
@@ -212,12 +209,115 @@ public final class MicroManager {
 				// "Retreat begun at "
 				// + u.getPosition().getDistance(ua.target.getPosition()));
 				final int dx = 10 * (ua.unit.getX() - ua.target.getX());
-				final int dy = 10 * (ua.unit.getY() - ua.target.getY()) + 500;
+				final int dy = 10 * (ua.unit.getY() - ua.target.getY());
 				ua.unit.move(new Position(ua.unit.getX() + dx, ua.unit.getY() + dy));
 				ua.timeout--;
 				// Go safe when threshold is reached
 				if (ua.timeout <= 0
 						&& u.getGroundWeaponCooldown() <= u.getType().groundWeapon().damageCooldown() * 1 / 3) {
+					ua.task = UnitTask.ATTACK_RUN;
+				}
+				break;
+			default:
+				break;
+			}
+		}
+
+		for (UnitAgent ua : unitsByType.get(UnitType.Terran_Vulture)) {
+			final Unit u = ua.unit;
+			final Position predictedPosition = new Position((int) (u.getX() + u.getVelocityX()),
+					(int) (u.getY() + u.getVelocityY()));
+
+			switch (ua.task) {
+			case IDLE:
+				ua.task = UnitTask.SCOUTING;
+				break;
+			case SCOUTING:
+				// Scout the base...
+				if (scoutingTarget.isPresent()) {
+					scout(ua, scoutingTarget.get());
+				}
+				ua.target = GameHandler.getEnemyUnits().stream()
+						.sorted((u1,
+								u2) -> (int) (u1.getPosition().getDistance(u.getPosition())
+										- u2.getPosition().getDistance(u.getPosition())) * 1000)
+						.findFirst().orElse(null);
+				// Go aggro when threshold is reached
+				if (unitsByType.get(UnitType.Terran_Vulture).size() > 0 && ua.target != null) {
+					ua.task = UnitTask.ATTACK_RUN;
+				}
+				break;
+			case ATTACK_RUN:
+				ua.target = GameHandler.getEnemyUnits().stream()
+						.sorted((u1,
+								u2) -> (int) (u1.getPosition().getDistance(u.getPosition())
+										- u2.getPosition().getDistance(u.getPosition())) * 1000)
+						.findFirst().orElse(null);
+				if (ua.target == null) {
+					ua.task = UnitTask.SCOUTING;
+					break;
+				} else {
+					final int unitSize = Math.min(u.getType().width(), u.getType().height());
+					final int range = u.getType().groundWeapon().maxRange();
+					final int enemySize = Math.max(ua.target.getType().width(), ua.target.getType().height());
+					final Vector fv = Vector.fromAngle(ua.unit.getAngle());
+					final Vector av = new Vector(ua.unit.getPosition(), ua.target.getPosition()).normalize();
+					// Firing angle of 2.5 rad seems to work for vultures
+					if (predictedPosition.getDistance(ua.target.getPosition()) <= unitSize + range + enemySize / 2
+							&& Vector.angleBetween(fv, av) < 2.5) {
+						// TODO remember to check weapon cooldown here too! may
+						// need to switch back to retreating state?
+						ua.task = UnitTask.FIRING;
+					} else {
+						u.move(ua.target.getPosition());
+						break;
+					}
+				}
+			case FIRING:
+				u.attack(ua.target);
+				// System.out.println(GameHandler.getFrameCount() + " :
+				// attack");
+				// System.out.println(GameHandler.getFrameCount() + ": Range=" +
+				// u.getType().groundWeapon().maxRange());
+				// System.out.println(
+				// GameHandler.getFrameCount() + ": mySize=" +
+				// u.getType().width() + ", " + u.getType().height());
+				// System.out.println(GameHandler.getFrameCount() + ":
+				// enemySize=" + ua.target.getType().width() + ", "
+				// + ua.target.getType().height());
+				// System.out.println(
+				// GameHandler.getFrameCount() + ": real Distance=" +
+				// u.getDistance(ua.target.getPosition()));
+				// System.out.println(GameHandler.getFrameCount() + ": predicted
+				// Distance="
+				// + predictedPosition.getDistance(ua.target.getPosition()));
+				final Vector fv = Vector.fromAngle(ua.unit.getAngle());
+				final Vector av = new Vector(ua.unit.getPosition(), ua.target.getPosition()).normalize();
+				// System.out.println(GameHandler.getFrameCount() + ": angle ("
+				// + Vector.angleBetween(fv, av) + ")");
+				ua.task = UnitTask.RETREATING;
+				ua.timeout = 3;
+				break;
+			case RETREATING:
+				// System.out.println(
+				// GameHandler.getFrameCount() + ": Retreating (" +
+				// ua.unit.getGroundWeaponCooldown() + ")");
+				final int dx = (ua.unit.getX() - ua.target.getX());
+				final int dy = (ua.unit.getY() - ua.target.getY());
+				final Position destination = new Position(ua.unit.getX() + dx, ua.unit.getY() + dy);
+				ua.unit.move(destination);
+				// try {
+				// ua.path =
+				// PathingManager.findGroundPath(ua.unit.getPosition(),
+				// destination,
+				// UnitType.Terran_Vulture);
+				// ua.followPath();
+				// } catch (NoPathFoundException e1) {
+				// System.err.println("No path found for vulture!");
+				// }
+				ua.timeout--;
+				// Go safe when threshold is reached
+				if (ua.timeout <= 0 && u.getGroundWeaponCooldown() <= 0) {
 					ua.task = UnitTask.ATTACK_RUN;
 				}
 				break;
@@ -295,13 +395,7 @@ public final class MicroManager {
 			for (UnitAgent ua : unitAgents.values()) {
 				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), ua.task);
 			}
-		});
-		// Enemy units
-		DebugManager.createDebugModule("enemies").setDraw(() -> {
-			for (Unit e : GameHandler.getEnemyUnits()) {
-				DrawEngine.drawCircleMap(e.getX(), e.getY(), 3, Color.Red, true);
-			}
-		});
+		}).setActive(true);
 		// // Threat map
 		// DebugManager.createDebugModule("threats").setDraw(() -> {
 		// // Actually draw
@@ -323,7 +417,41 @@ public final class MicroManager {
 					DrawEngine.drawLineMap(a.unit.getX(), a.unit.getY(), a.target.getX(), a.target.getY(), Color.Red);
 				}
 			}
-		});
+
+			GameHandler.getAllUnits().stream().filter(e -> e.getType().canAttack()).forEach(e -> {
+				try {
+					DrawEngine.drawCircleMap(e.getX(), e.getY(), 3, Color.Red, true);
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+			});
+		}).setActive(true);
+		// Vulture range
+		DebugManager.createDebugModule("vulturerange").setDraw(() -> {
+			for (UnitAgent ua : unitsByType.get(UnitType.Terran_Vulture)) {
+				Vector uv = new Vector(ua.unit.getPosition().getX(), ua.unit.getPosition().getY());
+				Vector fv = Vector.fromAngle(ua.unit.getAngle());
+				Position forward = Vector.add(uv, fv.scalarMultiply(32)).toPosition();
+				DrawEngine.drawArrowMap(ua.unit.getX(), ua.unit.getY(), forward.getX(), forward.getY(), Color.Green);
+
+				if (ua.target != null) {
+					Vector av = new Vector(ua.unit.getPosition(), ua.target.getPosition()).normalize();
+					Position ap = Vector.add(uv, av.scalarMultiply(32)).toPosition();
+					DrawEngine.drawArrowMap(ua.unit.getX(), ua.unit.getY(), ap.getX(), ap.getY(), Color.Red);
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() + 15, Vector.angleBetween(fv, av));
+				}
+			}
+		}).setActive(true);
+		// Static D
+		DebugManager.createDebugModule("staticd").setDraw(() -> {
+			for (Unit u : GameHandler.getEnemyUnits().stream()
+					.filter(u -> u.getType() == UnitType.Protoss_Photon_Cannon
+							|| u.getType() == UnitType.Zerg_Sunken_Colony || u.getType() == UnitType.Zerg_Spore_Colony)
+					.collect(Collectors.toList())) {
+				DrawEngine.drawCircleMap(u.getX(), u.getY(), u.getType().groundWeapon().maxRange(), Color.Red, false);
+				DrawEngine.drawCircleMap(u.getX(), u.getY(), u.getType().airWeapon().maxRange(), Color.Red, false);
+			}
+		}).setActive(true);
 		// // Movement map
 		// DebugManager.createDebugModule("movement").setDraw(
 		// () -> {
@@ -359,7 +487,9 @@ public final class MicroManager {
 		// }
 		// });
 		// Weapon cooldown bars
-		DebugManager.createDebugModule("cooldowns").setDraw(() -> {
+		DebugManager.createDebugModule("cooldowns").setDraw(() ->
+
+		{
 			for (UnitAgent ua : unitAgents.values()) {
 				Unit u = ua.unit;
 				UnitType unitType = u.getType();
@@ -372,9 +502,11 @@ public final class MicroManager {
 							u.getX() + cooldownRemaining * cooldownBarSize / maxCooldown, u.getY(), Color.Red);
 				}
 			}
-		});
+		}).setActive(true);
 		// Scouting Target
-		DebugManager.createDebugModule("scouting").setDraw(() -> {
+		DebugManager.createDebugModule("scouting").setDraw(() ->
+
+		{
 			if (scoutingTarget.isPresent()) {
 				int x = scoutingTarget.get().getX();
 				int y = scoutingTarget.get().getY();
@@ -383,7 +515,9 @@ public final class MicroManager {
 			}
 		});
 		// Pathing
-		DebugManager.createDebugModule("pathing").setDraw(() -> {
+		DebugManager.createDebugModule("pathing").setDraw(() ->
+
+		{
 			for (UnitAgent ua : unitAgents.values()) {
 				final Iterator<Position> it = ua.path.iterator();
 				Position previous = it.hasNext() ? it.next() : null;
@@ -394,6 +528,6 @@ public final class MicroManager {
 					previous = current;
 				}
 			}
-		});
+		}).setActive(true);
 	}
 }

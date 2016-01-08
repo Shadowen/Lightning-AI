@@ -278,55 +278,60 @@ public final class PathingManager {
 	}
 
 	public static void registerDebugFunctions() {
-		// Clearance values
-		DebugManager.createDebugModule("clearance").setDraw(() -> {
-			try {
-				// Show clearance values
-				for (int wx = 0; wx < mapWalkWidth; wx++) {
-					for (int wy = 0; wy < mapWalkHeight; wy++) {
-						Node n = walkableNodes[wx][wy];
-						if (n.clearance == 0) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
-						}
-						// else if (n.clearance == 1) {
-						// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
-						// 8, n.wy * 8 + 8, Color.Orange, true);
-						// } else if (n.clearance == 2) {
-						// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
-						// 8, n.wy * 8 + 8, Color.Yellow, true);
-						// } else if (n.clearance == 3) {
-						// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
-						// 8, n.wy * 8 + 8, Color.Green, true);
-						// }
-					}
-				}
-				Position mousePosition = GameHandler.getMousePositionOnMap();
-				if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() / 8 < mapWalkHeight) {
-					Node thisCell = walkableNodes[mousePosition.getX() / 8][mousePosition.getY() / 8];
-					DrawEngine.drawBoxMap(thisCell.wx * 8, thisCell.wy * 8, (thisCell.wx + thisCell.clearance) * 8,
-							(thisCell.wy + thisCell.clearance) * 8, Color.Yellow, false);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}).setActive(true);
-		DebugManager.createDebugModule("pathing").setDraw(() -> {
-			// Projected paths
-			GameHandler.getSelectedUnits().stream().forEach(u -> {
-				try {
-					try {
-						Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
-								GameHandler.getMousePositionOnMap(), u.getType());
-						for (Position w : path) {
-							DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2, Color.Cyan,
-									false);
-						}
-					} catch (NoPathFoundException e) {
-					}
-				} catch (ShapeOverflowException s) {
-					System.out.println("Shape overflow!");
-				}
-			});
-		});
+		// // Clearance values
+		// DebugManager.createDebugModule("clearance").setDraw(() -> {
+		// try {
+		// // Show clearance values
+		// for (int wx = 0; wx < mapWalkWidth; wx++) {
+		// for (int wy = 0; wy < mapWalkHeight; wy++) {
+		// Node n = walkableNodes[wx][wy];
+		// if (n.clearance == 0) {
+		// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8,
+		// Color.Red, true);
+		// }
+		// // else if (n.clearance == 1) {
+		// // DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
+		// // 8, n.wy * 8 + 8, Color.Orange, true);
+		// // } else if (n.clearance == 2) {
+		// // DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
+		// // 8, n.wy * 8 + 8, Color.Yellow, true);
+		// // } else if (n.clearance == 3) {
+		// // DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
+		// // 8, n.wy * 8 + 8, Color.Green, true);
+		// // }
+		// }
+		// }
+		// Position mousePosition = GameHandler.getMousePositionOnMap();
+		// if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() /
+		// 8 < mapWalkHeight) {
+		// Node thisCell = walkableNodes[mousePosition.getX() /
+		// 8][mousePosition.getY() / 8];
+		// DrawEngine.drawBoxMap(thisCell.wx * 8, thisCell.wy * 8, (thisCell.wx
+		// + thisCell.clearance) * 8,
+		// (thisCell.wy + thisCell.clearance) * 8, Color.Yellow, false);
+		// }
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+		// });
+		// DebugManager.createDebugModule("pathing").setDraw(() -> {
+		// // Projected paths
+		// GameHandler.getSelectedUnits().stream().forEach(u -> {
+		// try {
+		// try {
+		// Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
+		// GameHandler.getMousePositionOnMap(), u.getType());
+		// for (Position w : path) {
+		// DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2,
+		// w.getY() + 2, Color.Cyan,
+		// false);
+		// }
+		// } catch (NoPathFoundException e) {
+		// }
+		// } catch (ShapeOverflowException s) {
+		// System.out.println("Shape overflow!");
+		// }
+		// });
+		// });
 	}
 }
