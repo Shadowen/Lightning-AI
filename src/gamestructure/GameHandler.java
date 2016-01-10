@@ -8,8 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import datastructure.BuildManager;
-import datastructure.BuildingPlan;
+import build.BuildManager;
+import build.BuildingPlan;
 import bwapi.Bullet;
 import bwapi.Game;
 import bwapi.Player;

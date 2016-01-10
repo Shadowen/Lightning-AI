@@ -1,12 +1,7 @@
-package pathfinder;
-
-import gamestructure.GameHandler;
-import gamestructure.debug.DebugManager;
-import gamestructure.debug.DebugModule;
-import gamestructure.debug.DrawEngine;
-import gamestructure.debug.ShapeOverflowException;
+package pathing;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,20 +14,21 @@ import java.util.Set;
 
 import bwapi.Color;
 import bwapi.Position;
+import bwapi.TilePosition;
 import bwapi.Unit;
 import bwapi.UnitType;
-import bwapi.WalkPosition;
-import bwta.BWTA;
-import bwta.Chokepoint;
-import datastructure.BaseManager;
+import gamestructure.GameHandler;
+import gamestructure.debug.DebugManager;
+import gamestructure.debug.DrawEngine;
+import gamestructure.debug.ShapeOverflowException;
 
-public final class PathingManager {
+public final class PathFinder {
 	private static Node[][] walkableNodes;
 	private static int mapWalkWidth;
 	private static int mapWalkHeight;
 
 	public static void init() {
-		System.out.print("Starting PathingManager... ");
+		System.out.print("Starting PathingFinder... ");
 		mapWalkWidth = GameHandler.getMapWalkWidth();
 		mapWalkHeight = GameHandler.getMapWalkHeight();
 
@@ -53,7 +49,7 @@ public final class PathingManager {
 	}
 
 	/** This constructor should never be used. */
-	private PathingManager() {
+	private PathFinder() {
 	}
 
 	public static void refreshWalkableMap() {
@@ -78,8 +74,7 @@ public final class PathingManager {
 	 **/
 	private static int getTrueClearance(int wx, int wy) {
 		// Current tile is not walkable
-		if (!GameHandler.isWalkable(wx, wy)
-				|| GameHandler.getUnitsOnTile(wx / 4, wy / 4).stream().anyMatch(u -> u.getType().isBuilding())) {
+		if (!GameHandler.isWalkable(wx, wy)) {
 			return 0;
 		}
 		// True clearance is one larger than the minimum of the three true
@@ -88,6 +83,52 @@ public final class PathingManager {
 		int topRight = wx + 1 < mapWalkWidth ? walkableNodes[wx + 1][wy].clearance : 0;
 		int bottomRight = wy + 1 < mapWalkHeight && wx + 1 < mapWalkWidth ? walkableNodes[wx + 1][wy + 1].clearance : 0;
 		return Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1;
+	}
+
+	public static void onBuildingCreate(Unit building) {
+		Set<Node> zeroMe = new HashSet<>();
+		Queue<Node> toRecalculate = new ArrayDeque<>();
+
+		// Add the building to the walkable map
+		TilePosition tp = building.getTilePosition();
+		for (int wx = tp.getX() * 4; wx < (tp.getX() + building.getType().tileWidth()) * 4; wx++) {
+			for (int wy = tp.getY() * 4; wy < (tp.getY() + building.getType().tileHeight()) * 4; wy++) {
+				zeroMe.add(walkableNodes[wx][wy]);
+				toRecalculate.add(walkableNodes[wx][wy]);
+			}
+		}
+
+		while (!toRecalculate.isEmpty()) {
+			Node current = toRecalculate.remove();
+			int oldClearance = current.clearance;
+			// Current tile is not walkable
+			if (zeroMe.contains(current)) {
+				current.clearance = 0;
+			} else {
+				// Otherwise, true clearance is one larger than the minimum of
+				// the three true clearances below, to the right, and
+				// below-right, or itself if clearance was zero
+				int bottomLeft = current.wy + 1 < mapWalkHeight ? walkableNodes[current.wx][current.wy + 1].clearance
+						: 0;
+				int topRight = current.wx + 1 < mapWalkWidth ? walkableNodes[current.wx + 1][current.wy].clearance : 0;
+				int bottomRight = current.wy + 1 < mapWalkHeight && current.wx + 1 < mapWalkWidth
+						? walkableNodes[current.wx + 1][current.wy + 1].clearance : 0;
+				current.clearance = Math.min(current.clearance,
+						Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1);
+			}
+			// If the clearance value has changed,
+			if (current.clearance != oldClearance) {
+				if (current.wx - 1 > 0) {
+					toRecalculate.add(walkableNodes[current.wx - 1][current.wy]);
+				}
+				if (current.wy > 0) {
+					toRecalculate.add(walkableNodes[current.wx][current.wy - 1]);
+				}
+				if (current.wx > 0 && current.wy > 0) {
+					toRecalculate.add(walkableNodes[current.wx - 1][current.wy - 1]);
+				}
+			}
+		}
 	}
 
 	/**
@@ -106,26 +147,35 @@ public final class PathingManager {
 		return false;
 	}
 
-	public static Queue<Position> findGroundPath(Unit u, Position end) throws NoPathFoundException {
+	public static Deque<Position> findGroundPath(Unit unit, Rectangle boundingBox, int maxLength)
+			throws NoPathFoundException {
+		return findGroundPath(unit.getX(), unit.getY(), boundingBox, unit.getType(), maxLength);
+	}
+
+	public static Deque<Position> findGroundPath(Unit u, Position end) throws NoPathFoundException {
 		return findGroundPath(u.getX(), u.getY(), end.getX(), end.getY(), u.getType());
 	}
 
-	public static Queue<Position> findGroundPath(Position start, Position end, UnitType unitType)
+	public static Deque<Position> findGroundPath(Unit u, Position end, int maxLength) throws NoPathFoundException {
+		return findGroundPath(u.getX(), u.getY(), end.getX(), end.getY(), u.getType(), maxLength);
+	}
+
+	public static Deque<Position> findGroundPath(Position start, Position end, UnitType unitType)
 			throws NoPathFoundException {
 		return findGroundPath(start.getX(), start.getY(), end.getX(), end.getY(), unitType);
 	}
 
-	public static Queue<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
+	public static Deque<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
 			throws NoPathFoundException {
 		return findGroundPath(startx, starty, endx, endy, unitType, Integer.MAX_VALUE);
 	}
 
-	public static Queue<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType,
+	public static Deque<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType,
 			int maxLength) throws NoPathFoundException {
-		int startWx = (startx - unitType.width() / 2) / 8;
-		int startWy = (starty - unitType.height() / 2) / 8;
-		int endWx = (endx - unitType.width() / 2) / 8;
-		int endWy = (endy - unitType.height() / 2) / 8;
+		int startWx = startx / 8;
+		int startWy = starty / 8;
+		int endWx = endx / 8;
+		int endWy = endy / 8;
 
 		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
 			@Override
@@ -164,6 +214,57 @@ public final class PathingManager {
 					neighbor.costFromStart = tentative_g_score;
 					neighbor.predictedTotalCost = tentative_g_score
 							+ Point.distance(neighbor.wx, neighbor.wy, endWx, endWy);
+					openSet.add(neighbor);
+				}
+			}
+		}
+		throw new NoPathFoundException();
+	}
+
+	public static Deque<Position> findGroundPath(int startx, int starty, Rectangle destination, UnitType unitType,
+			int maxLength) throws NoPathFoundException {
+		int startWx = startx / 8;
+		int startWy = starty / 8;
+
+		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
+			@Override
+			public int compare(Node n1, Node n2) {
+				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
+			}
+		});
+		Node startNode = walkableNodes[startWx][startWy];
+		startNode.parent = null;
+		startNode.costFromStart = 0;
+		openSet.add(startNode);
+		Set<Node> closedSet = new HashSet<Node>();
+
+		// Iterate
+		while (openSet.size() > 0) {
+			Node currentNode = openSet.remove();
+
+			// Move the node from the open set to the closed set
+			closedSet.add(currentNode);
+			// Add all neigbors to the open set
+			for (Node neighbor : getNeighbors(currentNode.wx, currentNode.wy)) {
+				double tentative_g_score = currentNode.costFromStart
+						+ Point.distance(currentNode.wx, currentNode.wy, neighbor.wx, neighbor.wy);
+				// Base case
+				if (destination.contains(neighbor.wx * 8, neighbor.wy * 8) || tentative_g_score > maxLength) {
+					Deque<Position> path = new ArrayDeque<>();
+					reconstructPath(path, currentNode, unitType);
+					return path;
+				}
+
+				if (closedSet.contains(neighbor) || unitDoesNotFit(unitType, neighbor.clearance)) {
+					continue;
+				}
+
+				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
+					neighbor.parent = currentNode;
+					neighbor.costFromStart = tentative_g_score;
+					neighbor.predictedTotalCost = tentative_g_score
+							+ Point.distance(neighbor.wx, neighbor.wy, destination.getX() + destination.getWidth() / 2,
+									destination.getY() + destination.getHeight() / 2);
 					openSet.add(neighbor);
 				}
 			}
@@ -292,11 +393,11 @@ public final class PathingManager {
 		// if (n.clearance == 0) {
 		// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8,
 		// Color.Red, true);
+		// } else if (n.clearance == 1) {
+		// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8,
+		// Color.Orange, true);
 		// }
-		// // else if (n.clearance == 1) {
-		// // DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
-		// // 8, n.wy * 8 + 8, Color.Orange, true);
-		// // } else if (n.clearance == 2) {
+		// // else if (n.clearance == 2) {
 		// // DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
 		// // 8, n.wy * 8 + 8, Color.Yellow, true);
 		// // } else if (n.clearance == 3) {
@@ -323,7 +424,7 @@ public final class PathingManager {
 		// GameHandler.getSelectedUnits().stream().forEach(u -> {
 		// try {
 		// try {
-		// Queue<Position> path = PathingManager.findGroundPath(u.getPosition(),
+		// Queue<Position> path = PathFinder.findGroundPath(u.getPosition(),
 		// GameHandler.getMousePositionOnMap(), u.getType());
 		// for (Position w : path) {
 		// DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2,

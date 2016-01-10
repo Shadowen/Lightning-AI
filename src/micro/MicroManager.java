@@ -1,4 +1,4 @@
-package micromanager;
+package micro;
 
 import java.awt.Point;
 import java.util.HashMap;
@@ -8,19 +8,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import base.Base;
+import base.BaseManager;
+import base.Worker;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.PositionOrUnit;
 import bwapi.Unit;
 import bwapi.UnitType;
-import datastructure.Base;
-import datastructure.BaseManager;
-import datastructure.Worker;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
-import pathfinder.NoPathFoundException;
-import pathfinder.PathingManager;
+import pathing.NoPathFoundException;
+import pathing.PathFinder;
 
 public final class MicroManager {
 	/** The width of the map in build tiles */
@@ -59,12 +59,6 @@ public final class MicroManager {
 		scoutingTarget = Optional.empty();
 
 		registerDebugFunctions();
-		System.out.println("Wraith range: " + UnitType.Terran_Wraith.groundWeapon().maxRange());
-		System.out.println("Wraith size: " + UnitType.Terran_Wraith.width() + ", " + UnitType.Terran_Wraith.height());
-		System.out.println("Mutalisk range: " + UnitType.Zerg_Mutalisk.groundWeapon().maxRange());
-		System.out.println("Mutalisk size: " + UnitType.Zerg_Mutalisk.width() + ", " + UnitType.Zerg_Mutalisk.height());
-		System.out.println("Marine range: " + UnitType.Terran_Marine.airWeapon().maxRange());
-		System.out.println("Marine: " + UnitType.Terran_Marine.width() + ", " + UnitType.Terran_Marine.height());
 		System.out.println("Success!");
 	}
 
@@ -72,22 +66,18 @@ public final class MicroManager {
 	private MicroManager() {
 	}
 
-	public static void act() {
+	public static void onFrame() {
 		updateMap();
 		// Move attacking units
 		micro();
 		// Move scouting unit(s)
-		if (!scoutingTarget.isPresent()
-				|| GameHandler.isVisible(scoutingTarget.get().getX() / 32, scoutingTarget.get().getY() / 32)) {
+		if (!scoutingTarget.isPresent()) {
+			// Acquire a target if necessary
 			GameHandler.sendText("Looking for new scouting target");
 			scoutingTarget = getScoutingTarget();
 		}
 		if (scoutingTarget.isPresent()) {
-			// Acquire a target if necessary
-			for (UnitAgent ua : unitAgents.values().stream().filter(ua -> ua.task == UnitTask.SCOUTING)
-					.collect(Collectors.toList())) {
-				scout(ua);
-			}
+			unitAgents.values().stream().filter(ua -> ua.task == UnitTask.SCOUTING).forEach(ua -> scout(ua));
 		}
 	}
 
@@ -251,7 +241,7 @@ public final class MicroManager {
 						ua.task = UnitTask.FIRING;
 					} else {
 						try {
-							ua.path = PathingManager.findGroundPath(u, ua.target.getPosition());
+							ua.findPath(ua.target.getPosition(), 64);
 							ua.followPath();
 						} catch (NoPathFoundException e) {
 							System.err.println("No path found for vulture!");
@@ -319,15 +309,9 @@ public final class MicroManager {
 
 	private static void scout(UnitAgent ua) {
 		try {
-			if (ua.path.size() < 15) {
-				// Path planned is short
-				if (scoutingTarget.isPresent()) {
-					ua.path = PathingManager.findGroundPath(ua.unit.getX(), ua.unit.getY(), scoutingTarget.get().getX(),
-							scoutingTarget.get().getY(), ua.unit.getType(), 256);
-				}
-				if (ua.path.size() == 0) {
-					System.out.println("Pathfinder failed to find a scouting path...");
-				}
+			// Path planned is short
+			if (scoutingTarget.isPresent()) {
+				ua.findPath(scoutingTarget.get(), 256);
 			}
 
 			ua.followPath();
@@ -356,7 +340,7 @@ public final class MicroManager {
 
 	public static void unitCreated(Unit unit) {
 		if (!unitAgents.containsKey(unit)) {
-			UnitType type = unit.getType();
+			final UnitType type = unit.getType();
 			UnitAgent ua;
 			// TODO is there a way to clean up this if statement?
 			if (type.isWorker()) {
@@ -383,11 +367,6 @@ public final class MicroManager {
 	}
 
 	public static void registerDebugFunctions() {
-		DebugManager.createDebugModule("tasks").setDraw(() -> {
-			for (UnitAgent ua : unitAgents.values()) {
-				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), ua.task);
-			}
-		}).setActive(true);
 		// // Threat map
 		// DebugManager.createDebugModule("threats").setDraw(() -> {
 		// // Actually draw
@@ -409,7 +388,6 @@ public final class MicroManager {
 					DrawEngine.drawLineMap(a.unit.getX(), a.unit.getY(), a.target.getX(), a.target.getY(), Color.Red);
 				}
 			}
-
 			GameHandler.getAllUnits().stream().filter(e -> e.getType().canAttack()).forEach(e -> {
 				try {
 					DrawEngine.drawCircleMap(e.getX(), e.getY(), 3, Color.Red, true);
@@ -430,7 +408,8 @@ public final class MicroManager {
 					Vector av = new Vector(ua.unit.getPosition(), ua.target.getPosition()).normalize();
 					Position ap = Vector.add(uv, av.scalarMultiply(32)).toPosition();
 					DrawEngine.drawArrowMap(ua.unit.getX(), ua.unit.getY(), ap.getX(), ap.getY(), Color.Red);
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() + 15, Vector.angleBetween(fv, av));
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() + 15,
+							String.valueOf(Vector.angleBetween(fv, av)));
 				}
 			}
 		}).setActive(true);
@@ -501,11 +480,11 @@ public final class MicroManager {
 				DrawEngine.drawLineMap(x - 10, y - 10, x + 10, y + 10, Color.Red);
 				DrawEngine.drawLineMap(x + 10, y - 10, x - 10, y + 10, Color.Red);
 			}
-		});
+		}).setActive(true);
 		// Pathing
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
-				final Iterator<Position> it = ua.path.iterator();
+				final Iterator<Position> it = ua.getPath().iterator();
 				Position previous = it.hasNext() ? it.next() : null;
 				while (it.hasNext()) {
 					final Position current = it.next();

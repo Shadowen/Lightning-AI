@@ -1,4 +1,4 @@
-package pathfinder;
+package pathing;
 
 public class Node {
 	int wx;

@@ -1,4 +1,4 @@
-package datastructure;
+package build;
 
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
@@ -10,9 +10,15 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
 import java.util.Map.Entry;
+
+import base.Base;
+import base.BaseManager;
+import base.GasResource;
+
 import java.util.Queue;
 
 import bwapi.Color;
+import bwapi.TilePosition;
 import bwapi.Unit;
 import bwapi.UnitType;
 
@@ -72,8 +78,8 @@ public final class BuildManager {
 	}
 
 	// Build a building at a specific location
-	public static void addBuilding(Point buildLocation, UnitType type) {
-		addBuilding(buildLocation.x, buildLocation.y, type);
+	public static void addBuilding(TilePosition buildLocation, UnitType type) {
+		addBuilding(buildLocation.getX(), buildLocation.getY(), type);
 	}
 
 	// Build a building at a specific location
@@ -81,7 +87,7 @@ public final class BuildManager {
 		buildingQueue.add(new BuildingPlan(tx, ty, type));
 	}
 
-	public static void unitComplete(Unit u) {
+	public static void unitConstructed(Unit u) {
 		UnitType type = u.getType();
 		if (type.isBuilding()) {
 			// Go through planned buildings

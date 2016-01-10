@@ -1,4 +1,4 @@
-package datastructure;
+package base;
 
 import bwapi.Unit;
 

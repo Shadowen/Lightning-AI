@@ -1,21 +1,26 @@
-package datastructure;
+package base;
 
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
-import micromanager.MicroManager;
-import micromanager.UnitTask;
+import micro.MicroManager;
+import micro.UnitTask;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import build.BuildManager;
+
 import java.util.Optional;
 import java.util.Set;
 
 import bwapi.Color;
+import bwapi.Player;
+import bwapi.PlayerType;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -81,7 +86,7 @@ public final class BaseManager {
 	private BaseManager() {
 	}
 
-	public static void onFrame() {
+	public static void countScoutedBases() {
 		for (Entry<BaseLocation, Base> e : bases.entrySet()) {
 			BaseLocation bl = e.getKey();
 			Base b = e.getValue();
@@ -95,6 +100,15 @@ public final class BaseManager {
 		for (Base b : bases.values()) {
 			b.gatherResources();
 		}
+	}
+
+	public static void expand() {
+		// Expand to the base that is closest by ground
+		bases.values().stream().filter(b -> b.getPlayer() == GameHandler.getNeutralPlayer()).map(b -> b.getLocation())
+				.sorted((b1, b2) -> BWTA.getGroundDistance2(main.getLocation().getTilePosition(), b2.getTilePosition())
+						- BWTA.getGroundDistance2(main.getLocation().getTilePosition(), b1.getTilePosition()))
+				.findFirst()
+				.ifPresent(l -> BuildManager.addBuilding(l.getTilePosition(), UnitType.Terran_Command_Center));
 	}
 
 	public static Set<Base> getMyBases() {

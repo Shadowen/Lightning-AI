@@ -1,14 +1,21 @@
-package datastructure;
+package base;
 
+import java.awt.Rectangle;
+
+import build.BuildingPlan;
 import bwapi.Position;
 import bwapi.Unit;
 import gamestructure.GameHandler;
-import micromanager.UnitAgent;
-import micromanager.UnitTask;
+import micro.UnitAgent;
+import micro.UnitTask;
+import pathing.NoPathFoundException;
+import pathing.PathFinder;
 
 public class Worker extends UnitAgent {
 	private Resource currentResource;
 	private Base base;
+	/** The destination building of the current path */
+	private Rectangle pathTargetBox;
 
 	public Worker(Unit u) {
 		super(u);
@@ -37,7 +44,6 @@ public class Worker extends UnitAgent {
 	}
 
 	public void build(BuildingPlan toBuild) {
-		unit.build(toBuild.getType(), toBuild.getTilePosition());
 		toBuild.setBuilder(this);
 		task = UnitTask.CONSTRUCTING;
 	}
@@ -87,4 +93,20 @@ public class Worker extends UnitAgent {
 		}
 	}
 
+	@Override
+	public void findPath(Position toWhere, int length) throws NoPathFoundException {
+		pathTargetBox = null;
+		super.findPath(toWhere, length);
+	}
+
+	public void findPath(Rectangle toWhere, int length) throws NoPathFoundException {
+		pathTarget = null;
+		// If we already have a decent path
+		if (pathTargetBox != null && pathTargetBox.equals(toWhere) && path.size() >= 1.0 / 3 * length) {
+			return;
+		}
+		// Otherwise make a new path
+		pathTargetBox = toWhere;
+			path = PathFinder.findGroundPath(unit, toWhere, length);
+	}
 }

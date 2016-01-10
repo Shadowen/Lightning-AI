@@ -1,19 +1,19 @@
-package Waller;
+package walling;
 
 import java.util.Queue;
 
+import base.BaseManager;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.UnitType;
 import bwta.BWTA;
 import bwta.Chokepoint;
-import datastructure.BaseManager;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
-import pathfinder.NoPathFoundException;
-import pathfinder.PathingManager;
+import pathing.NoPathFoundException;
+import pathing.PathFinder;
 
 public final class Waller {
 	private static Queue<Position> pathToNat;
@@ -38,9 +38,9 @@ public final class Waller {
 	}
 
 	private static void findPaths() throws Exception {
-		pathToNat = PathingManager.findGroundPath(BaseManager.main.getLocation().getPoint(),
+		pathToNat = PathFinder.findGroundPath(BaseManager.main.getLocation().getPoint(),
 				BaseManager.natural.getLocation().getPoint(), UnitType.Zerg_Zergling);
-		pathToEnemy = PathingManager.findGroundPath(BaseManager.main.getLocation().getPoint(),
+		pathToEnemy = PathFinder.findGroundPath(BaseManager.main.getLocation().getPoint(),
 				BaseManager.getBases().stream().filter(b -> b.getPlayer() == GameHandler.getEnemyPlayer()).findAny()
 						.get().getLocation().getPoint(),
 				UnitType.Zerg_Zergling);

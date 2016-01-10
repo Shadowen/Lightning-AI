@@ -1,14 +1,14 @@
-package botstate;
+package state;
 
 import java.util.Optional;
 
+import base.BaseManager;
+import base.Worker;
+import build.BuildManager;
 import bwapi.Unit;
 import bwapi.UnitType;
-import datastructure.BaseManager;
-import datastructure.BuildManager;
-import datastructure.Worker;
 import gamestructure.GameHandler;
-import micromanager.UnitTask;
+import micro.UnitTask;
 
 public class StarportRush extends BotState {
 
@@ -19,7 +19,10 @@ public class StarportRush extends BotState {
 	}
 
 	@Override
-	public BotState act() {
+	public BotState onFrame() {
+		if (GameHandler.getSelfPlayer().minerals() >= 400 && !BuildManager.isInQueue(UnitType.Terran_Command_Center)) {
+			BaseManager.expand();
+		}
 		// Check the build order
 		int supply = GameHandler.getSelfPlayer().supplyUsed() / 2;
 		if (supply > 30) {
@@ -61,7 +64,7 @@ public class StarportRush extends BotState {
 	}
 
 	@Override
-	public BotState unitComplete(Unit unit) {
+	public BotState unitConstructed(Unit unit) {
 		UnitType unitType = unit.getType();
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (unitType.isRefinery()) {

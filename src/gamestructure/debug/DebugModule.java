@@ -71,7 +71,7 @@ public class DebugModule {
 	 */
 	DebugModule(String iname) {
 		name = iname;
-		commands.put(null, (c) -> active = !active);
+		commands.put(null, this::setActive);
 	}
 
 	public DebugModule addCommand(String command, CommandFunction action) {
@@ -148,7 +148,7 @@ public class DebugModule {
 		System.out.println(name + " is parsing command..." + command);
 		// All
 		if (command.size() > 1 && command.get(0).equals("all")) {
-			onReceiveCommand(command.subList(1, command.size()));
+			setActive(true);
 			for (DebugModule s : subModules.values()) {
 				s.onReceiveCommand(command);
 			}
@@ -169,8 +169,11 @@ public class DebugModule {
 		throw new InvalidCommandException(name, command);
 	}
 
+	protected void setActive(List<String> command) {
+		active = !active;
+	}
+
 	public void setActive(boolean setTo) {
-		// TODO
 		active = setTo;
 	}
 }

@@ -4,16 +4,23 @@ import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.InvalidCommandException;
+import micro.MicroManager;
+import pathing.NoPathFoundException;
+import pathing.PathFinder;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import Waller.Waller;
-import micromanager.MicroManager;
-import pathfinder.PathingManager;
-import botstate.BotState;
-import botstate.FirstFrameState;
+
+import base.Base;
+import base.BaseManager;
+import base.Resource;
+import build.BuildManager;
+import state.BotState;
+import state.FirstFrameState;
+import walling.Waller;
 import bwapi.BWEventListener;
 import bwapi.Mirror;
 import bwapi.Player;
@@ -21,10 +28,6 @@ import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
-import datastructure.Base;
-import datastructure.BaseManager;
-import datastructure.BuildManager;
-import datastructure.Resource;
 
 public class JavaBot implements BWEventListener {
 	private Mirror mirror = new Mirror();
@@ -59,7 +62,7 @@ public class JavaBot implements BWEventListener {
 			BaseManager.init();
 			BuildManager.init();
 			MicroManager.init();
-			PathingManager.init();
+			PathFinder.init();
 			botState = new FirstFrameState();
 			Waller.init();
 
@@ -87,14 +90,14 @@ public class JavaBot implements BWEventListener {
 				return false;
 			});
 
-			BaseManager.onFrame();
+			BaseManager.countScoutedBases();
 			// Allow the bot to act
 			// Bot state updates
-			botState = botState.act();
+			botState = botState.onFrame();
 			// BuildManager check build order
 			BuildManager.checkMinimums();
 			// Micro units
-			MicroManager.act();
+			MicroManager.onFrame();
 
 			// Auto economy
 			BaseManager.gatherResources();
@@ -125,13 +128,42 @@ public class JavaBot implements BWEventListener {
 			}
 
 			// Auto build
+			// TODO move this into Worker?
 			BuildManager.buildingQueue.stream()
 					.filter(b -> GameHandler.getSelfPlayer().minerals() >= b.getType().mineralPrice())
 					.filter(b -> GameHandler.getSelfPlayer().gas() >= b.getType().gasPrice()).forEach(b -> {
 						if (b.hasBuilder()) {
 							// Has builder already
 							if (!b.builder.unit.isConstructing()) {
-								b.builder.build(b);
+								// Not already building it
+								try {
+									DrawEngine.drawTextMap(b.builder.unit.getX(), b.builder.unit.getY() + 20,
+											"Build it");
+								} catch (Exception e1) {
+									e1.printStackTrace();
+								}
+								Position p = b.builder.unit.getPosition();
+								if (p.getDistance((int) b.getBoundingBox().getCenterX(),
+										(int) b.getBoundingBox().getCenterY()) < 128) {
+									// Build it
+									b.builder.unit.build(b.getType(), b.getTilePosition());
+								} else {
+									// Move closer
+									try {
+										DrawEngine.drawTextMap(b.builder.unit.getX(), b.builder.unit.getY() + 20,
+												"Move closer");
+									} catch (Exception e1) {
+										e1.printStackTrace();
+									}
+									b.builder.move(b.getTx() * 32, b.getTy() * 32);
+									try {
+										b.builder.findPath(b.getBoundingBox(), 128);
+										b.builder.followPath();
+									} catch (NoPathFoundException e) {
+										System.err.println(
+												"Worker failed to find a path to build a " + b.getType().toString());
+									}
+								}
 							}
 						} else {
 							// If it isn't being built yet
@@ -218,6 +250,9 @@ public class JavaBot implements BWEventListener {
 			}
 			BaseManager.unitCreated(unit);
 			BuildManager.unitQueue.remove(unit.getType());
+			if (unit.getType().isBuilding()) {
+				PathFinder.onBuildingCreate(unit);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -273,10 +308,10 @@ public class JavaBot implements BWEventListener {
 	public void onUnitConstructed(Unit unit) {
 		try {
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
-				BuildManager.unitComplete(unit);
+				BuildManager.unitConstructed(unit);
 			}
 			BaseManager.unitConstructed(unit);
-			botState = botState.unitComplete(unit);
+			botState = botState.unitConstructed(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

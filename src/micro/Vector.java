@@ -1,4 +1,4 @@
-package micromanager;
+package micro;
 
 import bwapi.Position;
 
