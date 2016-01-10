@@ -5,6 +5,7 @@ import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -160,16 +161,15 @@ public final class BuildManager {
 		DebugManager.createDebugModule("buildingqueue").setDraw(() -> {
 			String buildQueueString = "";
 			for (BuildingPlan plan : buildingQueue) {
-				int x = plan.getTx() * 32;
-				int y = plan.getTy() * 32;
-				int width = plan.getType().tileWidth() * 32;
-				int height = plan.getType().tileHeight() * 32;
-				DrawEngine.drawBoxMap(x, y, x + width, y + height, Color.Green, false);
-				DrawEngine.drawTextMap(x, y, plan.getType().toString());
+				Rectangle bb = plan.getBoundingBox();
+				DrawEngine.drawBoxMap((int) bb.getMinX(), (int) bb.getMinY(), (int) bb.getMaxX(), (int) bb.getMaxY(),
+						Color.Green, false);
+				DrawEngine.drawTextMap((int) bb.getMinX(), (int) bb.getMinY(), plan.getType().toString());
 				if (plan.builder != null) {
 					int bx = plan.builder.unit.getX();
 					int by = plan.builder.unit.getY();
-					DrawEngine.drawLineMap(bx, by, x + width / 2, y + width / 2, Color.Green);
+
+					DrawEngine.drawLineMap(bx, by, (int) bb.getCenterX(), (int) bb.getCenterY(), Color.Green);
 				}
 
 				buildQueueString += plan.toString() + ", ";

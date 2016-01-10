@@ -132,42 +132,32 @@ public class JavaBot implements BWEventListener {
 			BuildManager.buildingQueue.stream()
 					.filter(b -> GameHandler.getSelfPlayer().minerals() >= b.getType().mineralPrice())
 					.filter(b -> GameHandler.getSelfPlayer().gas() >= b.getType().gasPrice()).forEach(b -> {
+						if (!b.hasBuilder()) {
+							// If it isn't being built yet
+							BaseManager.getFreeWorker().ifPresent(w -> w.build(b));
+						}
 						if (b.hasBuilder()) {
 							// Has builder already
 							if (!b.builder.unit.isConstructing()) {
 								// Not already building it
-								try {
-									DrawEngine.drawTextMap(b.builder.unit.getX(), b.builder.unit.getY() + 20,
-											"Build it");
-								} catch (Exception e1) {
-									e1.printStackTrace();
-								}
 								Position p = b.builder.unit.getPosition();
 								if (p.getDistance((int) b.getBoundingBox().getCenterX(),
 										(int) b.getBoundingBox().getCenterY()) < 128) {
 									// Build it
 									b.builder.unit.build(b.getType(), b.getTilePosition());
+									System.out.println("Building " + b.getType().toString());
 								} else {
 									// Move closer
 									try {
-										DrawEngine.drawTextMap(b.builder.unit.getX(), b.builder.unit.getY() + 20,
-												"Move closer");
-									} catch (Exception e1) {
-										e1.printStackTrace();
-									}
-									b.builder.move(b.getTx() * 32, b.getTy() * 32);
-									try {
-										b.builder.findPath(b.getBoundingBox(), 128);
+										b.builder.findPath(b.getBoundingBox(),1024);
 										b.builder.followPath();
 									} catch (NoPathFoundException e) {
 										System.err.println(
 												"Worker failed to find a path to build a " + b.getType().toString());
 									}
+									System.out.println("Moving closer to build " + b.getType().toString());
 								}
 							}
-						} else {
-							// If it isn't being built yet
-							BaseManager.getFreeWorker().ifPresent(w -> w.build(b));
 						}
 					});
 			// Auto train

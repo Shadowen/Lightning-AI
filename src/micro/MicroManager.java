@@ -493,7 +493,7 @@ public final class MicroManager {
 					previous = current;
 				}
 			}
-		}).setActive(true);
+		}).setActive(false);
 		// Tasks
 		DebugManager.createDebugModule("tasks").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {

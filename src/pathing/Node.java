@@ -16,6 +16,6 @@ public class Node {
 	}
 
 	public String toString() {
-		return "(" + wx + ", " + wy + ")";
+		return "(" + wx + ", " + wy + ")" + " = " + clearance;
 	}
 }

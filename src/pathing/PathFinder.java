@@ -23,6 +23,13 @@ import gamestructure.debug.DrawEngine;
 import gamestructure.debug.ShapeOverflowException;
 
 public final class PathFinder {
+	/**
+	 * The furthest distance to look for a walkable tile when a ground unit
+	 * appears to be on unwalkable terrain. This is necessary because some
+	 * buildings have walkable edges that are marked as impassable.
+	 */
+	private static final int MAX_WALKABLE_RANGE = 10;
+
 	private static Node[][] walkableNodes;
 	private static int mapWalkWidth;
 	private static int mapWalkHeight;
@@ -86,9 +93,10 @@ public final class PathFinder {
 	}
 
 	public static void onBuildingCreate(Unit building) {
+		long startRebuildTime = System.currentTimeMillis();
+		System.out.print("Rebuilding walk map... ");
 		Set<Node> zeroMe = new HashSet<>();
 		Queue<Node> toRecalculate = new ArrayDeque<>();
-
 		// Add the building to the walkable map
 		TilePosition tp = building.getTilePosition();
 		for (int wx = tp.getX() * 4; wx < (tp.getX() + building.getType().tileWidth()) * 4; wx++) {
@@ -129,6 +137,8 @@ public final class PathFinder {
 				}
 			}
 		}
+
+		System.out.println("done! in " + (System.currentTimeMillis() - startRebuildTime) + "ms");
 	}
 
 	/**
@@ -148,30 +158,32 @@ public final class PathFinder {
 	}
 
 	public static Deque<Position> findGroundPath(Unit unit, Rectangle boundingBox, int maxLength)
-			throws NoPathFoundException {
+			throws NoPathFoundException, InvalidStartNodeException {
 		return findGroundPath(unit.getX(), unit.getY(), boundingBox, unit.getType(), maxLength);
 	}
 
-	public static Deque<Position> findGroundPath(Unit u, Position end) throws NoPathFoundException {
+	public static Deque<Position> findGroundPath(Unit u, Position end)
+			throws NoPathFoundException, InvalidStartNodeException {
 		return findGroundPath(u.getX(), u.getY(), end.getX(), end.getY(), u.getType());
 	}
 
-	public static Deque<Position> findGroundPath(Unit u, Position end, int maxLength) throws NoPathFoundException {
+	public static Deque<Position> findGroundPath(Unit u, Position end, int maxLength)
+			throws NoPathFoundException, InvalidStartNodeException {
 		return findGroundPath(u.getX(), u.getY(), end.getX(), end.getY(), u.getType(), maxLength);
 	}
 
 	public static Deque<Position> findGroundPath(Position start, Position end, UnitType unitType)
-			throws NoPathFoundException {
+			throws NoPathFoundException, InvalidStartNodeException {
 		return findGroundPath(start.getX(), start.getY(), end.getX(), end.getY(), unitType);
 	}
 
 	public static Deque<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType)
-			throws NoPathFoundException {
+			throws NoPathFoundException, InvalidStartNodeException {
 		return findGroundPath(startx, starty, endx, endy, unitType, Integer.MAX_VALUE);
 	}
 
 	public static Deque<Position> findGroundPath(int startx, int starty, int endx, int endy, UnitType unitType,
-			int maxLength) throws NoPathFoundException {
+			int maxLength) throws NoPathFoundException, InvalidStartNodeException {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
 		int endWx = endx / 8;
@@ -183,10 +195,35 @@ public final class PathFinder {
 				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
 			}
 		});
-		Node startNode = walkableNodes[startWx][startWy];
+		// Find the closest walkable node
+		Node startNode = null;
+		distanceLoop: for (int d = 0; d < MAX_WALKABLE_RANGE; d++) {
+			for (int x = 0; x <= d; x++) {
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx + x][startWy + d].clearance)) {
+					startNode = walkableNodes[startWx + x][startWy + d];
+					break distanceLoop;
+				}
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx - x][startWy + d].clearance)) {
+					startNode = walkableNodes[startWx - x][startWy + d];
+					break distanceLoop;
+				}
+			}
+			for (int y = 0; y <= d; y++) {
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy + y].clearance)) {
+					startNode = walkableNodes[startWx + d][startWy + y];
+					break distanceLoop;
+				}
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy - y].clearance)) {
+					startNode = walkableNodes[startWx + d][startWy - y];
+					break distanceLoop;
+				}
+			}
+		}
+		if (startNode == null) {
+			throw new InvalidStartNodeException();
+		}
 		startNode.parent = null;
 		startNode.costFromStart = 0;
-		startNode.predictedTotalCost = Point.distance(startWx, startWy, endWx, endWy);
 		openSet.add(startNode);
 		Set<Node> closedSet = new HashSet<Node>();
 
@@ -221,8 +258,29 @@ public final class PathFinder {
 		throw new NoPathFoundException();
 	}
 
+	/**
+	 * If the starting position is "unwalkable" to ground units, the nearest
+	 * valid location is chosen instead.
+	 * 
+	 * @param startx
+	 *            ending location in pixels
+	 * @param starty
+	 *            starting location in pixels
+	 * @param destination
+	 *            a destination rectangle, coordinates in pixels
+	 * @param unitType
+	 *            the unit type used to determine clearances
+	 * @param maxLength
+	 *            the length of the path at which to terminate the search
+	 * @return
+	 * @throws NoPathFoundException
+	 *             if no path can be found
+	 * @throws InvalidStartNodeException
+	 *             if the start node is too far from any valid ground position
+	 *             for this unit
+	 */
 	public static Deque<Position> findGroundPath(int startx, int starty, Rectangle destination, UnitType unitType,
-			int maxLength) throws NoPathFoundException {
+			int maxLength) throws NoPathFoundException, InvalidStartNodeException {
 		int startWx = startx / 8;
 		int startWy = starty / 8;
 
@@ -232,7 +290,33 @@ public final class PathFinder {
 				return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) * 100);
 			}
 		});
-		Node startNode = walkableNodes[startWx][startWy];
+		// Find the closest walkable node
+		Node startNode = null;
+		distanceLoop: for (int d = 0; d < MAX_WALKABLE_RANGE; d++) {
+			for (int x = 0; x <= d; x++) {
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx + x][startWy + d].clearance)) {
+					startNode = walkableNodes[startWx + x][startWy + d];
+					break distanceLoop;
+				}
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx - x][startWy + d].clearance)) {
+					startNode = walkableNodes[startWx - x][startWy + d];
+					break distanceLoop;
+				}
+			}
+			for (int y = 0; y <= d; y++) {
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy + y].clearance)) {
+					startNode = walkableNodes[startWx + d][startWy + y];
+					break distanceLoop;
+				}
+				if (!unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy - y].clearance)) {
+					startNode = walkableNodes[startWx + d][startWy - y];
+					break distanceLoop;
+				}
+			}
+		}
+		if (startNode == null) {
+			throw new InvalidStartNodeException();
+		}
 		startNode.parent = null;
 		startNode.costFromStart = 0;
 		openSet.add(startNode);
@@ -365,21 +449,12 @@ public final class PathFinder {
 	private static Deque<Position> reconstructPath(Deque<Position> path, Node finalNode, UnitType unitType) {
 		path.push(new Position(finalNode.wx * 8 + unitType.width() / 2, finalNode.wy * 8 + unitType.height() / 2));
 
-		// Base case
-		if (finalNode.parent == null) {
-			return path;
-		}
-		return reconstructPath(path, finalNode.parent, unitType);
-	}
-
-	private static Deque<Position> reconstructAirPath(Deque<Position> path, Node finalNode) {
-		path.push(new Position(finalNode.wx * 8 + 4, finalNode.wy * 8 + 4));
-
-		// Base case
-		if (finalNode.parent == null) {
-			return path;
-		}
-		return reconstructAirPath(path, finalNode.parent);
+		Node n = finalNode;
+		do {
+			path.push(new Position(n.wx * 8 + unitType.width() / 2, n.wy * 8 + unitType.height() / 2));
+			n = n.parent;
+		} while (n != null);
+		return path;
 	}
 
 	public static void registerDebugFunctions() {
@@ -432,11 +507,14 @@ public final class PathFinder {
 		// false);
 		// }
 		// } catch (NoPathFoundException e) {
+		// System.err.println(e);
+		// } catch (InvalidStartNodeException e2) {
+		// System.err.println(e2);
 		// }
 		// } catch (ShapeOverflowException s) {
 		// System.out.println("Shape overflow!");
 		// }
 		// });
-		// });
+		// }).setActive(true);
 	}
 }
