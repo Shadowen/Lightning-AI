@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import bwapi.Position;
 import bwapi.Unit;
+import gamestructure.GameHandler;
 import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
 import pathing.PathFinder;
@@ -15,6 +16,12 @@ public class UnitAgent {
 	protected Position pathTarget;
 	/** The length of the originally planned path */
 	protected int pathOriginalSize;
+	/** Number of frames after which we try a better path */
+	protected static final int PATHING_TIMEOUT_FRAMES = 250;
+	/**
+	 * Frame on which we started using this path.
+	 */
+	protected int pathStartFrame;
 	public UnitTask task;
 	public Unit target;
 	public int timeout;
@@ -33,11 +40,14 @@ public class UnitAgent {
 				&& (path.size() >= 1.0 / 3 * length || pathOriginalSize <= 1.0 / 3 * length)) {
 			return;
 		}
+		// Every 500 frames make the pathfinder work harder
+		length *= ((GameHandler.getFrameCount() - pathStartFrame) / PATHING_TIMEOUT_FRAMES + 1);
 		// Otherwise make a new path
 		try {
 			path = PathFinder.findGroundPath(unit, toWhere, length);
 			pathTarget = toWhere;
 			pathOriginalSize = path.size();
+			pathStartFrame = GameHandler.getFrameCount() + 500;
 		} catch (InvalidStartNodeException e) {
 			e.printStackTrace();
 		}

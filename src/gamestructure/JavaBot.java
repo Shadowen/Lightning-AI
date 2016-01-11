@@ -1,14 +1,5 @@
 package gamestructure;
 
-import gamestructure.debug.DebugManager;
-import gamestructure.debug.DebugModule;
-import gamestructure.debug.DrawEngine;
-import gamestructure.debug.InvalidCommandException;
-import micro.MicroManager;
-import pathing.NoPathFoundException;
-import pathing.PathFinder;
-
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -18,9 +9,6 @@ import base.Base;
 import base.BaseManager;
 import base.Resource;
 import build.BuildManager;
-import state.BotState;
-import state.FirstFrameState;
-import walling.Waller;
 import bwapi.BWEventListener;
 import bwapi.Mirror;
 import bwapi.Player;
@@ -28,6 +16,16 @@ import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
+import gamestructure.debug.DebugManager;
+import gamestructure.debug.DebugModule;
+import gamestructure.debug.DrawEngine;
+import gamestructure.debug.InvalidCommandException;
+import micro.MicroManager;
+import pathing.NoPathFoundException;
+import pathing.PathFinder;
+import state.BotState;
+import state.FirstFrameState;
+import walling.Waller;
 
 public class JavaBot implements BWEventListener {
 	private Mirror mirror = new Mirror();
@@ -100,14 +98,8 @@ public class JavaBot implements BWEventListener {
 			MicroManager.onFrame();
 
 			// Auto economy
-			BaseManager.gatherResources();
+			BaseManager.onFrame();
 
-			BaseManager.getMyBases().stream().filter(b -> b.workers.size() < b.minerals.size() * 2)
-					.map(b -> b.commandCenter).filter(o -> o.isPresent()).map(o -> o.get()).filter(c -> !c.isTraining())
-					.forEach(c -> {
-						if (GameHandler.getSelfPlayer().minerals() >= 50)
-							c.train(UnitType.Terran_SCV);
-					});
 			// OLD Implementation
 			for (Base b : BaseManager.getMyBases()) {
 				b.commandCenter.ifPresent(c -> {
@@ -142,20 +134,18 @@ public class JavaBot implements BWEventListener {
 								// Not already building it
 								Position p = b.builder.unit.getPosition();
 								if (p.getDistance((int) b.getBoundingBox().getCenterX(),
-										(int) b.getBoundingBox().getCenterY()) < 128) {
+										(int) b.getBoundingBox().getCenterY()) < 4 * 32) {
 									// Build it
 									b.builder.unit.build(b.getType(), b.getTilePosition());
-									System.out.println("Building " + b.getType().toString());
 								} else {
 									// Move closer
 									try {
-										b.builder.findPath(b.getBoundingBox(),1024);
+										b.builder.findPath(b.getBoundingBox(), 128);
 										b.builder.followPath();
 									} catch (NoPathFoundException e) {
 										System.err.println(
 												"Worker failed to find a path to build a " + b.getType().toString());
 									}
-									System.out.println("Moving closer to build " + b.getType().toString());
 								}
 							}
 						}

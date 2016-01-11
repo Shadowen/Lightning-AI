@@ -28,7 +28,7 @@ public final class PathFinder {
 	 * appears to be on unwalkable terrain. This is necessary because some
 	 * buildings have walkable edges that are marked as impassable.
 	 */
-	private static final int MAX_WALKABLE_RANGE = 10;
+	private static final int MAX_WALKABLE_RANGE = 20;
 
 	private static Node[][] walkableNodes;
 	private static int mapWalkWidth;
@@ -93,8 +93,6 @@ public final class PathFinder {
 	}
 
 	public static void onBuildingCreate(Unit building) {
-		long startRebuildTime = System.currentTimeMillis();
-		System.out.print("Rebuilding walk map... ");
 		Set<Node> zeroMe = new HashSet<>();
 		Queue<Node> toRecalculate = new ArrayDeque<>();
 		// Add the building to the walkable map
@@ -137,8 +135,6 @@ public final class PathFinder {
 				}
 			}
 		}
-
-		System.out.println("done! in " + (System.currentTimeMillis() - startRebuildTime) + "ms");
 	}
 
 	/**
@@ -293,24 +289,32 @@ public final class PathFinder {
 		// Find the closest walkable node
 		Node startNode = null;
 		distanceLoop: for (int d = 0; d < MAX_WALKABLE_RANGE; d++) {
-			for (int x = 0; x <= d; x++) {
-				if (!unitDoesNotFit(unitType, walkableNodes[startWx + x][startWy + d].clearance)) {
-					startNode = walkableNodes[startWx + x][startWy + d];
-					break distanceLoop;
-				}
-				if (!unitDoesNotFit(unitType, walkableNodes[startWx - x][startWy + d].clearance)) {
-					startNode = walkableNodes[startWx - x][startWy + d];
-					break distanceLoop;
+			if (startWy + d < mapWalkHeight) {
+				for (int x = 0; x <= d; x++) {
+					if (startWx + x < mapWalkWidth
+							&& !unitDoesNotFit(unitType, walkableNodes[startWx + x][startWy + d].clearance)) {
+						startNode = walkableNodes[startWx + x][startWy + d];
+						break distanceLoop;
+					}
+					if (startWx - x >= 0
+							&& !unitDoesNotFit(unitType, walkableNodes[startWx - x][startWy + d].clearance)) {
+						startNode = walkableNodes[startWx - x][startWy + d];
+						break distanceLoop;
+					}
 				}
 			}
-			for (int y = 0; y <= d; y++) {
-				if (!unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy + y].clearance)) {
-					startNode = walkableNodes[startWx + d][startWy + y];
-					break distanceLoop;
-				}
-				if (!unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy - y].clearance)) {
-					startNode = walkableNodes[startWx + d][startWy - y];
-					break distanceLoop;
+			if (startWx + d < mapWalkWidth) {
+				for (int y = 0; y <= d; y++) {
+					if (startWy + y < mapWalkHeight
+							&& !unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy + y].clearance)) {
+						startNode = walkableNodes[startWx + d][startWy + y];
+						break distanceLoop;
+					}
+					if (startWy - y >= 0
+							&& !unitDoesNotFit(unitType, walkableNodes[startWx + d][startWy - y].clearance)) {
+						startNode = walkableNodes[startWx + d][startWy - y];
+						break distanceLoop;
+					}
 				}
 			}
 		}

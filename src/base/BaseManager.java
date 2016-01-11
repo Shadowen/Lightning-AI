@@ -17,10 +17,7 @@ import build.BuildManager;
 
 import java.util.Optional;
 import java.util.Set;
-
 import bwapi.Color;
-import bwapi.Player;
-import bwapi.PlayerType;
 import bwapi.Position;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -96,10 +93,23 @@ public final class BaseManager {
 		}
 	}
 
-	public static void gatherResources() {
+	public static void onFrame() {
 		for (Base b : bases.values()) {
 			b.gatherResources();
+			// Refinery
+			if (b.getMineralWorkerCount() >= b.getMineralCount() && b.gas.stream().anyMatch(r -> !r.gasTaken())) {
+				try {
+					b.takeGas();
+				} catch (NoGeyserAvailableException e) {
+					e.printStackTrace();
+				}
+			}
 		}
+		bases.values().stream().filter(b -> b.workers.size() < b.minerals.size() * 2).map(b -> b.commandCenter)
+				.filter(o -> o.isPresent()).map(o -> o.get()).filter(c -> !c.isTraining()).forEach(c -> {
+					if (GameHandler.getSelfPlayer().minerals() >= 50)
+						c.train(UnitType.Terran_SCV);
+				});
 	}
 
 	public static void expand() {
@@ -185,6 +195,12 @@ public final class BaseManager {
 				Worker w = (Worker) MicroManager.getAgentForUnit(u);
 				getClosestBase(u.getPosition()).ifPresent(b -> b.addWorker(w));
 				w.setTask(UnitTask.MINERALS, null);
+			} else if (u.getType().isRefinery()) {
+				getResource(u).ifPresent(r -> getClosestBase(u.getPosition()).ifPresent(b -> {
+					// Add two more workers
+					b.getFreeWorker().setTask(UnitTask.GAS, r);
+					b.getFreeWorker().setTask(UnitTask.GAS, r);
+				}));
 			}
 		}
 	}
@@ -198,12 +214,6 @@ public final class BaseManager {
 		} else if (type.isMineralField()) {
 			for (Base b : bases.values()) {
 				if (b.minerals.remove(unit)) {
-					break;
-				}
-			}
-		} else if (type.equals(UnitType.Resource_Vespene_Geyser) || type.isRefinery()) {
-			for (Base b : bases.values()) {
-				if (b.gas.remove(unit)) {
 					break;
 				}
 			}
@@ -290,19 +300,15 @@ public final class BaseManager {
 				}
 			}
 		});
-		// bases.addSubmodule("enemy").setDraw(
-		// () -> {
-		// for (Unit u : enemyBuildings) {
-		// DrawEngine.drawBoxScreen(u.getLeft(), u.getTop(),
-		// u.getRight(), u.getBottom(), Color.Red, false);
-		// }
-		// });
 		bases.addSubmodule("miners").setDraw(() -> {
 			for (Base b : BaseManager.bases.values()) {
 				// Miner counts
 				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 15, "Mineral Miners: " + b.getMineralWorkerCount());
 				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 25, "Mineral Fields: " + b.minerals.size());
 			}
+			long idleWorkers = BaseManager.bases.values().stream().flatMap(b -> b.workers.stream())
+					.filter(w -> w.unit.isIdle()).count();
+			DrawEngine.drawTextScreen(550, 50, "Idle workers: " + idleWorkers);
 		});
 	}
 }

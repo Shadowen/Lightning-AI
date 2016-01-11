@@ -24,14 +24,12 @@ public class MassMarineState extends BotState {
 	@Override
 	public BotState onFrame() {
 		// Build marines
-		if (BuildManager.unitQueue.size() == 0) {
+		if (BuildManager.getCountInQueue(UnitType.Terran_Marine) == 0) {
 			BuildManager.addToQueue(UnitType.Terran_Marine);
 		}
 
-		if (GameHandler.getSelfPlayer().minerals() > 200
-				&& BuildManager.getMyUnitCount(UnitType.Terran_Barracks)
-						+ BuildManager
-								.getCountInQueue(UnitType.Terran_Barracks) < 4) {
+		if (GameHandler.getSelfPlayer().minerals() > 200 && BuildManager.getMyUnitCount(UnitType.Terran_Barracks)
+				+ BuildManager.getCountInQueue(UnitType.Terran_Barracks) < 4) {
 			// Add more barracks
 			BuildManager.addToQueue(UnitType.Terran_Barracks);
 		}
@@ -41,30 +39,23 @@ public class MassMarineState extends BotState {
 			for (Unit u : GameHandler.getMyUnits()) {
 				if (u.getType() == UnitType.Terran_Marine) {
 					Optional<Unit> enemyUnit = GameHandler.getClosestEnemy(u);
-					if (enemyUnit.isPresent()
-							&& Point.distance(u.getX(), u.getY(), enemyUnit
-									.get().getX(), enemyUnit.get().getY()) < 500) {
+					if (enemyUnit.isPresent() && Point.distance(u.getX(), u.getY(), enemyUnit.get().getX(),
+							enemyUnit.get().getY()) < 500) {
 						// Attack
 						u.attack(new PositionOrUnit(enemyUnit.get()));
-					} else if (BuildManager
-							.getMyUnitCount(UnitType.Terran_Marine) > armySize) {
+					} else if (BuildManager.getMyUnitCount(UnitType.Terran_Marine) > armySize) {
 						{
 							// Scout all bases
-							List<BaseLocation> baseLocations = BWTA
-									.getBaseLocations();
-							BaseLocation baseLoc = baseLocations
-									.get(enemyLocation);
+							List<BaseLocation> baseLocations = BWTA.getBaseLocations();
+							BaseLocation baseLoc = baseLocations.get(enemyLocation);
 							int x = baseLoc.getX();
 							int y = baseLoc.getY();
 							u.move(baseLoc.getPosition());
 
 							if (GameHandler.isVisible(x / 32, y / 32)) {
-								Optional<Unit> closestEnemy = GameHandler
-										.getClosestEnemyUnit(x, y);
-								if (!closestEnemy.isPresent()
-										|| Point.distance(x, y, closestEnemy
-												.get().getX(), closestEnemy
-												.get().getY()) > 100) {
+								Optional<Unit> closestEnemy = GameHandler.getClosestEnemyUnit(x, y);
+								if (!closestEnemy.isPresent() || Point.distance(x, y, closestEnemy.get().getX(),
+										closestEnemy.get().getY()) > 100) {
 									enemyLocation++;
 								}
 							}

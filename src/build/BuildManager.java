@@ -24,7 +24,7 @@ import bwapi.Unit;
 import bwapi.UnitType;
 
 public final class BuildManager {
-	public static Hashtable<UnitType, Integer> unitMinimums;
+	private static Hashtable<UnitType, Integer> unitMinimums;
 	public static Queue<BuildingPlan> buildingQueue;
 	public static Queue<UnitType> unitQueue;
 	// Only contains my units under construction
@@ -45,6 +45,12 @@ public final class BuildManager {
 	private BuildManager() {
 	}
 
+	/**
+	 * Add a building or unit to the queue to be built. No contorl over the
+	 * location.
+	 * 
+	 * @param unitType
+	 */
 	public static void addToQueue(UnitType unitType) {
 		if (unitType == UnitType.Terran_Refinery) {
 			// Refineries get special treatment!
@@ -71,7 +77,14 @@ public final class BuildManager {
 		}
 	}
 
-	// Add multiple units at once
+	/**
+	 * Add some buildings or units to the queue to be built. No contorl over the
+	 * location.
+	 * 
+	 * @param unitType
+	 * @param count
+	 *            the amount of this unit to build
+	 */
 	public static void addToQueue(UnitType unitType, int count) {
 		for (int i = 0; i < count; i++) {
 			addToQueue(unitType);
@@ -201,5 +214,10 @@ public final class BuildManager {
 				}
 			}
 		});
+	}
+
+	public static boolean buildingPlannedForLocation(TilePosition tilePosition) {
+		return buildingQueue.stream()
+				.anyMatch(b -> b.getBoundingBox().contains(tilePosition.getX() * 32, tilePosition.getY() * 32));
 	}
 }

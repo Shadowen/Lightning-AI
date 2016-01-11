@@ -312,9 +312,8 @@ public final class MicroManager {
 			// Path planned is short
 			if (scoutingTarget.isPresent()) {
 				ua.findPath(scoutingTarget.get(), 256);
+				ua.followPath();
 			}
-
-			ua.followPath();
 		} catch (NoPathFoundException e) {
 			GameHandler.sendText("Failed to find a ground path!");
 		}

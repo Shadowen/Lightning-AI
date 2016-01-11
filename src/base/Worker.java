@@ -105,12 +105,11 @@ public class Worker extends UnitAgent {
 		// If we already have a decent path
 		if (pathTargetBox != null && pathTargetBox.equals(toWhere)
 				&& (path.size() >= 1.0 / 3 * length || pathOriginalSize <= 1.0 / 3 * length)) {
-			System.out.println(GameHandler.getFrameCount() + ": Reusing old path");
 			return;
 		}
+		// Every 500 frames make the pathfinder work harder
+		length *= ((GameHandler.getFrameCount() - pathStartFrame) / PATHING_TIMEOUT_FRAMES + 1);
 		// Otherwise make a new path
-		System.out.println(GameHandler.getFrameCount() + ": New path " + (pathTargetBox != null) + ","
-				+ (pathTargetBox != null && pathTargetBox.equals(toWhere)) + "," + (path.size() >= 1.0 / 3 * length));
 		try {
 			path = PathFinder.findGroundPath(unit, toWhere, length);
 			pathTargetBox = toWhere;

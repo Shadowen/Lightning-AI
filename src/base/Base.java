@@ -8,9 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import build.BuildManager;
 import bwapi.Player;
 import bwapi.TilePosition;
 import bwapi.Unit;
+import bwapi.UnitType;
 import bwta.BaseLocation;
 
 public class Base {
@@ -172,5 +174,18 @@ public class Base {
 			lastScouted = GameHandler.getFrameCount();
 		}
 		return lastScouted;
+	}
+
+	/**
+	 * Take a geyser at this base
+	 * 
+	 * @throws NoGeyserAvailableException
+	 */
+	public void takeGas() throws NoGeyserAvailableException {
+		TilePosition gasTilePosition = gas.stream().filter(r -> r.gasTaken() == false).findAny()
+				.orElseThrow(() -> new NoGeyserAvailableException()).getUnit().getTilePosition();
+		if (!BuildManager.buildingPlannedForLocation(gasTilePosition)) {
+			BuildManager.addBuilding(gasTilePosition, UnitType.Terran_Refinery);
+		}
 	}
 }
