@@ -83,6 +83,7 @@ public final class BaseManager {
 	private BaseManager() {
 	}
 
+	/** Checks the occupancy of bases */
 	public static void countScoutedBases() {
 		for (Entry<BaseLocation, Base> e : bases.entrySet()) {
 			BaseLocation bl = e.getKey();
@@ -94,8 +95,9 @@ public final class BaseManager {
 	}
 
 	public static void onFrame() {
+		countScoutedBases();
+
 		for (Base b : bases.values()) {
-			b.gatherResources();
 			// Refinery
 			if (b.getMineralWorkerCount() >= b.getMineralCount() && b.gas.stream().anyMatch(r -> !r.gasTaken())) {
 				try {
@@ -174,6 +176,12 @@ public final class BaseManager {
 				b.setPlayer(unit.getPlayer());
 			});
 		}
+		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
+			if (unit.getType().isWorker()) {
+				Worker w = (Worker) MicroManager.getAgentForUnit(unit);
+				getClosestBase(unit.getPosition()).ifPresent(b -> b.addWorker(w));
+			}
+		}
 	}
 
 	public static void unitShown(Unit unit) {
@@ -191,11 +199,7 @@ public final class BaseManager {
 
 	public static void unitConstructed(Unit u) {
 		if (u.getPlayer() == GameHandler.getSelfPlayer()) {
-			if (u.getType().isWorker()) {
-				Worker w = (Worker) MicroManager.getAgentForUnit(u);
-				getClosestBase(u.getPosition()).ifPresent(b -> b.addWorker(w));
-				w.setTask(UnitTask.MINERALS, null);
-			} else if (u.getType().isRefinery()) {
+			if (u.getType().isRefinery()) {
 				getResource(u).ifPresent(r -> getClosestBase(u.getPosition()).ifPresent(b -> {
 					// Add two more workers
 					b.getFreeWorker().setTask(UnitTask.GAS, r);

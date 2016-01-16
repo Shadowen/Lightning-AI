@@ -1,19 +1,20 @@
 package micro;
 
+import java.awt.Rectangle;
 import java.util.ArrayDeque;
 import java.util.Deque;
+
 import bwapi.Position;
 import bwapi.Unit;
-import gamestructure.GameHandler;
-import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
-import pathing.PathFinder;
 
-public class UnitAgent {
+public abstract class UnitAgent {
 	public Unit unit;
 	protected Deque<Position> path;
 	/** The destination of the current path */
 	protected Position pathTarget;
+	/** The destination building of the current path */
+	protected Rectangle pathTargetBox;
 	/** The length of the originally planned path */
 	protected int pathOriginalSize;
 	/** Number of frames after which we try a better path */
@@ -22,8 +23,9 @@ public class UnitAgent {
 	 * Frame on which we started using this path.
 	 */
 	protected int pathStartFrame;
-	public UnitTask task;
+	protected UnitTask task;
 	public Unit target;
+	public Position targetPosition;
 	public int timeout;
 
 	public UnitAgent(Unit u) {
@@ -34,24 +36,9 @@ public class UnitAgent {
 		timeout = 0;
 	}
 
-	public void findPath(Position toWhere, int length) throws NoPathFoundException {
-		// If we already have a decent path
-		if (pathTarget != null && pathTarget.equals(toWhere)
-				&& (path.size() >= 1.0 / 3 * length || pathOriginalSize <= 1.0 / 3 * length)) {
-			return;
-		}
-		// Every 500 frames make the pathfinder work harder
-		length *= ((GameHandler.getFrameCount() - pathStartFrame) / PATHING_TIMEOUT_FRAMES + 1);
-		// Otherwise make a new path
-		try {
-			path = PathFinder.findGroundPath(unit, toWhere, length);
-			pathTarget = toWhere;
-			pathOriginalSize = path.size();
-			pathStartFrame = GameHandler.getFrameCount() + 500;
-		} catch (InvalidStartNodeException e) {
-			e.printStackTrace();
-		}
-	}
+	public abstract void findPath(Position toWhere, int length) throws NoPathFoundException;
+
+	public abstract void findPath(Rectangle toWhere, int length) throws NoPathFoundException;
 
 	public void followPath() {
 		Position moveTarget = null;
@@ -79,6 +66,18 @@ public class UnitAgent {
 	public Deque<Position> getPath() {
 		return path;
 	}
+
+	public UnitTask getTask() {
+		return task;
+	}
+
+	public void setTask(UnitTask task) {
+		this.task = task;
+	}
+
+	public abstract void act();
+
+	public abstract void scout() throws NoPathFoundException;
 
 	public String toString() {
 		return unit.getType() + " @ (" + unit.getX() + ", " + unit.getY() + ")";

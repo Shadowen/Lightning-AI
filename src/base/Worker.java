@@ -1,30 +1,22 @@
 package base;
 
-import java.awt.Rectangle;
+import java.awt.Point;
 
 import build.BuildingPlan;
 import bwapi.Position;
 import bwapi.Unit;
 import gamestructure.GameHandler;
-import micro.UnitAgent;
+import micro.GroundAgent;
 import micro.UnitTask;
-import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
-import pathing.PathFinder;
 
-public class Worker extends UnitAgent {
+public class Worker extends GroundAgent {
 	private Resource currentResource;
 	private Base base;
-	/** The destination building of the current path */
-	private Rectangle pathTargetBox;
 
 	public Worker(Unit u) {
 		super(u);
 		task = UnitTask.IDLE;
-	}
-
-	public boolean isIdle() {
-		return unit.isIdle();
 	}
 
 	public void move(int x, int y) {
@@ -49,16 +41,8 @@ public class Worker extends UnitAgent {
 		task = UnitTask.CONSTRUCTING;
 	}
 
-	public UnitTask getTask() {
-		return task;
-	}
-
-	public void setTask(UnitTask task) {
-		setTask(task, null);
-	}
-
 	public void setTask(UnitTask task, Resource newResource) {
-		this.task = task;
+		super.setTask(task);
 
 		if (task == UnitTask.MINERALS || task == UnitTask.GAS) {
 			if (currentResource != null) {
@@ -88,34 +72,65 @@ public class Worker extends UnitAgent {
 		return currentResource;
 	}
 
+	@Override
+	public void act() {
+		if (task == UnitTask.SCOUTING) {
+			try {
+				scout();
+			} catch (NoPathFoundException e) {
+				setTask(UnitTask.IDLE);
+				e.printStackTrace();
+			}
+		}
+		if (task == UnitTask.IDLE) {
+			setTask(UnitTask.MINERALS);
+		}
+		if (task == UnitTask.MINERALS || task == UnitTask.GAS) {
+			if (base == null) {
+				System.err.println("No base found for worker!");
+			}
+			// Get back to work
+			if (currentResource != null) {
+				gather(currentResource);
+				return;
+			}
+
+			// Try to assign one worker to each mineral first
+			Resource mineral = null;
+			double distance = 0;
+
+			// This variable is the loop counter. It only allows maxMiners
+			// to gather each resource patch each loop.
+			int maxMiners = 1;
+			boolean workerAssigned = false;
+			while (!workerAssigned && maxMiners <= 2) {
+				for (MineralResource m : base.minerals) {
+					if (m.getNumGatherers() < maxMiners) {
+						// Find closest mineral patch
+						double newDistance = Point.distance(unit.getX(), unit.getY(), m.getX(), m.getY());
+						if (mineral == null || newDistance < distance) {
+							mineral = m;
+							distance = newDistance;
+							gather(mineral);
+							workerAssigned = true;
+						}
+					}
+				}
+
+				maxMiners++;
+			}
+
+			// Worker could not be assigned a patch as the base is
+			// supersaturated
+			if (!workerAssigned) {
+				GameHandler.sendText("Warning: Base is supersaturated!");
+			}
+		}
+	}
+
 	public void unitDestroyed() {
 		if (currentResource != null) {
 			currentResource.removeGatherer();
-		}
-	}
-
-	@Override
-	public void findPath(Position toWhere, int length) throws NoPathFoundException {
-		pathTargetBox = null;
-		super.findPath(toWhere, length);
-	}
-
-	public void findPath(Rectangle toWhere, int length) throws NoPathFoundException {
-		pathTarget = null;
-		// If we already have a decent path
-		if (pathTargetBox != null && pathTargetBox.equals(toWhere)
-				&& (path.size() >= 1.0 / 3 * length || pathOriginalSize <= 1.0 / 3 * length)) {
-			return;
-		}
-		// Every 500 frames make the pathfinder work harder
-		length *= ((GameHandler.getFrameCount() - pathStartFrame) / PATHING_TIMEOUT_FRAMES + 1);
-		// Otherwise make a new path
-		try {
-			path = PathFinder.findGroundPath(unit, toWhere, length);
-			pathTargetBox = toWhere;
-			pathOriginalSize = path.size();
-		} catch (InvalidStartNodeException e) {
-			e.printStackTrace();
 		}
 	}
 }

@@ -370,4 +370,8 @@ public final class GameHandler {
 	public static List<Unit> getUnitsOnTile(int tx, int ty) {
 		return game.getUnitsOnTile(tx, ty);
 	}
+
+	public static List<Unit> getUnitsInRadius(Position p, int radius) {
+		return game.getUnitsInRadius(p, radius);
+	}
 }

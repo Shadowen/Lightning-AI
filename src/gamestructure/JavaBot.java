@@ -21,6 +21,7 @@ import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.InvalidCommandException;
 import micro.MicroManager;
+import micro.UnrecognizedUnitTypeException;
 import pathing.NoPathFoundException;
 import pathing.PathFinder;
 import state.BotState;
@@ -88,7 +89,6 @@ public class JavaBot implements BWEventListener {
 				return false;
 			});
 
-			BaseManager.countScoutedBases();
 			// Allow the bot to act
 			// Bot state updates
 			botState = botState.onFrame();
@@ -223,18 +223,18 @@ public class JavaBot implements BWEventListener {
 	 */
 	@Override
 	public void onUnitCreate(Unit unit) {
-		try {
-			if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
+		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
+			try {
 				MicroManager.unitCreated(unit);
-				BuildManager.unitsUnderConstruction.add(unit);
+			} catch (UnrecognizedUnitTypeException e) {
+				System.err.println("Micromanager cannot recognize unit " + e.unit.getType());
 			}
-			BaseManager.unitCreated(unit);
-			BuildManager.unitQueue.remove(unit.getType());
-			if (unit.getType().isBuilding()) {
-				PathFinder.onBuildingCreate(unit);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
+			BuildManager.unitsUnderConstruction.add(unit);
+		}
+		BaseManager.unitCreated(unit);
+		BuildManager.unitQueue.remove(unit.getType());
+		if (unit.getType().isBuilding()) {
+			PathFinder.onBuildingCreate(unit);
 		}
 	}
 
@@ -343,6 +343,13 @@ public class JavaBot implements BWEventListener {
 			DrawEngine.drawTextScreen(550, 15, "Supply: " + GameHandler.getSelfPlayer().supplyUsed() + "/"
 					+ GameHandler.getSelfPlayer().supplyTotal());
 		});
+
+		DebugManager.createDebugModule("orders").setDraw(() -> {
+			for (Unit u : GameHandler.getMyUnits()) {
+				DrawEngine.drawLineMap(u.getPosition().getX(), u.getPosition().getY(),
+						u.getOrderTargetPosition().getX(), u.getOrderTargetPosition().getY(), bwapi.Color.Black);
+			}
+		}).setActive(true);
 	}
 
 	@Override

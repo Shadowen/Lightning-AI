@@ -2,12 +2,15 @@ package state;
 
 import java.util.Optional;
 
+import base.Base;
 import base.BaseManager;
 import base.Worker;
 import build.BuildManager;
 import bwapi.Unit;
 import bwapi.UnitType;
 import gamestructure.GameHandler;
+import micro.MicroManager;
+import micro.UnitAgent;
 import micro.UnitTask;
 
 public class StarportRush extends BotState {
@@ -20,11 +23,29 @@ public class StarportRush extends BotState {
 
 	@Override
 	public BotState onFrame() {
+		// Anti-zerg rush
+		if (BaseManager.main != null
+				&& GameHandler.getUnitsInRadius(BaseManager.main.getLocation().getPosition(), 1000).stream()
+						.filter(u -> u.getType() == UnitType.Zerg_Zergling).count() > 0
+				&& MicroManager.getUnitsByType(UnitType.Terran_Vulture).size() > 2
+				&& MicroManager.getUnitsByType(UnitType.Terran_Marine).size() > 5) {
+			System.out.println("Zerg rush detected");
+			MicroManager.getUnitsByType(UnitType.Terran_SCV).stream().forEach(u -> {
+				u.setTask(UnitTask.DEFENDING);
+			});
+		}
+
+		// Expand
 		if (GameHandler.getSelfPlayer().minerals() >= 400 && !BuildManager.isInQueue(UnitType.Terran_Command_Center)) {
 			BaseManager.expand();
 		}
 		// Check the build order
 		int supply = GameHandler.getSelfPlayer().supplyUsed() / 2;
+
+		if (previousSupply <= 0 && supply > 0) {
+			MicroManager.getUnitsByType(UnitType.Terran_SCV).stream().findFirst().get().setTask(UnitTask.SCOUTING);
+		}
+
 		if (supply > 30) {
 			if (GameHandler.getSelfPlayer().supplyTotal() - GameHandler.getSelfPlayer().supplyUsed() < 4) {
 				if (!BuildManager.isInQueue(UnitType.Terran_Supply_Depot)) {
@@ -52,6 +73,21 @@ public class StarportRush extends BotState {
 					GameHandler.sendText("Can't scout since no workers available!");
 				} else {
 					w.get().setTask(UnitTask.SCOUTING);
+					Base target = null;
+					for (Base b : BaseManager.getBases()) {
+						if (b.getLocation().isStartLocation() && b.getPlayer() == GameHandler.getNeutralPlayer()
+								&& (target == null || b.getLastScouted() < target.getLastScouted())) {
+							target = b;
+						}
+					}
+					if (target == null) {
+						for (Base b : BaseManager.getBases()) {
+							if (target == null || b.getLastScouted() < target.getLastScouted()) {
+								target = b;
+							}
+						}
+					}
+					w.get().targetPosition = target.getLocation().getPosition();
 				}
 			} else if (previousSupply < 9 && supply >= 9) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
@@ -72,6 +108,11 @@ public class StarportRush extends BotState {
 					BaseManager.getFreeWorker()
 							.ifPresent(w -> BaseManager.getResource(unit).ifPresent(r -> w.gather(r)));
 				}
+			} else if (unitType == UnitType.Terran_Vulture) {
+				UnitAgent a = MicroManager.getAgentForUnit(unit);
+				a.setTask(UnitTask.SCOUTING);
+			} else if (unitType == UnitType.Terran_Wraith) {
+				MicroManager.getAgentForUnit(unit).setTask(UnitTask.SCOUTING);
 			}
 		}
 		return this;
