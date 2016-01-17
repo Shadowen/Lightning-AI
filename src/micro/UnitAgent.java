@@ -16,7 +16,7 @@ public abstract class UnitAgent {
 	/** The destination building of the current path */
 	protected Rectangle pathTargetBox;
 	/** The length of the originally planned path */
-	protected int pathOriginalSize;
+	protected int pathOriginalSize = Integer.MAX_VALUE;
 	/** Number of frames after which we try a better path */
 	protected static final int PATHING_TIMEOUT_FRAMES = 250;
 	/**
@@ -25,8 +25,7 @@ public abstract class UnitAgent {
 	protected int pathStartFrame;
 	protected UnitTask task;
 	public Unit target;
-	public Position targetPosition;
-	public int timeout;
+	protected int timeout;
 
 	public UnitAgent(Unit u) {
 		unit = u;
@@ -71,7 +70,13 @@ public abstract class UnitAgent {
 		return task;
 	}
 
+	public void setTaskScout(Position target) {
+		this.task = UnitTask.SCOUTING;
+		pathTarget = target;
+	}
+
 	public void setTask(UnitTask task) {
+		// TODO remove this, replace with specific functions
 		this.task = task;
 	}
 

@@ -3,6 +3,7 @@ package build;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
+import micro.UnitTask;
 
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -110,7 +111,7 @@ public final class BuildManager {
 				if (u.getType().equals(p.getType()) && u.getTilePosition().equals(p.getTilePosition())) {
 					// It has been completed
 					buildingQueue.remove(p);
-					p.builder.gather(p.builder.getCurrentResource());
+					p.builder.setTask(UnitTask.MINERALS);
 					break;
 				}
 			}

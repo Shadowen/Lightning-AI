@@ -346,8 +346,10 @@ public class JavaBot implements BWEventListener {
 
 		DebugManager.createDebugModule("orders").setDraw(() -> {
 			for (Unit u : GameHandler.getMyUnits()) {
-				DrawEngine.drawLineMap(u.getPosition().getX(), u.getPosition().getY(),
-						u.getOrderTargetPosition().getX(), u.getOrderTargetPosition().getY(), bwapi.Color.Black);
+				if (u.getOrderTargetPosition().getX() != 0 && u.getOrderTargetPosition().getY() != 0) {
+					DrawEngine.drawLineMap(u.getPosition().getX(), u.getPosition().getY(),
+							u.getOrderTargetPosition().getX(), u.getOrderTargetPosition().getY(), bwapi.Color.Black);
+				}
 			}
 		}).setActive(true);
 	}

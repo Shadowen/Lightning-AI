@@ -202,8 +202,8 @@ public final class BaseManager {
 			if (u.getType().isRefinery()) {
 				getResource(u).ifPresent(r -> getClosestBase(u.getPosition()).ifPresent(b -> {
 					// Add two more workers
-					b.getFreeWorker().setTask(UnitTask.GAS, r);
-					b.getFreeWorker().setTask(UnitTask.GAS, r);
+					b.getFreeWorker().setTaskMining(UnitTask.GAS, r);
+					b.getFreeWorker().setTaskMining(UnitTask.GAS, r);
 				}));
 			}
 		}

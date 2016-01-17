@@ -87,7 +87,7 @@ public class StarportRush extends BotState {
 							}
 						}
 					}
-					w.get().targetPosition = target.getLocation().getPosition();
+					w.get().setTaskScout(target.getLocation().getPosition());
 				}
 			} else if (previousSupply < 9 && supply >= 9) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
@@ -104,9 +104,9 @@ public class StarportRush extends BotState {
 		UnitType unitType = unit.getType();
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (unitType.isRefinery()) {
-				for (int i = 0; i < 3; i++) {
-					BaseManager.getFreeWorker()
-							.ifPresent(w -> BaseManager.getResource(unit).ifPresent(r -> w.gather(r)));
+				// Add two more workers
+				for (int i = 0; i < 2; i++) {
+					BaseManager.getFreeWorker().ifPresent(w -> w.setTask(UnitTask.GAS));
 				}
 			} else if (unitType == UnitType.Terran_Vulture) {
 				UnitAgent a = MicroManager.getAgentForUnit(unit);

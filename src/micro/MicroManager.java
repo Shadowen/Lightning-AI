@@ -218,6 +218,9 @@ public final class MicroManager {
 		// Pathing
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
+				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() + 15,
+						"Path: " + ua.path.size() + "/" + ua.pathOriginalSize + " (" + ua.pathStartFrame + ")");
+
 				final Iterator<Position> it = ua.getPath().iterator();
 				Position previous = it.hasNext() ? it.next() : null;
 				while (it.hasNext()) {
@@ -226,8 +229,12 @@ public final class MicroManager {
 							Color.Yellow);
 					previous = current;
 				}
+				if (previous != null && ua.pathTarget != null) {
+					DrawEngine.drawArrowMap(previous.getX(), previous.getY(), ua.pathTarget.getX(),
+							ua.pathTarget.getY(), Color.Yellow);
+				}
 			}
-		});
+		}).setActive(true);
 		// Unit Agents
 		DebugManager.createDebugModule("agents").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {

@@ -1,33 +1,33 @@
 package base;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import bwapi.Unit;
 
 public abstract class Resource {
 	protected Unit unit;
-	private int gatherers;
+	private List<Worker> gatherers;
 
 	public Resource(Unit u) {
 		unit = u;
-		gatherers = 0;
+		gatherers = new ArrayList<>();
 	}
 
 	public Unit getUnit() {
 		return unit;
 	}
 
-	public void addGatherer() {
-		gatherers++;
+	public void addGatherer(Worker w) {
+		gatherers.add(w);
 	}
 
-	public void removeGatherer() {
-		if (gatherers <= 0) {
-			throw new IndexOutOfBoundsException();
-		}
-		gatherers--;
+	public void removeGatherer(Worker w) {
+		gatherers.remove(w);
 	}
 
 	public int getNumGatherers() {
-		return gatherers;
+		return gatherers.size();
 	}
 
 	public int getX() {

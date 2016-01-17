@@ -16,24 +16,10 @@ public class Worker extends GroundAgent {
 
 	public Worker(Unit u) {
 		super(u);
-		task = UnitTask.IDLE;
 	}
 
 	public void move(int x, int y) {
 		unit.move(new Position(x, y));
-	}
-
-	public void gather(Resource r) {
-		unit.gather(r.getUnit());
-
-		if (r instanceof MineralResource) {
-			setTask(UnitTask.MINERALS, r);
-		} else if (r instanceof GasResource) {
-			setTask(UnitTask.GAS, r);
-		} else {
-			GameHandler.sendText("Error in gathering");
-			setTask(UnitTask.SCOUTING, null);
-		}
 	}
 
 	public void build(BuildingPlan toBuild) {
@@ -41,15 +27,15 @@ public class Worker extends GroundAgent {
 		task = UnitTask.CONSTRUCTING;
 	}
 
-	public void setTask(UnitTask task, Resource newResource) {
-		super.setTask(task);
+	public void setTaskMining(UnitTask task, Resource newResource) {
+		setTask(task);
 
 		if (task == UnitTask.MINERALS || task == UnitTask.GAS) {
 			if (currentResource != null) {
-				currentResource.removeGatherer();
+				currentResource.removeGatherer(this);
 			}
 			if (newResource != null) {
-				newResource.addGatherer();
+				newResource.addGatherer(this);
 			}
 		} else if (task == UnitTask.SCOUTING) {
 			if (base != null) {
@@ -85,18 +71,20 @@ public class Worker extends GroundAgent {
 		if (task == UnitTask.IDLE) {
 			setTask(UnitTask.MINERALS);
 		}
-		if (task == UnitTask.MINERALS || task == UnitTask.GAS) {
+		if (task == UnitTask.MINERALS) {
 			if (base == null) {
 				System.err.println("No base found for worker!");
 			}
 			// Get back to work
 			if (currentResource != null) {
-				gather(currentResource);
+				if (!unit.isGatheringMinerals()) {
+					unit.gather(currentResource.unit);
+				}
 				return;
 			}
 
 			// Try to assign one worker to each mineral first
-			Resource mineral = null;
+			MineralResource mineral = null;
 			double distance = 0;
 
 			// This variable is the loop counter. It only allows maxMiners
@@ -111,7 +99,6 @@ public class Worker extends GroundAgent {
 						if (mineral == null || newDistance < distance) {
 							mineral = m;
 							distance = newDistance;
-							gather(mineral);
 							workerAssigned = true;
 						}
 					}
@@ -119,18 +106,27 @@ public class Worker extends GroundAgent {
 
 				maxMiners++;
 			}
-
+			currentResource = mineral;
 			// Worker could not be assigned a patch as the base is
 			// supersaturated
 			if (!workerAssigned) {
 				GameHandler.sendText("Warning: Base is supersaturated!");
 			}
 		}
+		if (task == UnitTask.GAS) {
+			// Get back to work
+			if (currentResource != null) {
+				if (!unit.isGatheringGas()) {
+					unit.gather(currentResource.unit);
+				}
+				return;
+			}
+		}
 	}
 
 	public void unitDestroyed() {
 		if (currentResource != null) {
-			currentResource.removeGatherer();
+			currentResource.removeGatherer(this);
 		}
 	}
 }

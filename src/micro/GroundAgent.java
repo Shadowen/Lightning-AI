@@ -31,7 +31,7 @@ public abstract class GroundAgent extends UnitAgent {
 			path = PathFinder.findGroundPath(unit, toWhere, length);
 			pathTarget = toWhere;
 			pathOriginalSize = path.size();
-			pathStartFrame = GameHandler.getFrameCount() + 500;
+			pathStartFrame = GameHandler.getFrameCount();
 		} catch (InvalidStartNodeException e) {
 			e.printStackTrace();
 		}
@@ -51,6 +51,7 @@ public abstract class GroundAgent extends UnitAgent {
 			path = PathFinder.findGroundPath(unit, toWhere, length);
 			pathTargetBox = toWhere;
 			pathOriginalSize = path.size();
+			pathStartFrame = GameHandler.getFrameCount();
 		} catch (InvalidStartNodeException e) {
 			e.printStackTrace();
 		}
@@ -58,8 +59,8 @@ public abstract class GroundAgent extends UnitAgent {
 
 	public void scout() throws NoPathFoundException {
 		// Acquire target
-		if (targetPosition == null || (GameHandler.isVisible(targetPosition.getX() / 32, targetPosition.getY() / 32)
-				&& BaseManager.getClosestBase(targetPosition).get().getPlayer().isNeutral())) {
+		if (pathTarget == null || (GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)
+				&& BaseManager.getClosestBase(pathTarget).get().getPlayer().isNeutral())) {
 			System.out.println("Acquiring new scouting target");
 			Base targetBase = null;
 			for (Base b : BaseManager.getBases()) {
@@ -77,12 +78,12 @@ public abstract class GroundAgent extends UnitAgent {
 				}
 			}
 			if (targetBase != null) {
-				targetPosition = targetBase.getLocation().getPosition();
+				pathTarget = targetBase.getLocation().getPosition();
 			}
 		}
 		// Path planned is short
-		if (targetPosition != null) {
-			findPath(targetPosition, 256);
+		if (pathTarget != null) {
+			findPath(pathTarget, 256);
 			followPath();
 		} else {
 			System.err.println("Attempted to scout with no target");
