@@ -27,21 +27,28 @@ public class Worker extends GroundAgent {
 		task = UnitTask.CONSTRUCTING;
 	}
 
-	public void setTaskMining(UnitTask task, Resource newResource) {
-		setTask(task);
+	public void setTaskMiningMinerals(MineralResource newResource) {
+		task = UnitTask.MINERALS;
 
-		if (task == UnitTask.MINERALS || task == UnitTask.GAS) {
-			if (currentResource != null) {
-				currentResource.removeGatherer(this);
-			}
-			if (newResource != null) {
-				newResource.addGatherer(this);
-			}
-		} else if (task == UnitTask.SCOUTING) {
-			if (base != null) {
-				base.removeWorker(this);
-			}
+		if (currentResource != null) {
+			currentResource.removeGatherer(this);
 		}
+		newResource.addGatherer(this);
+
+		currentResource = newResource;
+	}
+
+	public void setTaskMiningMinerals() {
+		task = UnitTask.MINERALS;
+	}
+
+	public void setTaskMiningGas(GasResource newResource) {
+		task = UnitTask.GAS;
+
+		if (currentResource != null) {
+			currentResource.removeGatherer(this);
+		}
+		newResource.addGatherer(this);
 
 		currentResource = newResource;
 	}
@@ -64,12 +71,12 @@ public class Worker extends GroundAgent {
 			try {
 				scout();
 			} catch (NoPathFoundException e) {
-				setTask(UnitTask.IDLE);
+				task = UnitTask.IDLE;
 				e.printStackTrace();
 			}
 		}
 		if (task == UnitTask.IDLE) {
-			setTask(UnitTask.MINERALS);
+			task = UnitTask.MINERALS;
 		}
 		if (task == UnitTask.MINERALS) {
 			if (base == null) {
@@ -106,7 +113,7 @@ public class Worker extends GroundAgent {
 
 				maxMiners++;
 			}
-			currentResource = mineral;
+			setTaskMiningMinerals(mineral);
 			// Worker could not be assigned a patch as the base is
 			// supersaturated
 			if (!workerAssigned) {

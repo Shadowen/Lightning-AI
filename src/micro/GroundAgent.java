@@ -59,27 +59,12 @@ public abstract class GroundAgent extends UnitAgent {
 
 	public void scout() throws NoPathFoundException {
 		// Acquire target
-		if (pathTarget == null || (GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)
-				&& BaseManager.getClosestBase(pathTarget).get().getPlayer().isNeutral())) {
+		if (pathTarget == null || GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
+			if (pathTarget != null && GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
+				System.out.println("Scouting complete!");
+			}
 			System.out.println("Acquiring new scouting target");
-			Base targetBase = null;
-			for (Base b : BaseManager.getBases()) {
-				if (b.getLocation().isStartLocation()
-						&& (b.getPlayer() == GameHandler.getNeutralPlayer() || b.getLastScouted() <= 100)
-						&& (targetBase == null || b.getLastScouted() < targetBase.getLastScouted())) {
-					targetBase = b;
-				}
-			}
-			if (targetBase == null) {
-				for (Base b : BaseManager.getBases()) {
-					if (targetBase == null || b.getLastScouted() < targetBase.getLastScouted()) {
-						targetBase = b;
-					}
-				}
-			}
-			if (targetBase != null) {
-				pathTarget = targetBase.getLocation().getPosition();
-			}
+			pathTarget = MicroManager.getScoutingTarget(unit);
 		}
 		// Path planned is short
 		if (pathTarget != null) {

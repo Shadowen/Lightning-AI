@@ -82,8 +82,9 @@ public class RangedAgent extends GroundAgent {
 			// System.out.println(GameHandler.getFrameCount() + ": predicted
 			// Distance="
 			// + predictedPosition.getDistance(target.getPosition()));
-			final Vector fv = Vector.fromAngle(unit.getAngle());
-			final Vector av = new Vector(unit.getPosition(), target.getPosition()).normalize();
+			// final Vector fv = Vector.fromAngle(unit.getAngle());
+			// final Vector av = new Vector(unit.getPosition(),
+			// target.getPosition()).normalize();
 			// System.out.println(GameHandler.getFrameCount() + ": angle ("
 			// + Vector.angleBetween(fv, av) + ")");
 			task = UnitTask.RETREATING;

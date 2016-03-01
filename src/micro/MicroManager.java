@@ -1,6 +1,7 @@
 package micro;
 
 import java.awt.Point;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,6 +19,7 @@ import bwapi.Position;
 import bwapi.PositionOrUnit;
 import bwapi.Unit;
 import bwapi.UnitType;
+import bwta.BWTA;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
@@ -132,29 +134,42 @@ public final class MicroManager {
 	}
 
 	public static Set<UnitAgent> getUnitsByType(UnitType type) {
-		return unitsByType.get(type);
+		return unitsByType.getOrDefault(type, Collections.emptySet());
 	}
 
 	public static UnitAgent getAgentForUnit(Unit u) {
 		return unitAgents.get(u);
 	}
 
-	private static Position getScoutingTarget() {
+	public static Position getScoutingTarget(Unit requestor) {
 		Base target = null;
 		for (Base b : BaseManager.getBases()) {
 			if (b.getLocation().isStartLocation() && b.getPlayer() == GameHandler.getNeutralPlayer()
 					&& (target == null || b.getLastScouted() < target.getLastScouted())) {
+				if (!requestor.getType().isFlyer()
+						&& !BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
+					System.out.println("Pruned a scouting target due to unreachability");
+					continue;
+				}
 				target = b;
 			}
 		}
 		if (target == null) {
 			for (Base b : BaseManager.getBases()) {
 				if (target == null || b.getLastScouted() < target.getLastScouted()) {
+					if (!requestor.getType().isFlyer()
+							&& !BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
+						System.out.println("Pruned a scouting target due to unreachability");
+						continue;
+					}
 					target = b;
 				}
 			}
 		}
-		return target.getLocation().getPosition();
+		if (target != null) {
+			return target.getLocation().getPosition();
+		}
+		return null;
 	}
 
 	public static void unitCreated(Unit unit) throws UnrecognizedUnitTypeException {

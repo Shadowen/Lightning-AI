@@ -33,21 +33,33 @@ public class WraithAgent extends UnitAgent {
 			}
 			break;
 		case ATTACK_RUN:
+			target = null;
+			// Prioritize units that can attack
 			GameHandler.getEnemyUnits().stream().filter(e -> e.getType().canAttack())
 					.sorted((u1,
 							u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
 									- u2.getPosition().getDistance(unit.getPosition())) * 1000)
 					.findFirst().ifPresent(e -> {
 						target = e;
-						unit.move(e.getPosition());
-						final int unitSize = Math.min(unit.getType().width(), unit.getType().height());
-						final int range = unit.getType().groundWeapon().maxRange();
-						final int enemySize = Math.min(e.getType().width(), e.getType().height());
-						// 205 distance seems good for Wraith
-						if (predictedPosition.getDistance(e.getPosition()) <= unitSize + range + enemySize / 2) {
-							task = UnitTask.FIRING;
-						}
 					});
+			// Otherwise target anything
+			if (target == null) {
+				GameHandler.getEnemyUnits().stream().filter(e -> !e.getType().canAttack())
+						.sorted((u1,
+								u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
+										- u2.getPosition().getDistance(unit.getPosition())) * 1000)
+						.findFirst().ifPresent(e -> {
+							target = e;
+						});
+			}
+			unit.move(target.getPosition());
+			final int unitSize = Math.min(unit.getType().width(), unit.getType().height());
+			final int range = unit.getType().groundWeapon().maxRange();
+			final int enemySize = Math.min(target.getType().width(), target.getType().height());
+			// 205 distance seems good for Wraith
+			if (predictedPosition.getDistance(target.getPosition()) <= unitSize + range + enemySize / 2) {
+				task = UnitTask.FIRING;
+			}
 			break;
 		case FIRING:
 			unit.attack(new PositionOrUnit(target));

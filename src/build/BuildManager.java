@@ -108,10 +108,11 @@ public final class BuildManager {
 			// Go through planned buildings
 			for (BuildingPlan p : buildingQueue) {
 				// If it's the right building according to the plan
+
 				if (u.getType().equals(p.getType()) && u.getTilePosition().equals(p.getTilePosition())) {
 					// It has been completed
 					buildingQueue.remove(p);
-					p.builder.setTask(UnitTask.MINERALS);
+					p.builder.setTaskMiningMinerals();
 					break;
 				}
 			}

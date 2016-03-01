@@ -66,18 +66,21 @@ public abstract class UnitAgent {
 		return path;
 	}
 
-	public UnitTask getTask() {
-		return task;
-	}
-
 	public void setTaskScout(Position target) {
 		this.task = UnitTask.SCOUTING;
 		pathTarget = target;
 	}
 
-	public void setTask(UnitTask task) {
-		// TODO remove this, replace with specific functions
-		this.task = task;
+	public void setTaskScouting() {
+		task = UnitTask.SCOUTING;
+	}
+
+	public void setTaskDefending(UnitTask defending) {
+		task = UnitTask.DEFENDING;
+	}
+
+	public UnitTask getTask() {
+		return task;
 	}
 
 	public abstract void act();
