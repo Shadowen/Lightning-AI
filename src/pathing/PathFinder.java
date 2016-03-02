@@ -309,11 +309,9 @@ public final class PathFinder {
 					reconstructPath(path, currentNode, unitType);
 					return path;
 				}
-
 				if (closedSet.contains(neighbor) || unitDoesNotFit(unitType, neighbor.clearance)) {
 					continue;
 				}
-
 				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
 					neighbor.parent = currentNode;
 					neighbor.costFromStart = tentative_g_score;

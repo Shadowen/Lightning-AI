@@ -13,6 +13,11 @@ public class RangedAgent extends GroundAgent {
 	}
 
 	@Override
+	public void attackCycle(Unit target) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
 	public void act() {
 		final Position predictedPosition = new Position((int) (unit.getX() + unit.getVelocityX()),
 				(int) (unit.getY() + unit.getVelocityY()));

@@ -132,4 +132,10 @@ public class Worker extends GroundAgent {
 			currentResource.removeGatherer(this);
 		}
 	}
+
+	@Override
+	public void attackCycle(Unit target) {
+		// TODO Auto-generated method stub
+		
+	}
 }

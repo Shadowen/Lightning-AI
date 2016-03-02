@@ -1,11 +1,7 @@
 package state;
 
-import java.util.Optional;
-
-import base.Base;
 import base.BaseManager;
 import base.GasResource;
-import base.Worker;
 import build.BuildManager;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -15,7 +11,6 @@ import micro.UnitAgent;
 import micro.UnitTask;
 
 public class StarportRush extends BotState {
-
 	int previousSupply = 0;
 
 	protected StarportRush(BotState oldState) {
@@ -42,10 +37,6 @@ public class StarportRush extends BotState {
 		}
 		// Check the build order
 		int supply = GameHandler.getSelfPlayer().supplyUsed() / 2;
-
-		if (previousSupply <= 0 && supply > 0) {
-			MicroManager.getUnitsByType(UnitType.Terran_SCV).stream().findFirst().ifPresent(w -> w.setTaskScouting());
-		}
 
 		if (supply > 30) {
 			if (GameHandler.getSelfPlayer().supplyTotal() - GameHandler.getSelfPlayer().supplyUsed() < 4) {
@@ -85,13 +76,7 @@ public class StarportRush extends BotState {
 	public BotState unitConstructed(Unit unit) {
 		UnitType unitType = unit.getType();
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
-			if (unitType.isRefinery()) {
-				// Add two more workers
-				for (int i = 0; i < 2; i++) {
-					BaseManager.getFreeWorker()
-							.ifPresent(w -> w.setTaskMiningGas((GasResource) BaseManager.getResource(unit).get()));
-				}
-			} else if (unitType == UnitType.Terran_Vulture) {
+			if (unitType == UnitType.Terran_Vulture) {
 				UnitAgent a = MicroManager.getAgentForUnit(unit);
 				a.setTaskScouting();
 			} else if (unitType == UnitType.Terran_Wraith) {

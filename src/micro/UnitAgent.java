@@ -40,7 +40,8 @@ public abstract class UnitAgent {
 
 	public abstract void findPath(Rectangle toWhere, int length) throws NoPathFoundException;
 
-	public abstract Deque<Position> findPathAwayFrom(Position fromWhere, int length) throws InvalidStartNodeException, NoPathFoundException;
+	public abstract Deque<Position> findPathAwayFrom(Position fromWhere, int length)
+			throws InvalidStartNodeException, NoPathFoundException;
 
 	public void followPath() {
 		Position moveTarget = null;
@@ -90,7 +91,10 @@ public abstract class UnitAgent {
 
 	public abstract void scout();
 
+	public abstract void attackCycle(Unit target);
+
 	public String toString() {
 		return unit.getType() + " @ (" + unit.getX() + ", " + unit.getY() + ")";
 	}
+
 }

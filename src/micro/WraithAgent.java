@@ -15,39 +15,13 @@ public class WraithAgent extends UnitAgent {
 		super(unit);
 	}
 
-	@Override
-	public void act() {
+	public void attackCycle(Unit target) {
+		this.target = target;
 		final Position predictedPosition = new Position((int) (unit.getX() + unit.getVelocityX()),
 				(int) (unit.getY() + unit.getVelocityY()));
 
 		switch (task) {
-		case IDLE:
-			task = UnitTask.SCOUTING;
-			break;
-		case SCOUTING:
-			// Scout the base...
-			scout();
-			break;
 		case ATTACK_RUN:
-			target = null;
-			// Prioritize units that can attack
-			GameHandler.getEnemyUnits().stream().filter(e -> e.getType().canAttack())
-					.sorted((u1,
-							u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
-									- u2.getPosition().getDistance(unit.getPosition())) * 1000)
-					.findFirst().ifPresent(e -> {
-						target = e;
-					});
-			// Otherwise target anything
-			if (target == null) {
-				GameHandler.getEnemyUnits().stream().filter(e -> !e.getType().canAttack())
-						.sorted((u1,
-								u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
-										- u2.getPosition().getDistance(unit.getPosition())) * 1000)
-						.findFirst().ifPresent(e -> {
-							target = e;
-						});
-			}
 			unit.move(target.getPosition());
 			final int unitSize = Math.min(unit.getType().width(), unit.getType().height());
 			final int range = unit.getType().groundWeapon().maxRange();
@@ -61,6 +35,32 @@ public class WraithAgent extends UnitAgent {
 			unit.attack(new PositionOrUnit(target));
 			task = UnitTask.RETREATING;
 			timeout = 3;
+			break;
+		case RETREATING:
+			final int dx = 10 * (unit.getX() - target.getX());
+			final int dy = 10 * (unit.getY() - target.getY());
+			unit.move(new Position(unit.getX() + dx, unit.getY() + dy));
+			timeout--;
+			break;
+		default:
+			task = UnitTask.ATTACK_RUN;
+			attackCycle(target);
+		}
+	}
+
+	@Override
+	public void act() {
+		switch (task) {
+		case IDLE:
+			task = UnitTask.SCOUTING;
+			break;
+		case SCOUTING:
+			// Scout the base...
+			scout();
+			break;
+		case ATTACK_RUN:
+		case FIRING:
+			attackCycle(target);
 			break;
 		case RETREATING:
 			final int dx = 10 * (unit.getX() - target.getX());

@@ -201,9 +201,10 @@ public final class BaseManager {
 		if (u.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (u.getType().isRefinery()) {
 				getResource(u).ifPresent(r -> getClosestBase(u.getPosition()).ifPresent(b -> {
-					// Add two more workers
-					b.getFreeWorker().setTaskMiningGas((GasResource) r);
-					b.getFreeWorker().setTaskMiningGas((GasResource) r);
+					GasResource gr = (GasResource) r;
+					while (gr.getNumGatherers() < 3) {
+						b.getFreeWorker().setTaskMiningGas(gr);
+					}
 				}));
 			}
 		}
