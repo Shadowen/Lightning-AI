@@ -1,11 +1,11 @@
 package micro;
 
 import java.awt.Rectangle;
+import java.util.Deque;
 
 import bwapi.Position;
 import bwapi.PositionOrUnit;
 import bwapi.Unit;
-import bwapi.UnitType;
 import gamestructure.GameHandler;
 import pathing.NoPathFoundException;
 
@@ -26,11 +26,7 @@ public class WraithAgent extends UnitAgent {
 			break;
 		case SCOUTING:
 			// Scout the base...
-			try {
-				scout();
-			} catch (NoPathFoundException e1) {
-				e1.printStackTrace();
-			}
+			scout();
 			break;
 		case ATTACK_RUN:
 			target = null;
@@ -84,19 +80,25 @@ public class WraithAgent extends UnitAgent {
 
 	@Override
 	public void findPath(Position toWhere, int length) throws NoPathFoundException {
-		// TODO Auto-generated method stub
-
+		path.clear();
+		path.add(toWhere);
 	}
 
 	@Override
 	public void findPath(Rectangle toWhere, int length) throws NoPathFoundException {
-		// TODO Auto-generated method stub
-
+		path.clear();
+		path.addLast(new Position(toWhere.x, toWhere.y));
 	}
 
 	@Override
-	public void scout() throws NoPathFoundException {
+	public void scout() {
 		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public Deque<Position> findPathAwayFrom(Position fromWhere, int length) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

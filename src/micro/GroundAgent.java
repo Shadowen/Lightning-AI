@@ -1,6 +1,14 @@
 package micro;
 
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
 
 import base.Base;
 import base.BaseManager;
@@ -9,6 +17,7 @@ import bwapi.Unit;
 import gamestructure.GameHandler;
 import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
+import pathing.Node;
 import pathing.PathFinder;
 
 public abstract class GroundAgent extends UnitAgent {
@@ -57,7 +66,7 @@ public abstract class GroundAgent extends UnitAgent {
 		}
 	}
 
-	public void scout() throws NoPathFoundException {
+	public void scout() {
 		// Acquire target
 		if (pathTarget == null || GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
 			if (pathTarget != null && GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
@@ -68,10 +77,67 @@ public abstract class GroundAgent extends UnitAgent {
 		}
 		// Path planned is short
 		if (pathTarget != null) {
-			findPath(pathTarget, 256);
-			followPath();
+			try {
+				findPath(pathTarget, 256);
+				followPath();
+			} catch (NoPathFoundException e) {
+				System.err.println("No path to scout");
+			}
 		} else {
 			System.err.println("Attempted to scout with no target");
 		}
+	}
+
+	@Override
+	public Deque<Position> findPathAwayFrom(Position fromWhere, int length)
+			throws InvalidStartNodeException, NoPathFoundException {
+		int fromWhereWx = fromWhere.getX() / 8;
+		int fromWhereWy = fromWhere.getY() / 8;
+
+		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
+			@Override
+			public int compare(Node n1, Node n2) {
+				return (int) Math
+						.round((MicroManager.threatMap[n1.wx][n1.wy] - MicroManager.threatMap[n2.wx][n2.wy]) * 100);
+			}
+		});
+		// Find the closest walkable node
+		Node startNode = PathFinder.findClosestWalkableNode(fromWhereWx, fromWhereWy, unit.getType());
+		startNode.parent = null;
+		startNode.costFromStart = 0;
+		openSet.add(startNode);
+		Set<Node> closedSet = new HashSet<Node>();
+
+		// Iterate
+		while (openSet.size() > 0) {
+			Node currentNode = openSet.remove();
+
+			// Move the node from the open set to the closed set
+			closedSet.add(currentNode);
+			// Add all neigbors to the open set
+			for (Node neighbor : PathFinder.getNeighbors(currentNode.wx, currentNode.wy)) {
+				double tentative_g_score = currentNode.costFromStart
+						+ Point.distance(currentNode.wx, currentNode.wy, neighbor.wx, neighbor.wy);
+				// Base case
+				if (tentative_g_score > length) {
+					Deque<Position> path = new ArrayDeque<>();
+					PathFinder.reconstructPath(path, currentNode, unit.getType());
+					return path;
+				}
+
+				if (closedSet.contains(neighbor) || PathFinder.unitDoesNotFit(unit.getType(), neighbor.clearance)) {
+					continue;
+				}
+
+				if (!openSet.contains(neighbor) || tentative_g_score < neighbor.costFromStart) {
+					neighbor.parent = currentNode;
+					neighbor.costFromStart = tentative_g_score;
+					neighbor.predictedTotalCost = tentative_g_score
+							+ Point.distance(neighbor.wx, neighbor.wy, fromWhereWx, fromWhereWy);
+					openSet.add(neighbor);
+				}
+			}
+		}
+		throw new NoPathFoundException();
 	}
 }

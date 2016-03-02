@@ -68,12 +68,8 @@ public class Worker extends GroundAgent {
 	@Override
 	public void act() {
 		if (task == UnitTask.SCOUTING) {
-			try {
-				scout();
-			} catch (NoPathFoundException e) {
-				task = UnitTask.IDLE;
-				e.printStackTrace();
-			}
+			scout();
+			return;
 		}
 		if (task == UnitTask.IDLE) {
 			task = UnitTask.MINERALS;

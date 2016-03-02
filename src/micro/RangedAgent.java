@@ -3,6 +3,7 @@ package micro;
 import bwapi.Position;
 import bwapi.Unit;
 import gamestructure.GameHandler;
+import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
 
 public class RangedAgent extends GroundAgent {
@@ -22,11 +23,7 @@ public class RangedAgent extends GroundAgent {
 			break;
 		case SCOUTING:
 			// Scout the base...
-			try {
-				scout();
-			} catch (NoPathFoundException e1) {
-				e1.printStackTrace();
-			}
+			scout();
 			target = GameHandler.getEnemyUnits().stream()
 					.sorted((u1,
 							u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
@@ -91,25 +88,32 @@ public class RangedAgent extends GroundAgent {
 			timeout = 3;
 			break;
 		case RETREATING:
+			target = GameHandler.getEnemyUnits().stream()
+					.sorted((u1,
+							u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
+									- u2.getPosition().getDistance(unit.getPosition())) * 1000)
+					.findFirst().orElse(null);
 			// System.out.println(
 			// GameHandler.getFrameCount() + ": Retreating (" +
 			// unit.getGroundWeaponCooldown() + ")");
-			final int dx = (unit.getX() - target.getX());
-			final int dy = (unit.getY() - target.getY());
-			final Position destination = new Position(unit.getX() + dx, unit.getY() + dy);
-			unit.move(destination);
-			// try {
-			// path =
-			// PathingManager.findGroundPath(unit.getPosition(),
-			// destination,
-			// UnitType.Terran_Vulture);
-			// followPath();
-			// } catch (NoPathFoundException e1) {
-			// System.err.println("No path found for vulture!");
-			// }
+			// final int dx = (unit.getX() - target.getX());
+			// final int dy = (unit.getY() - target.getY());
+			// final Position destination = new Position(unit.getX() + dx,
+			// unit.getY() + dy);
+			// unit.move(destination);
+			try {
+				path = findPathAwayFrom(target.getPosition(), 10);
+				followPath();
+			} catch (NoPathFoundException e1) {
+				System.err.println("No path found for RangedAgent!");
+				e1.printStackTrace();
+			} catch (InvalidStartNodeException e) {
+				System.err.println("Invalid start node for RangedAgent.");
+				e.printStackTrace();
+			}
 			timeout--;
 			// Go safe when threshold is reached
-			if (timeout <= 0 && unit.getGroundWeaponCooldown() <= 0) {
+			if (timeout <= 0 && unit.getGroundWeaponCooldown() <= 1) {
 				task = UnitTask.ATTACK_RUN;
 			}
 			break;
@@ -117,5 +121,4 @@ public class RangedAgent extends GroundAgent {
 			break;
 		}
 	}
-
 }

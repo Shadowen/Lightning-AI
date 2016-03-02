@@ -31,9 +31,8 @@ public final class MicroManager {
 	private static int mapWidth;
 	/** The height of the map in build tiles */
 	private static int mapHeight;
-	private static double[][] targetMap;
-	private static double[][] threatMap;
-	private static Point[][] movementMap;
+	public static double[][] targetMap;
+	public static double[][] threatMap;
 
 	private static Map<UnitType, Set<UnitAgent>> unitsByType;
 	private static Map<Unit, UnitAgent> unitAgents;
@@ -44,19 +43,9 @@ public final class MicroManager {
 		mapHeight = GameHandler.getMapHeight();
 		targetMap = new double[mapWidth + 1][mapHeight + 1];
 		threatMap = new double[mapWidth + 1][mapHeight + 1];
-		movementMap = new Point[mapWidth + 1][mapHeight + 1];
-		for (int x = 0; x < movementMap.length; x++) {
-			for (int y = 0; y < movementMap[x].length; y++) {
-				movementMap[x][y] = new Point(0, 0);
-			}
-		}
 
-		unitsByType = new HashMap<UnitType, Set<UnitAgent>>();
-		unitsByType.put(UnitType.Terran_Wraith, new HashSet<UnitAgent>());
-		unitsByType.put(UnitType.Terran_Barracks, new HashSet<UnitAgent>());
-		unitsByType.put(UnitType.Terran_Factory, new HashSet<UnitAgent>());
-		unitsByType.put(UnitType.Terran_Vulture, new HashSet<UnitAgent>());
 		unitAgents = new HashMap<Unit, UnitAgent>();
+		unitsByType = new HashMap<UnitType, Set<UnitAgent>>();
 
 		registerDebugFunctions();
 		System.out.println("Success!");
@@ -121,14 +110,6 @@ public final class MicroManager {
 				for (int cy = startY; cy < endY; cy++) {
 					threatMap[cx][cy] += threatValue * Math.max(1 - Point.distance(x, y, cx, cy) / radius, 0);
 				}
-			}
-		}
-
-		movementMap = new Point[mapWidth + 1][mapHeight + 1];
-		for (int x = 1; x < mapWidth - 1; x++) {
-			for (int y = 1; y < mapHeight - 1; y++) {
-				movementMap[x][y] = new Point((int) (threatMap[x + 1][y] - threatMap[x - 1][y]),
-						(int) (threatMap[x][y + 1] - threatMap[x][y - 1]));
 			}
 		}
 	}

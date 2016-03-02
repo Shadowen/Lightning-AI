@@ -6,6 +6,7 @@ import java.util.Deque;
 
 import bwapi.Position;
 import bwapi.Unit;
+import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
 
 public abstract class UnitAgent {
@@ -38,6 +39,8 @@ public abstract class UnitAgent {
 	public abstract void findPath(Position toWhere, int length) throws NoPathFoundException;
 
 	public abstract void findPath(Rectangle toWhere, int length) throws NoPathFoundException;
+
+	public abstract Deque<Position> findPathAwayFrom(Position fromWhere, int length) throws InvalidStartNodeException, NoPathFoundException;
 
 	public void followPath() {
 		Position moveTarget = null;
@@ -85,7 +88,7 @@ public abstract class UnitAgent {
 
 	public abstract void act();
 
-	public abstract void scout() throws NoPathFoundException;
+	public abstract void scout();
 
 	public String toString() {
 		return unit.getType() + " @ (" + unit.getX() + ", " + unit.getY() + ")";

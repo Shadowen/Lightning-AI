@@ -1,8 +1,8 @@
 package pathing;
 
 public class Node {
-	int wx;
-	int wy;
+	public int wx;
+	public int wy;
 	public int distanceFromStart;
 	public double costFromStart;
 	public double predictedTotalCost;
