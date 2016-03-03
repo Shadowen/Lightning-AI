@@ -84,22 +84,22 @@ public final class BaseManager {
 	}
 
 	/** Checks the occupancy of bases */
-	public static void countScoutedBases() {
+	public static void checkBaseOccupancy() {
 		for (Entry<BaseLocation, Base> e : bases.entrySet()) {
 			BaseLocation bl = e.getKey();
 			Base b = e.getValue();
-			if (GameHandler.isVisible(b.getLocation().getTilePosition())) {
+			if (GameHandler.isVisible(bl.getTilePosition())) {
 				b.setLastScouted();
 			}
 		}
 	}
 
 	public static void onFrame() {
-		countScoutedBases();
+		checkBaseOccupancy();
 
 		for (Base b : bases.values()) {
 			// Refinery
-			if (b.getMineralWorkerCount() >= b.getMineralCount() && b.gas.stream().anyMatch(r -> !r.gasTaken())) {
+			if (b.getMineralWorkerCount() >= 1.5 * b.getMineralCount() && b.gas.stream().anyMatch(r -> !r.gasTaken())) {
 				try {
 					b.takeGas();
 				} catch (NoGeyserAvailableException e) {

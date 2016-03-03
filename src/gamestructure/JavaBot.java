@@ -21,7 +21,6 @@ import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.InvalidCommandException;
 import micro.MicroManager;
-import micro.UnrecognizedUnitTypeException;
 import pathing.NoPathFoundException;
 import pathing.PathFinder;
 import state.BotState;
@@ -224,11 +223,7 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onUnitCreate(Unit unit) {
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
-			try {
-				MicroManager.unitCreated(unit);
-			} catch (UnrecognizedUnitTypeException e) {
-				System.err.println("Micromanager cannot recognize unit " + e.unit.getType());
-			}
+			MicroManager.unitCreated(unit);
 			BuildManager.unitsUnderConstruction.add(unit);
 		}
 		BaseManager.unitCreated(unit);

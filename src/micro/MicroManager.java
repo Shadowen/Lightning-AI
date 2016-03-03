@@ -153,7 +153,7 @@ public final class MicroManager {
 		return null;
 	}
 
-	public static void unitCreated(Unit unit) throws UnrecognizedUnitTypeException {
+	public static void unitCreated(Unit unit) {
 		if (!unitAgents.containsKey(unit)) {
 			final UnitType type = unit.getType();
 			UnitAgent ua;
@@ -165,7 +165,8 @@ public final class MicroManager {
 			} else if (type == UnitType.Terran_Wraith) {
 				ua = new WraithAgent(unit);
 			} else {
-				throw new UnrecognizedUnitTypeException(unit);
+				System.err.println("Micromanager was unable to recognize unit" + unit.getType().toString());
+				return;
 			}
 			unitsByType.putIfAbsent(type, new HashSet<UnitAgent>());
 			unitsByType.get(type).add(ua);

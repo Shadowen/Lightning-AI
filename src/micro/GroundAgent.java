@@ -10,8 +10,6 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
-import base.Base;
-import base.BaseManager;
 import bwapi.Position;
 import bwapi.Unit;
 import gamestructure.GameHandler;
