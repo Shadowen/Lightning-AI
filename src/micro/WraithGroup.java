@@ -5,13 +5,7 @@ import gamestructure.GameHandler;
 
 public class WraithGroup extends UnitGroup {
 	public void act() {
-		double cx = 0;
-		double cy = 0;
-		for (UnitAgent ua : unitAgents) {
-			cx += ua.unit.getX();
-			cy += ua.unit.getY();
-		}
-		final Position centerPosition = new Position((int) (cx / unitAgents.size()), (int) (cy / unitAgents.size()));
+		final Position centerPosition = getCenterPosition();
 
 		switch (task) {
 		case IDLE:
@@ -21,9 +15,9 @@ public class WraithGroup extends UnitGroup {
 			break;
 		case SCOUTING:
 			for (UnitAgent ua : unitAgents) {
-				ua.setTaskScouting();
+				ua.scout();
 			}
-			if (unitAgents.size() > 5) {
+			if (unitAgents.size() >= 4) {
 				task = UnitTask.ATTACK_RUN;
 			}
 			break;

@@ -1,6 +1,7 @@
 package micro;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ public final class MicroManager {
 
 	private static Map<UnitType, Set<UnitAgent>> unitsByType;
 	private static Map<Unit, UnitAgent> unitAgents;
+	private static List<UnitGroup> unitGroups;
 
 	public static void init() {
 		System.out.print("Starting MicroManager... ");
@@ -46,6 +48,7 @@ public final class MicroManager {
 
 		unitAgents = new HashMap<Unit, UnitAgent>();
 		unitsByType = new HashMap<UnitType, Set<UnitAgent>>();
+		unitGroups = new ArrayList<UnitGroup>();
 
 		registerDebugFunctions();
 		System.out.println("Success!");
@@ -58,8 +61,11 @@ public final class MicroManager {
 	public static void onFrame() {
 		updateMap();
 		// Move units
-		for (UnitAgent ua : unitAgents.values()) {
-			ua.act();
+		// for (UnitAgent ua : unitAgents.values()) {
+		// ua.act();
+		// }
+		for (UnitGroup ug : unitGroups) {
+			ug.act();
 		}
 	}
 
@@ -164,8 +170,14 @@ public final class MicroManager {
 				ua = new RangedAgent(unit);
 			} else if (type == UnitType.Terran_Wraith) {
 				ua = new WraithAgent(unit);
+				// TODO sort into unit groups properly
+				if (unitGroups.size() == 0) {
+					unitGroups.add(new WraithGroup());
+					unitGroups.get(0).task = UnitTask.SCOUTING;
+				}
+				unitGroups.get(0).addUnitAgent(ua);
 			} else {
-				System.err.println("Micromanager was unable to recognize unit" + unit.getType().toString());
+				System.err.println("Micromanager was unable to recognize unit " + unit.getType().toString());
 				return;
 			}
 			unitsByType.putIfAbsent(type, new HashSet<UnitAgent>());
@@ -241,6 +253,10 @@ public final class MicroManager {
 		// Tasks
 		DebugManager.createDebugModule("tasks").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
+				if (ua.target != null) {
+					DrawEngine.drawLineMap(ua.unit.getX(), ua.unit.getY(), ua.target.getX(), ua.target.getY(),
+							Color.Blue);
+				}
 				switch (ua.task) {
 				case CONSTRUCTING:
 					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Construction");
@@ -274,6 +290,15 @@ public final class MicroManager {
 					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Unknown");
 					break;
 				}
+			}
+		}).setActive(true);
+		// Unit Groups
+		DebugManager.createDebugModule("Unit Groups").setDraw(() -> {
+			for (int i = 0; i < unitGroups.size(); i++) {
+				UnitGroup ug = unitGroups.get(i);
+				Position c = ug.getCenterPosition();
+				DrawEngine.drawTextMap(c.getX(), c.getY(), "Unit Group " + i);
+				DrawEngine.drawTextMap(c.getX(), c.getY() + 10, ug.task.toString());
 			}
 		}).setActive(true);
 	}

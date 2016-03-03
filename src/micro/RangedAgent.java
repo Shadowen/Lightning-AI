@@ -34,6 +34,10 @@ public class RangedAgent extends GroundAgent {
 							u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
 									- u2.getPosition().getDistance(unit.getPosition())) * 1000)
 					.findFirst().orElse(null);
+			// Switch to aggressive if enemy is nearby
+			if (unit.getPosition().getDistance(target) < 100) {
+				task = UnitTask.ATTACK_RUN;
+			}
 			break;
 		case ATTACK_RUN:
 			target = GameHandler.getEnemyUnits().stream()

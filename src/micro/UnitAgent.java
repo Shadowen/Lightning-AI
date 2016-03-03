@@ -17,7 +17,7 @@ public abstract class UnitAgent {
 	/** The destination building of the current path */
 	protected Rectangle pathTargetBox;
 	/** The length of the originally planned path */
-	protected int pathOriginalSize = Integer.MAX_VALUE;
+	protected int pathOriginalSize = 0;
 	/** Number of frames after which we try a better path */
 	protected static final int PATHING_TIMEOUT_FRAMES = 250;
 	/**
