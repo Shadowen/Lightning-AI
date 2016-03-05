@@ -13,11 +13,6 @@ public class RangedAgent extends GroundAgent {
 	}
 
 	@Override
-	public void attackCycle(Unit target) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
 	public void act() {
 		final Position predictedPosition = new Position((int) (unit.getX() + unit.getVelocityX()),
 				(int) (unit.getY() + unit.getVelocityY()));
@@ -35,7 +30,7 @@ public class RangedAgent extends GroundAgent {
 									- u2.getPosition().getDistance(unit.getPosition())) * 1000)
 					.findFirst().orElse(null);
 			// Switch to aggressive if enemy is nearby
-			if (unit.getPosition().getDistance(target) < 100) {
+			if (target != null && unit.getPosition().getDistance(target) < 100) {
 				task = UnitTask.ATTACK_RUN;
 			}
 			break;
@@ -59,7 +54,9 @@ public class RangedAgent extends GroundAgent {
 						&& Vector.angleBetween(fv, av) < 2.5) {
 					// TODO remember to check weapon cooldown here too! may
 					// need to switch back to retreating state?
-					task = UnitTask.FIRING;
+					unit.attack(target);
+					timeout = 3;
+					task = UnitTask.MOVE;
 				} else {
 					try {
 						findPath(target.getPosition(), 64);
@@ -70,33 +67,8 @@ public class RangedAgent extends GroundAgent {
 					break;
 				}
 			}
-		case FIRING:
-			unit.attack(target);
-			// System.out.println(GameHandler.getFrameCount() + " :
-			// attack");
-			// System.out.println(GameHandler.getFrameCount() + ": Range=" +
-			// u.getType().groundWeapon().maxRange());
-			// System.out.println(
-			// GameHandler.getFrameCount() + ": mySize=" +
-			// u.getType().width() + ", " + u.getType().height());
-			// System.out.println(GameHandler.getFrameCount() + ":
-			// enemySize=" + target.getType().width() + ", "
-			// + target.getType().height());
-			// System.out.println(
-			// GameHandler.getFrameCount() + ": real Distance=" +
-			// u.getDistance(target.getPosition()));
-			// System.out.println(GameHandler.getFrameCount() + ": predicted
-			// Distance="
-			// + predictedPosition.getDistance(target.getPosition()));
-			// final Vector fv = Vector.fromAngle(unit.getAngle());
-			// final Vector av = new Vector(unit.getPosition(),
-			// target.getPosition()).normalize();
-			// System.out.println(GameHandler.getFrameCount() + ": angle ("
-			// + Vector.angleBetween(fv, av) + ")");
-			task = UnitTask.RETREATING;
-			timeout = 3;
 			break;
-		case RETREATING:
+		case MOVE:
 			target = GameHandler.getEnemyUnits().stream()
 					.sorted((u1,
 							u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())

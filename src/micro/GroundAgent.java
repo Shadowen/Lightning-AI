@@ -64,28 +64,6 @@ public abstract class GroundAgent extends UnitAgent {
 		}
 	}
 
-	public void scout() {
-		// Acquire target
-		if (pathTarget == null || GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
-			if (pathTarget != null && GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
-				System.out.println("Scouting complete!");
-			}
-			System.out.println("Acquiring new scouting target");
-			pathTarget = MicroManager.getScoutingTarget(unit);
-		}
-		// Path planned is short
-		if (pathTarget != null) {
-			try {
-				findPath(pathTarget, 256);
-				followPath();
-			} catch (NoPathFoundException e) {
-				System.err.println("No path to scout");
-			}
-		} else {
-			System.err.println("Attempted to scout with no target");
-		}
-	}
-
 	@Override
 	public Deque<Position> findPathAwayFrom(Position fromWhere, int length)
 			throws InvalidStartNodeException, NoPathFoundException {
@@ -95,8 +73,9 @@ public abstract class GroundAgent extends UnitAgent {
 		Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
 			@Override
 			public int compare(Node n1, Node n2) {
-				return (int) Math
-						.round((MicroManager.threatMap[n1.wx][n1.wy] - MicroManager.threatMap[n2.wx][n2.wy]) * 100);
+				return (int) Math.round(
+						(MicroManager.threatMap[n1.wx / 4][n1.wy / 4] - MicroManager.threatMap[n2.wx / 4][n2.wy / 4])
+								* 1000);
 			}
 		});
 		// Find the closest walkable node

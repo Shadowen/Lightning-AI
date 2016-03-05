@@ -60,12 +60,13 @@ public final class MicroManager {
 
 	public static void onFrame() {
 		updateMap();
-		// Move units
-		// for (UnitAgent ua : unitAgents.values()) {
-		// ua.act();
-		// }
+		// Unit groups issue orders
 		for (UnitGroup ug : unitGroups) {
 			ug.act();
+		}
+		// Units execute orders
+		for (UnitAgent ua : unitAgents.values()) {
+			ua.act();
 		}
 	}
 
@@ -159,13 +160,15 @@ public final class MicroManager {
 		return null;
 	}
 
-	public static void unitCreated(Unit unit) {
+	public static void unitConstructed(Unit unit) {
 		if (!unitAgents.containsKey(unit)) {
 			final UnitType type = unit.getType();
 			UnitAgent ua;
 			// TODO is there a way to clean up this if statement?
 			if (type.isWorker()) {
-				ua = new Worker(unit);
+				Worker w = new Worker(unit);
+				BaseManager.getClosestBase(unit.getPosition()).get().addWorker(w);
+				ua = w;
 			} else if (type == UnitType.Terran_Marine || type == UnitType.Terran_Vulture) {
 				ua = new RangedAgent(unit);
 			} else if (type == UnitType.Terran_Wraith) {
@@ -194,6 +197,9 @@ public final class MicroManager {
 			Set<UnitAgent> typeSet = unitsByType.get(unit.getType());
 			if (typeSet != null) {
 				typeSet.remove(ua);
+			}
+			for (UnitGroup ug : unitGroups) {
+				ug.removeUnit(ua);
 			}
 		}
 	}
@@ -227,9 +233,12 @@ public final class MicroManager {
 		// Pathing
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
-				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() + 15,
-						"Path: " + ua.path.size() + "/" + ua.pathOriginalSize + " (" + ua.pathStartFrame + ")");
-
+				// Write some information about the path
+				if (ua.path.size() != 0 || ua.pathOriginalSize != 0) {
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() + 15,
+							"Path: " + ua.path.size() + "/" + ua.pathOriginalSize + " (" + ua.pathStartFrame + ")");
+				}
+				// Draw the path
 				final Iterator<Position> it = ua.getPath().iterator();
 				Position previous = it.hasNext() ? it.next() : null;
 				while (it.hasNext()) {
@@ -277,17 +286,14 @@ public final class MicroManager {
 				case ATTACK_RUN:
 					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Attack run");
 					break;
-				case FIRING:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Firing");
-					break;
 				case IDLE:
 					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Idle");
 					break;
-				case RETREATING:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Retreating");
+				case MOVE:
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Moving");
 					break;
 				default:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Unknown");
+					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Unknown - " + ua.task.toString());
 					break;
 				}
 			}
@@ -297,8 +303,9 @@ public final class MicroManager {
 			for (int i = 0; i < unitGroups.size(); i++) {
 				UnitGroup ug = unitGroups.get(i);
 				Position c = ug.getCenterPosition();
-				DrawEngine.drawTextMap(c.getX(), c.getY(), "Unit Group " + i);
-				DrawEngine.drawTextMap(c.getX(), c.getY() + 10, ug.task.toString());
+				DrawEngine.drawTextMap(c.getX() + 40, c.getY(), "Unit Group " + i);
+				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 10, ug.task.toString());
+				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 20, "Spread: " + ug.getMaxDistance());
 			}
 		}).setActive(true);
 	}

@@ -6,6 +6,7 @@ import java.util.Deque;
 
 import bwapi.Position;
 import bwapi.Unit;
+import gamestructure.GameHandler;
 import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
 
@@ -17,7 +18,7 @@ public abstract class UnitAgent {
 	/** The destination building of the current path */
 	protected Rectangle pathTargetBox;
 	/** The length of the originally planned path */
-	protected int pathOriginalSize = 0;
+	protected int pathOriginalSize = Integer.MAX_VALUE;
 	/** Number of frames after which we try a better path */
 	protected static final int PATHING_TIMEOUT_FRAMES = 250;
 	/**
@@ -79,22 +80,40 @@ public abstract class UnitAgent {
 		task = UnitTask.SCOUTING;
 	}
 
-	public void setTaskDefending(UnitTask defending) {
-		task = UnitTask.DEFENDING;
-	}
-
 	public UnitTask getTask() {
 		return task;
 	}
 
 	public abstract void act();
 
-	public abstract void scout();
-
-	public abstract void attackCycle(Unit target);
+	public void scout() {
+		// Acquire target
+		if (pathTarget == null || GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
+			if (pathTarget != null && GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
+				System.out.println("Scouting complete!");
+			}
+			System.out.println("Acquiring new scouting target");
+			pathTarget = MicroManager.getScoutingTarget(unit);
+		}
+		// Path planned is short
+		if (pathTarget != null) {
+			try {
+				findPath(pathTarget, 256);
+				followPath();
+			} catch (NoPathFoundException e) {
+				System.err.println("No path to scout");
+			}
+		} else {
+			System.err.println("Attempted to scout with no target");
+		}
+	}
 
 	public String toString() {
 		return unit.getType() + " @ (" + unit.getX() + ", " + unit.getY() + ")";
 	}
 
+	public void setTaskMove(Position toWhere) {
+		task = UnitTask.MOVE;
+		pathTarget = toWhere;
+	}
 }

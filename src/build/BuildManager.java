@@ -146,7 +146,7 @@ public final class BuildManager {
 	}
 
 	public static int getMyUnitCount(UnitType type) {
-		return (int) GameHandler.getAllUnits().stream().filter(u -> !u.isBeingConstructed())
+		return (int) GameHandler.getMyUnits().stream().filter(u -> !u.isBeingConstructed())
 				.filter(u -> u.getType() == type).count();
 	}
 

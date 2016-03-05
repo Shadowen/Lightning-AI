@@ -97,7 +97,7 @@ public final class BaseManager {
 	public static void onFrame() {
 		checkBaseOccupancy();
 
-		for (Base b : bases.values()) {
+		for (Base b : getMyBases()) {
 			// Refinery
 			if (b.getMineralWorkerCount() >= 1.5 * b.getMineralCount() && b.gas.stream().anyMatch(r -> !r.gasTaken())) {
 				try {
@@ -175,12 +175,6 @@ public final class BaseManager {
 				b.commandCenter = Optional.of(unit);
 				b.setPlayer(unit.getPlayer());
 			});
-		}
-		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
-			if (unit.getType().isWorker()) {
-				Worker w = (Worker) MicroManager.getAgentForUnit(unit);
-				getClosestBase(unit.getPosition()).ifPresent(b -> b.addWorker(w));
-			}
 		}
 	}
 
@@ -310,6 +304,9 @@ public final class BaseManager {
 				// Miner counts
 				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 15, "Mineral Miners: " + b.getMineralWorkerCount());
 				DrawEngine.drawTextMap(b.getX() + 5, b.getY() + 25, "Mineral Fields: " + b.minerals.size());
+				for (Worker w : b.workers) {
+					DrawEngine.drawLineMap(b.getX(), b.getY(), w.unit.getX(), w.unit.getY(), Color.Brown);
+				}
 			}
 			long idleWorkers = BaseManager.bases.values().stream().flatMap(b -> b.workers.stream())
 					.filter(w -> w.unit.isIdle()).count();

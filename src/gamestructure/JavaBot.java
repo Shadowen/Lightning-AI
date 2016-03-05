@@ -8,6 +8,7 @@ import java.util.List;
 import base.Base;
 import base.BaseManager;
 import base.Resource;
+import base.Worker;
 import build.BuildManager;
 import bwapi.BWEventListener;
 import bwapi.Mirror;
@@ -125,7 +126,10 @@ public class JavaBot implements BWEventListener {
 					.filter(b -> GameHandler.getSelfPlayer().gas() >= b.getType().gasPrice()).forEach(b -> {
 						if (!b.hasBuilder()) {
 							// If it isn't being built yet
-							BaseManager.getFreeWorker().ifPresent(w -> w.build(b));
+							Worker w = BaseManager.getFreeWorker().orElse(null);
+							if (w != null) {
+								w.build(b);
+							}
 						}
 						if (b.hasBuilder()) {
 							// Has builder already
@@ -223,7 +227,6 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onUnitCreate(Unit unit) {
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
-			MicroManager.unitCreated(unit);
 			BuildManager.unitsUnderConstruction.add(unit);
 		}
 		BaseManager.unitCreated(unit);
@@ -284,6 +287,7 @@ public class JavaBot implements BWEventListener {
 		try {
 			if (unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
 				BuildManager.unitConstructed(unit);
+				MicroManager.unitConstructed(unit);
 			}
 			BaseManager.unitConstructed(unit);
 			botState = botState.unitConstructed(unit);

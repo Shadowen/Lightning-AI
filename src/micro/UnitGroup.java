@@ -20,6 +20,7 @@ public abstract class UnitGroup {
 	public abstract void act();
 
 	public Position getCenterPosition() {
+		// TODO cache this
 		double cx = 0;
 		double cy = 0;
 		for (UnitAgent ua : unitAgents) {
@@ -27,6 +28,15 @@ public abstract class UnitGroup {
 			cy += ua.unit.getY();
 		}
 		return new Position((int) (cx / unitAgents.size()), (int) (cy / unitAgents.size()));
+	}
+
+	public double getMaxDistance() {
+		double distance = Double.MIN_VALUE;
+		Position center = getCenterPosition();
+		for (UnitAgent ua : unitAgents) {
+			distance = Math.max(ua.unit.getPosition().getDistance(center), distance);
+		}
+		return distance;
 	}
 
 	public void addUnitAgent(UnitAgent ua) {

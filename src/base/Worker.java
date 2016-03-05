@@ -53,7 +53,7 @@ public class Worker extends GroundAgent {
 		currentResource = newResource;
 	}
 
-	public void setBase(Base b) {
+	protected void setBase(Base b) {
 		base = b;
 	}
 
@@ -131,11 +131,5 @@ public class Worker extends GroundAgent {
 		if (currentResource != null) {
 			currentResource.removeGatherer(this);
 		}
-	}
-
-	@Override
-	public void attackCycle(Unit target) {
-		// TODO Auto-generated method stub
-		
 	}
 }

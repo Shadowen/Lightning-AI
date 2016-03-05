@@ -27,7 +27,7 @@ public class StarportRush extends BotState {
 				&& MicroManager.getUnitsByType(UnitType.Terran_Marine).size() > 5) {
 			System.out.println("Zerg rush detected");
 			MicroManager.getUnitsByType(UnitType.Terran_SCV).stream().forEach(u -> {
-				u.setTaskDefending(UnitTask.DEFENDING);
+				// u.setTaskDefending(UnitTask.DEFENDING);
 			});
 		}
 
