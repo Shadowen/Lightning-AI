@@ -55,17 +55,22 @@ public class WraithAgent extends UnitAgent {
 	public void findPath(Position toWhere, int length) throws NoPathFoundException {
 		path.clear();
 		path.add(toWhere);
+		pathTarget = toWhere;
 	}
 
 	@Override
 	public void findPath(Rectangle toWhere, int length) throws NoPathFoundException {
 		path.clear();
-		path.addLast(new Position(toWhere.x, toWhere.y));
+		pathTarget = new Position(toWhere.x, toWhere.y);
+		path.add(pathTarget);
 	}
 
 	@Override
-	public Deque<Position> findPathAwayFrom(Position fromWhere, int length) {
-		return null;
+	public Deque<Position> findPathAwayFrom(Position fromWhere, int length) throws NoPathFoundException {
+		final int dx = 10 * (unit.getX() - target.getX());
+		final int dy = 10 * (unit.getY() - target.getY());
+		findPath(new Position(unit.getX() + dx, unit.getY() + dy), length);
+		return path;
 	}
 
 }
