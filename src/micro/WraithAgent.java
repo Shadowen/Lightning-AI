@@ -44,7 +44,11 @@ public class WraithAgent extends UnitAgent {
 			}
 			break;
 		case MOVE:
-			unit.move(pathTarget);
+			if (pathTarget.isValid()) {
+				unit.move(pathTarget);
+			} else {
+				System.err.println("WraithAgent path target invalid.");
+			}
 			break;
 		default:
 			break;

@@ -20,6 +20,10 @@ public class Vector {
 		return x;
 	}
 
+	public int getXInt() {
+		return (int) Math.round(getX());
+	}
+
 	public Vector setX(double x) {
 		this.x = x;
 		return this;
@@ -27,6 +31,10 @@ public class Vector {
 
 	public double getY() {
 		return y;
+	}
+
+	public int getYInt() {
+		return (int) Math.round(getY());
 	}
 
 	public Vector setY(double y) {

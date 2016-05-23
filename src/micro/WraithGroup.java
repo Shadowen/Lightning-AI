@@ -17,7 +17,7 @@ public class WraithGroup extends UnitGroup {
 				task = UnitTask.ATTACK_RUN;
 			} else {
 				for (UnitAgent ua : unitAgents) {
-					ua.setTaskScouting();
+					ua.setTaskScout();
 				}
 			}
 			break;
@@ -43,7 +43,7 @@ public class WraithGroup extends UnitGroup {
 			}
 			if (target == null) {
 				for (UnitAgent ua : unitAgents) {
-					ua.setTaskScouting();
+					ua.setTaskScout();
 				}
 				return;
 			}
@@ -52,9 +52,11 @@ public class WraithGroup extends UnitGroup {
 				ua.target = target;
 				if (ua.getTask() == UnitTask.MOVE || ua.timeout > 0) {
 					// Wraith has fired
-					final int dx = 10 * (ua.unit.getX() - target.getX());
-					final int dy = 10 * (ua.unit.getY() - target.getY());
-					ua.setTaskMove(new Position(ua.unit.getX() + dx, ua.unit.getY() + dy));
+					final int dx = ua.unit.getX() - target.getX();
+					final int dy = ua.unit.getY() - target.getY();
+					final Vector delta = new Vector(dx, dy).normalize().scalarMultiply(50);
+					ua.setTaskMove(new Position(ua.unit.getX() + delta.getXInt(), ua.unit.getY() + delta.getYInt())
+							.makeValid());
 				}
 				if (ua.timeout > 0
 						|| Math.max(ua.unit.getGroundWeaponCooldown(), ua.unit.getAirWeaponCooldown()) > 10) {
@@ -63,7 +65,7 @@ public class WraithGroup extends UnitGroup {
 			}
 			if (cycleComplete) {
 				// Regather
-				if (getMaxDistance() > Math.sqrt(unitAgents.size()) * 5) {
+				if (getMaxDistance() > Math.sqrt(unitAgents.size()) * 20) {
 					for (UnitAgent ua : unitAgents) {
 						ua.setTaskMove(centerPosition);
 					}

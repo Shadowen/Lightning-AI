@@ -71,13 +71,16 @@ public abstract class UnitAgent {
 		return path;
 	}
 
+	public void setTaskScout() {
+		task = UnitTask.SCOUTING;
+	}
+
 	public void setTaskScout(Position target) {
 		this.task = UnitTask.SCOUTING;
 		pathTarget = target;
-	}
-
-	public void setTaskScouting() {
-		task = UnitTask.SCOUTING;
+		if (!pathTarget.isValid()) {
+			System.err.println("UnitAgent tried to scout to invalid position!");
+		}
 	}
 
 	public UnitTask getTask() {
@@ -92,7 +95,7 @@ public abstract class UnitAgent {
 			if (pathTarget != null && GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
 				System.out.println("Scouting complete!");
 			}
-			System.out.println("Acquiring new scouting target");
+			// System.out.println("Acquiring new scouting target");
 			pathTarget = MicroManager.getScoutingTarget(unit);
 		}
 		// Path planned is short
@@ -103,9 +106,10 @@ public abstract class UnitAgent {
 			} catch (NoPathFoundException e) {
 				System.err.println("No path to scout");
 			}
-		} else {
-			System.err.println("Attempted to scout with no target");
 		}
+		// else {
+		// System.err.println("Attempted to scout with no target");
+		// }
 	}
 
 	public String toString() {
@@ -115,5 +119,8 @@ public abstract class UnitAgent {
 	public void setTaskMove(Position toWhere) {
 		task = UnitTask.MOVE;
 		pathTarget = toWhere;
+		if (!pathTarget.isValid()) {
+			System.err.println("UnitAgent tried to move to invalid position!");
+		}
 	}
 }

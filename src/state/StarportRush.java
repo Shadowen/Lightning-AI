@@ -61,7 +61,7 @@ public class StarportRush extends BotState {
 			} else if (previousSupply < 11 && supply >= 11) {
 				BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
 				MicroManager.getUnitsByType(UnitType.Terran_SCV).stream().findFirst()
-						.ifPresent(w -> w.setTaskScouting());
+						.ifPresent(w -> w.setTaskScout());
 			} else if (previousSupply < 9 && supply >= 9) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
 			}
@@ -78,9 +78,9 @@ public class StarportRush extends BotState {
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			if (unitType == UnitType.Terran_Vulture) {
 				UnitAgent a = MicroManager.getAgentForUnit(unit);
-				a.setTaskScouting();
+				a.setTaskScout();
 			} else if (unitType == UnitType.Terran_Wraith) {
-				MicroManager.getAgentForUnit(unit).setTaskScouting();
+				MicroManager.getAgentForUnit(unit).setTaskScout();
 			}
 		}
 		return this;

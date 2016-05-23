@@ -206,15 +206,18 @@ public final class MicroManager {
 
 	public static void registerDebugFunctions() {
 		// Static D
-		DebugManager.createDebugModule("staticd").setDraw(() -> {
-			for (Unit u : GameHandler.getEnemyUnits().stream()
-					.filter(u -> u.getType() == UnitType.Protoss_Photon_Cannon
-							|| u.getType() == UnitType.Zerg_Sunken_Colony || u.getType() == UnitType.Zerg_Spore_Colony)
-					.collect(Collectors.toList())) {
-				DrawEngine.drawCircleMap(u.getX(), u.getY(), u.getType().groundWeapon().maxRange(), Color.Red, false);
-				DrawEngine.drawCircleMap(u.getX(), u.getY(), u.getType().airWeapon().maxRange(), Color.Red, false);
-			}
-		}).setActive(true);
+		// DebugManager.createDebugModule("staticd").setDraw(() -> {
+		// for (Unit u : GameHandler.getEnemyUnits().stream()
+		// .filter(u -> u.getType() == UnitType.Protoss_Photon_Cannon
+		// || u.getType() == UnitType.Zerg_Sunken_Colony || u.getType() ==
+		// UnitType.Zerg_Spore_Colony)
+		// .collect(Collectors.toList())) {
+		// DrawEngine.drawCircleMap(u.getX(), u.getY(),
+		// u.getType().groundWeapon().maxRange(), Color.Red, false);
+		// DrawEngine.drawCircleMap(u.getX(), u.getY(),
+		// u.getType().airWeapon().maxRange(), Color.Red, false);
+		// }
+		// }).setActive(true);
 		// Weapon cooldown bars
 		DebugManager.createDebugModule("cooldowns").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
@@ -234,9 +237,9 @@ public final class MicroManager {
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
 				// Write some information about the path
-				if (ua.path.size() != 0 || ua.pathOriginalSize != 0) {
+				if (ua.path.size() != 0) {
 					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() + 15,
-							"Path: " + ua.path.size() + "/" + ua.pathOriginalSize + " (" + ua.pathStartFrame + ")");
+							"Path: " + ua.path.size() + "/" + ua.pathOriginalSize + "(" + ua.pathStartFrame + ")");
 				}
 				// Draw the path
 				final Iterator<Position> it = ua.getPath().iterator();
