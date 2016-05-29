@@ -134,23 +134,19 @@ public final class MicroManager {
 		for (Base b : BaseManager.getBases()) {
 			if (b.getLocation().isStartLocation() && b.getPlayer() == GameHandler.getNeutralPlayer()
 					&& (target == null || b.getLastScouted() < target.getLastScouted())) {
-				if (!requestor.getType().isFlyer()
-						&& !BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
-					System.out.println("Pruned a scouting target due to unreachability");
-					continue;
+				if (requestor.getType().isFlyer()
+						|| BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
+					target = b;
 				}
-				target = b;
 			}
 		}
 		if (target == null) {
 			for (Base b : BaseManager.getBases()) {
 				if (target == null || b.getLastScouted() < target.getLastScouted()) {
-					if (!requestor.getType().isFlyer()
-							&& !BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
-						System.out.println("Pruned a scouting target due to unreachability");
-						continue;
+					if (requestor.getType().isFlyer()
+							|| BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
+						target = b;
 					}
-					target = b;
 				}
 			}
 		}

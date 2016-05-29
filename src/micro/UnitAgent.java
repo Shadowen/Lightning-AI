@@ -4,8 +4,10 @@ import java.awt.Rectangle;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+import base.BaseManager;
 import bwapi.Position;
 import bwapi.Unit;
+import bwta.BWTA;
 import gamestructure.GameHandler;
 import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
@@ -90,15 +92,19 @@ public abstract class UnitAgent {
 	public abstract void act();
 
 	public void scout() {
+		if (pathTarget != null
+				&& GameHandler.isVisible(new Position(pathTarget.getX(), pathTarget.getY()).toTilePosition())
+				&& BaseManager.getClosestBase(pathTarget).get().getPlayer() == GameHandler.getEnemyPlayer()) {
+			System.out.println("Unit Agent " + toString() + " arrived at enemy base");
+		}
+
 		// Acquire target
-		if (pathTarget == null || GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
-			if (pathTarget != null && GameHandler.isVisible(pathTarget.getX() / 32, pathTarget.getY() / 32)) {
-				System.out.println("Scouting complete!");
-			}
-			// System.out.println("Acquiring new scouting target");
+		if (pathTarget == null
+				|| GameHandler.isVisible(new Position(pathTarget.getX(), pathTarget.getY()).toTilePosition())) {
+			System.out.println("Acquiring new scouting target");
 			pathTarget = MicroManager.getScoutingTarget(unit);
 		}
-		// Path planned is short
+		// Find a path to there
 		if (pathTarget != null) {
 			try {
 				findPath(pathTarget, 256);
@@ -106,10 +112,9 @@ public abstract class UnitAgent {
 			} catch (NoPathFoundException e) {
 				System.err.println("No path to scout");
 			}
+		} else {
+			System.err.println("Attempted to scout with no target");
 		}
-		// else {
-		// System.err.println("Attempted to scout with no target");
-		// }
 	}
 
 	public String toString() {
