@@ -7,9 +7,8 @@ import gamestructure.GameHandler;
 
 public class BuildingFootprint {
 	public final int id;
-	public UnitType type;
-	public final TilePosition tilePosition;
-
+	private final UnitType type;
+	private final TilePosition tilePosition;
 	public long lastSeen;
 
 	public BuildingFootprint(Unit building) {
@@ -18,5 +17,13 @@ public class BuildingFootprint {
 		tilePosition = building.getTilePosition();
 
 		lastSeen = GameHandler.getFrameCount();
+	}
+
+	public UnitType getType() {
+		return type;
+	}
+
+	public TilePosition getTilePosition() {
+		return tilePosition;
 	}
 }

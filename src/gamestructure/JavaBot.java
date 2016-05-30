@@ -228,9 +228,6 @@ public class JavaBot implements BWEventListener {
 			BuildManager.unitQueue.remove(unit.getType());
 		}
 		BaseManager.unitCreated(unit);
-		if (unit.getType().isBuilding()) {
-			PathFinder.onBuildingCreate(unit);
-		}
 	}
 
 	@Override

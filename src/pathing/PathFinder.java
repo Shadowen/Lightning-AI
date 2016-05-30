@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
+import build.BuildingPlan;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.TilePosition;
@@ -24,6 +26,7 @@ import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.ShapeOverflowException;
+import memory.BuildingFootprint;
 
 public final class PathFinder {
 	/**
@@ -94,7 +97,7 @@ public final class PathFinder {
 		return Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1;
 	}
 
-	public static void onBuildingCreate(Unit building) {
+	public static void addBuilding(BuildingFootprint building) {
 		Set<Node> zeroMe = new HashSet<>();
 		Queue<Node> toRecalculate = new ArrayDeque<>();
 		// Add the building to the walkable map
@@ -106,12 +109,34 @@ public final class PathFinder {
 			}
 		}
 
+		recalculateBuilding(toRecalculate, zeroMe);
+	}
+
+	public static void removeBuilding(BuildingFootprint building) {
+		Deque<Node> toRecalculate = new ArrayDeque<>();
+
+		TilePosition tp = building.getTilePosition();
+		for (int wx = tp.getX() * 4; wx < (tp.getX() + building.getType().tileWidth()) * 4; wx++) {
+			for (int wy = tp.getY() * 4; wy < (tp.getY() + building.getType().tileHeight()) * 4; wy++) {
+				toRecalculate.push(walkableNodes[wx][wy]);
+			}
+		}
+
+		recalculateBuilding(toRecalculate, Collections.EMPTY_SET);
+	}
+
+	private static void recalculateBuilding(Queue<Node> toRecalculate, Set<Node> zeroMe) {
+		for (Node n : toRecalculate) {
+			n.clearance = Integer.MAX_VALUE;
+		}
+
 		while (!toRecalculate.isEmpty()) {
 			Node current = toRecalculate.remove();
 			int oldClearance = current.clearance;
 			// Current tile is not walkable
 			if (zeroMe.contains(current)) {
 				current.clearance = 0;
+			} else if (current.clearance == 0) {
 			} else {
 				// Otherwise, true clearance is one larger than the minimum of
 				// the three true clearances below, to the right, and
@@ -121,8 +146,7 @@ public final class PathFinder {
 				int topRight = current.wx + 1 < mapWalkWidth ? walkableNodes[current.wx + 1][current.wy].clearance : 0;
 				int bottomRight = current.wy + 1 < mapWalkHeight && current.wx + 1 < mapWalkWidth
 						? walkableNodes[current.wx + 1][current.wy + 1].clearance : 0;
-				current.clearance = Math.min(current.clearance,
-						Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1);
+				current.clearance = Math.min(Math.min(bottomLeft, bottomRight), topRight) + 1;
 			}
 			// If the clearance value has changed,
 			if (current.clearance != oldClearance) {
@@ -428,103 +452,6 @@ public final class PathFinder {
 		return path;
 	}
 
-	public static void registerDebugFunctions() {
-		// // Clearance values
-		// DebugManager.createDebugModule("clearance").setDraw(() -> {
-		// try {
-		// // Show clearance values
-		// for (int wx = 0; wx < mapWalkWidth; wx++) {
-		// for (int wy = 0; wy < mapWalkHeight; wy++) {
-		// Node n = walkableNodes[wx][wy];
-		// if (n.clearance == 0) {
-		// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8,
-		// Color.Red, true);
-		// } else if (n.clearance == 1) {
-		// DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8,
-		// Color.Orange, true);
-		// }
-		// // else if (n.clearance == 2) {
-		// // DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
-		// // 8, n.wy * 8 + 8, Color.Yellow, true);
-		// // } else if (n.clearance == 3) {
-		// // DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 +
-		// // 8, n.wy * 8 + 8, Color.Green, true);
-		// // }
-		// }
-		// }
-		// Position mousePosition = GameHandler.getMousePositionOnMap();
-		// if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() /
-		// 8 < mapWalkHeight) {
-		// Node thisCell = walkableNodes[mousePosition.getX() /
-		// 8][mousePosition.getY() / 8];
-		// DrawEngine.drawBoxMap(thisCell.wx * 8, thisCell.wy * 8, (thisCell.wx
-		// + thisCell.clearance) * 8,
-		// (thisCell.wy + thisCell.clearance) * 8, Color.Yellow, false);
-		// }
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// }
-		// });
-		// DebugManager.createDebugModule("pathing").setDraw(() -> {
-		// // Projected paths
-		// GameHandler.getSelectedUnits().stream().forEach(u -> {
-		// try {
-		// try {
-		// Queue<Position> path = PathFinder.findGroundPath(u.getPosition(),
-		// GameHandler.getMousePositionOnMap(), u.getType());
-		// for (Position w : path) {
-		// DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2,
-		// w.getY() + 2, Color.Cyan,
-		// false);
-		// }
-		// } catch (NoPathFoundException e) {
-		// System.err.println(e);
-		// } catch (InvalidStartNodeException e2) {
-		// System.err.println(e2);
-		// }
-		// } catch (ShapeOverflowException s) {
-		// System.out.println("Shape overflow!");
-		// }
-		// });
-		// }).setActive(true);
-
-		// Regions
-		DebugManager.createDebugModule("regions").setDraw(() -> {
-			List<Region> regions = BWTA.getRegions();
-			for (int r = 0; r < regions.size(); r++) {
-				final Region region = regions.get(r);
-				// Draw name
-				DrawEngine.drawTextMap(region.getCenter().getX(), region.getCenter().getY(), "Region " + r);
-				// Draw outline
-				final List<Position> points = region.getPolygon().getPoints();
-				final int numVertices = points.size();
-				for (int p = 0; p < numVertices - 1; p++) {
-					Position p1 = points.get(p);
-					Position p2 = points.get(p + 1);
-					DrawEngine.drawLineMap(p1, p2, Color.White);
-				}
-				// Close the shape
-				if (numVertices > 2) {
-					Position p1 = points.get(points.size() - 1);
-					Position p2 = points.get(0);
-					DrawEngine.drawLineMap(p1, p2, Color.White);
-				}
-
-				// Draw connections
-				for (Chokepoint choke : region.getChokepoints()) {
-					DrawEngine.drawLineMap(region.getCenter(), choke.getCenter(), Color.Yellow);
-				}
-				// for (Chokepoint choke : region.getChokepoints()) {
-				// Region neighbor = choke.getRegions().first != region ?
-				// choke.getRegions().first
-				// : choke.getRegions().second;
-				// DrawEngine.drawLineMap(region.getCenter(),
-				// neighbor.getCenter(), Color.Yellow);
-				// }
-			}
-		}).setActive(true);
-	}
-
 	public static Node findClosestWalkableNode(int wx, int wy, UnitType unitType) throws InvalidStartNodeException {
 		for (int d = 0; d < PathFinder.MAX_WALKABLE_RANGE; d++) {
 			if (wy + d < GameHandler.getMapWalkHeight()) {
@@ -555,4 +482,86 @@ public final class PathFinder {
 
 		throw new InvalidStartNodeException();
 	}
+
+	public static void registerDebugFunctions() {
+		// Clearance values
+		DebugManager.createDebugModule("clearance").setDraw(() -> {
+			try {
+				// Show clearance values
+				for (int wx = 0; wx < mapWalkWidth; wx++) {
+					for (int wy = 0; wy < mapWalkHeight; wy++) {
+						Node n = walkableNodes[wx][wy];
+						if (n.clearance == 0) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
+						} else if (n.clearance == 1) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Orange, true);
+						} else if (n.clearance == 2) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Yellow, true);
+						} else if (n.clearance == 3) {
+							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Green, true);
+						}
+					}
+				}
+				Position mousePosition = GameHandler.getMousePositionOnMap();
+				if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() / 8 < mapWalkHeight) {
+					Node thisCell = walkableNodes[mousePosition.getX() / 8][mousePosition.getY() / 8];
+					DrawEngine.drawBoxMap(thisCell.wx * 8, thisCell.wy * 8, (thisCell.wx + thisCell.clearance) * 8,
+							(thisCell.wy + thisCell.clearance) * 8, Color.Yellow, false);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+		DebugManager.createDebugModule("pathing").setDraw(() -> {
+			// Projected paths
+			GameHandler.getSelectedUnits().stream().forEach(u -> {
+				try {
+					try {
+						Queue<Position> path = PathFinder.findGroundPath(u.getPosition(),
+								GameHandler.getMousePositionOnMap(), u.getType());
+						for (Position w : path) {
+							DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2, Color.Cyan,
+									false);
+						}
+					} catch (NoPathFoundException e) {
+						System.err.println(e);
+					} catch (InvalidStartNodeException e2) {
+						System.err.println(e2);
+					}
+				} catch (ShapeOverflowException s) {
+					System.out.println("Shape overflow!");
+				}
+			});
+		}).setActive(true);
+
+		// Regions
+		DebugManager.createDebugModule("regions").setDraw(() -> {
+			List<Region> regions = BWTA.getRegions();
+			for (int r = 0; r < regions.size(); r++) {
+				final Region region = regions.get(r);
+				// Draw name
+				DrawEngine.drawTextMap(region.getCenter().getX(), region.getCenter().getY(), "Region " + r);
+				// Draw outline
+				final List<Position> points = region.getPolygon().getPoints();
+				final int numVertices = points.size();
+				for (int p = 0; p < numVertices - 1; p++) {
+					Position p1 = points.get(p);
+					Position p2 = points.get(p + 1);
+					DrawEngine.drawLineMap(p1, p2, Color.White);
+				}
+				// Close the shape
+				if (numVertices > 2) {
+					Position p1 = points.get(points.size() - 1);
+					Position p2 = points.get(0);
+					DrawEngine.drawLineMap(p1, p2, Color.White);
+				}
+
+				// Draw connections
+				for (Chokepoint choke : region.getChokepoints()) {
+					DrawEngine.drawLineMap(region.getCenter(), choke.getCenter(), Color.Yellow);
+				}
+			}
+		}).setActive(true);
+	}
+
 }
