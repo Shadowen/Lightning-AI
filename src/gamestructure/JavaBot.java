@@ -21,6 +21,7 @@ import gamestructure.debug.DebugManager;
 import gamestructure.debug.DebugModule;
 import gamestructure.debug.DrawEngine;
 import gamestructure.debug.InvalidCommandException;
+import memory.MemoryManager;
 import micro.MicroManager;
 import pathing.NoPathFoundException;
 import pathing.PathFinder;
@@ -62,6 +63,7 @@ public class JavaBot implements BWEventListener {
 			BuildManager.init();
 			MicroManager.init();
 			PathFinder.init();
+			MemoryManager.init();
 			botState = new FirstFrameState();
 			Waller.init();
 
@@ -80,6 +82,7 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onFrame() {
 		try {
+			MemoryManager.onFrame();
 			// Check if any units have completed
 			BuildManager.unitsUnderConstruction.removeIf(unit -> {
 				if (unit.isCompleted()) {
@@ -182,17 +185,10 @@ public class JavaBot implements BWEventListener {
 	}
 
 	@Override
-	public void onEnd(boolean winner) {
-	}
-
-	public void onNukeDetect(Position p) {
-	}
-
-	@Override
 	public void onUnitDiscover(Unit unit) {
 		try {
 			// Update botstate
-			botState = botState.unitDiscover(unit);
+			botState = botState.onUnitDiscover(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -205,7 +201,8 @@ public class JavaBot implements BWEventListener {
 	@Override
 	public void onUnitShow(Unit unit) {
 		try {
-			BaseManager.unitShown(unit);
+			BaseManager.onUnitShow(unit);
+			MemoryManager.onUnitShow(unit);
 			botState.unitShown(unit);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -228,9 +225,9 @@ public class JavaBot implements BWEventListener {
 	public void onUnitCreate(Unit unit) {
 		if (unit.getPlayer() == GameHandler.getSelfPlayer()) {
 			BuildManager.unitsUnderConstruction.add(unit);
+			BuildManager.unitQueue.remove(unit.getType());
 		}
 		BaseManager.unitCreated(unit);
-		BuildManager.unitQueue.remove(unit.getType());
 		if (unit.getType().isBuilding()) {
 			PathFinder.onBuildingCreate(unit);
 		}
@@ -249,6 +246,8 @@ public class JavaBot implements BWEventListener {
 			// Deletes units from microManager
 			MicroManager.unitDestroyed(unit);
 
+			MemoryManager.onUnitDestroy(unit);
+
 			// Allow the bot state to act
 			botState = botState.unitDestroyed(unit);
 		} catch (Exception e) {
@@ -259,6 +258,9 @@ public class JavaBot implements BWEventListener {
 	/**
 	 * Called when one unit morphs into another. Refineries being started
 	 * counts!
+	 * 
+	 * @param unit
+	 *            The type of the unit is the type AFTER the morph has started
 	 */
 	@Override
 	public void onUnitMorph(Unit unit) {
@@ -266,6 +268,7 @@ public class JavaBot implements BWEventListener {
 		if (type.isRefinery()) {
 			onUnitCreate(unit);
 		}
+		MemoryManager.onUnitMorph(unit);
 	}
 
 	@Override
@@ -276,6 +279,7 @@ public class JavaBot implements BWEventListener {
 	@Deprecated
 	@Override
 	public void onUnitComplete(Unit unit) {
+		GameHandler.sendText(unit.getType().toString() + " complete");
 	}
 
 	/**
@@ -294,6 +298,13 @@ public class JavaBot implements BWEventListener {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public void onEnd(boolean winner) {
+	}
+
+	public void onNukeDetect(Position p) {
 	}
 
 	@Override

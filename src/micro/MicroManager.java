@@ -174,6 +174,7 @@ public final class MicroManager {
 					unitGroups.add(new WraithGroup());
 					unitGroups.get(0).task = UnitTask.SCOUTING;
 				}
+				// TODO
 				unitGroups.get(0).addUnitAgent(ua);
 			} else {
 				System.err.println("Micromanager was unable to recognize unit " + unit.getType().toString());
@@ -228,7 +229,7 @@ public final class MicroManager {
 							u.getX() + cooldownRemaining * cooldownBarSize / maxCooldown, u.getY(), Color.Red);
 				}
 			}
-		}).setActive(true);
+		});
 		// Pathing
 		DebugManager.createDebugModule("pathing").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
@@ -251,13 +252,13 @@ public final class MicroManager {
 							ua.pathTarget.getY(), Color.Yellow);
 				}
 			}
-		}).setActive(true);
+		});
 		// Unit Agents
 		DebugManager.createDebugModule("agents").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
 				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() - 15, ua.getClass().getSimpleName());
 			}
-		}).setActive(true);
+		});
 		// Tasks
 		DebugManager.createDebugModule("tasks").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
@@ -296,7 +297,7 @@ public final class MicroManager {
 					break;
 				}
 			}
-		}).setActive(true);
+		});
 		// Unit Groups
 		DebugManager.createDebugModule("Unit Groups").setDraw(() -> {
 			for (int i = 0; i < unitGroups.size(); i++) {
@@ -306,6 +307,6 @@ public final class MicroManager {
 				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 10, ug.task.toString());
 				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 20, "Spread: " + ug.getMaxDistance());
 			}
-		}).setActive(true);
+		});
 	}
 }

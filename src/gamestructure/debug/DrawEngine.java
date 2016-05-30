@@ -328,6 +328,25 @@ public class DrawEngine {
 	}
 
 	/**
+	 * Draws a line on the map using the {@link javabot.JNIBWAPI} native
+	 * methods. Coordinates are relative to the top left corner of the map. The
+	 * line is only drawn if it falls inside the current viewport.
+	 * 
+	 * @param p1
+	 *            The start position in pixels.
+	 * @param p2
+	 *            The end position in pixels.
+	 * @param color
+	 *            The colour as a {@link BWColor}.
+	 * @throws ShapeOverflowException
+	 *             Thrown if the {@link DebugManager} tries to draw too many
+	 *             shapes.
+	 */
+	public static void drawLineMap(Position p1, Position p2, Color color) throws ShapeOverflowException {
+		drawLineMap(p1.getX(), p1.getY(), p2.getX(), p2.getY(), color);
+	}
+
+	/**
 	 * Draws a line on the screen using the {@link javabot.JNIBWAPI} native
 	 * methods. Coordinates are relative to the top left corner of the screen.
 	 * 

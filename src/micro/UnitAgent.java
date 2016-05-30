@@ -101,7 +101,7 @@ public abstract class UnitAgent {
 		// Acquire target
 		if (pathTarget == null
 				|| GameHandler.isVisible(new Position(pathTarget.getX(), pathTarget.getY()).toTilePosition())) {
-			System.out.println("Acquiring new scouting target");
+			// System.out.println("Acquiring new scouting target");
 			pathTarget = MicroManager.getScoutingTarget(unit);
 		}
 		// Find a path to there
@@ -113,7 +113,7 @@ public abstract class UnitAgent {
 				System.err.println("No path to scout");
 			}
 		} else {
-			System.err.println("Attempted to scout with no target");
+			// System.err.println("Attempted to scout with no target");
 		}
 	}
 

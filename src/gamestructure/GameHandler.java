@@ -107,6 +107,105 @@ public final class GameHandler {
 		return getClosestEnemyUnit(toWho.getX(), toWho.getY());
 	}
 
+	/**
+	 * Retrieves the set of accessible units that are on a given build tile.
+	 * 
+	 * @param tileX
+	 *            The X position, in tiles.
+	 * @param tileY
+	 *            The Y position, in tiles.
+	 * @return A Unitset object consisting of all the units that have any part
+	 *         of them on the given build tile.
+	 */
+	public static List<Unit> getUnitsOnTile(int tileX, int tileY) {
+		return game.getUnitsOnTile(tileX, tileY);
+	}
+
+	/**
+	 * Retrieves the set of accessible units that are on a given build tile.
+	 * 
+	 * @param tile
+	 *            The tile position.
+	 * @return A Unitset object consisting of all the units that have any part
+	 *         of them on the given build tile.
+	 */
+	public static List<Unit> getUnitsOnTile(TilePosition tile) {
+		return game.getUnitsOnTile(tile);
+	}
+
+	/**
+	 * Retrieves the set of accessible units that are in a given rectangle.
+	 * 
+	 * @param left
+	 *            The X coordinate of the left position of the bounding box, in
+	 *            pixels.
+	 * @param top
+	 *            The Y coordinate of the top position of the bounding box, in
+	 *            pixels.
+	 * @param right
+	 *            The X coordinate of the right position of the bounding box, in
+	 *            pixels.
+	 * @param bottom
+	 *            The Y coordinate of the bottom position of the bounding box,
+	 *            in pixels.
+	 * @return A Unitset object consisting of all the units that have any part
+	 *         of them within the given rectangle bounds.
+	 */
+	public static List<Unit> getUnitsInRectangle(int left, int top, int right, int bottom) {
+		return game.getUnitsInRectangle(left, top, right, bottom);
+	}
+
+	/**
+	 * Retrieves the set of accessible units that are in a given rectangle.
+	 * 
+	 * @param topLeft
+	 *            The top left corner position of the bounding box, in pixels.
+	 * @param bottomRight
+	 *            The bottom right corner position of the bounding box, in
+	 *            pixels.
+	 * @return A Unitset object consisting of all the units that have any part
+	 *         of them within the given rectangle bounds.
+	 */
+	public static List<Unit> getUnitsInRectangle(Position topLeft, Position bottomRight) {
+		return game.getUnitsInRectangle(topLeft, bottomRight);
+	}
+
+	/**
+	 * Retrieves the set of accessible units that are within a given radius of a
+	 * position.
+	 * 
+	 * @param x
+	 *            The x coordinate of the center, in pixels.
+	 * @param y
+	 *            The y coordinate of the center, in pixels.
+	 * @param radius
+	 *            The radius from the center, in pixels, to include units. pred
+	 *            (optional) A function predicate that indicates which units are
+	 *            included in the returned set.
+	 * @return A Unitset object consisting of all the units that have any part
+	 *         of them within the given radius from the center position.
+	 */
+	public static List<Unit> getUnitsInRadius(int x, int y, int radius) {
+		return game.getUnitsInRadius(x, y, radius);
+	}
+
+	/**
+	 * Retrieves the set of accessible units that are within a given radius of a
+	 * position.
+	 * 
+	 * @param center
+	 *            The coordinates of the center, in pixels.
+	 * @param radius
+	 *            The radius from the center, in pixels, to include units. pred
+	 *            (optional) A function predicate that indicates which units are
+	 *            included in the returned set.
+	 * @return A Unitset object consisting of all the units that have any part
+	 *         of them within the given radius from the center position.
+	 */
+	public static List<Unit> getUnitsInRadius(Position center, int radius) {
+		return game.getUnitsInRadius(center, radius);
+	}
+
 	public static int getFrameCount() {
 		return game.getFrameCount();
 	}
@@ -365,13 +464,5 @@ public final class GameHandler {
 		Position sp = game.getScreenPosition();
 		Position mp = game.getMousePosition();
 		return new Position(sp.getX() + mp.getX(), sp.getY() + mp.getY());
-	}
-
-	public static List<Unit> getUnitsOnTile(int tx, int ty) {
-		return game.getUnitsOnTile(tx, ty);
-	}
-
-	public static List<Unit> getUnitsInRadius(Position p, int radius) {
-		return game.getUnitsInRadius(p, radius);
 	}
 }

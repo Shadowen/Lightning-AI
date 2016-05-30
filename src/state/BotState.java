@@ -12,7 +12,7 @@ public abstract class BotState {
 
 	public abstract BotState onFrame();
 
-	public BotState unitDiscover(Unit unit){
+	public BotState onUnitDiscover(Unit unit){
 		return this;
 	}
 	

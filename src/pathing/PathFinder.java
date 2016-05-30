@@ -17,6 +17,9 @@ import bwapi.Position;
 import bwapi.TilePosition;
 import bwapi.Unit;
 import bwapi.UnitType;
+import bwta.BWTA;
+import bwta.Chokepoint;
+import bwta.Region;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
@@ -51,7 +54,6 @@ public final class PathFinder {
 
 		registerDebugFunctions();
 
-		// findChokeToMain();
 		System.out.println("Success!");
 	}
 
@@ -485,6 +487,42 @@ public final class PathFinder {
 		// }
 		// });
 		// }).setActive(true);
+
+		// Regions
+		DebugManager.createDebugModule("regions").setDraw(() -> {
+			List<Region> regions = BWTA.getRegions();
+			for (int r = 0; r < regions.size(); r++) {
+				final Region region = regions.get(r);
+				// Draw name
+				DrawEngine.drawTextMap(region.getCenter().getX(), region.getCenter().getY(), "Region " + r);
+				// Draw outline
+				final List<Position> points = region.getPolygon().getPoints();
+				final int numVertices = points.size();
+				for (int p = 0; p < numVertices - 1; p++) {
+					Position p1 = points.get(p);
+					Position p2 = points.get(p + 1);
+					DrawEngine.drawLineMap(p1, p2, Color.White);
+				}
+				// Close the shape
+				if (numVertices > 2) {
+					Position p1 = points.get(points.size() - 1);
+					Position p2 = points.get(0);
+					DrawEngine.drawLineMap(p1, p2, Color.White);
+				}
+
+				// Draw connections
+				for (Chokepoint choke : region.getChokepoints()) {
+					DrawEngine.drawLineMap(region.getCenter(), choke.getCenter(), Color.Yellow);
+				}
+				// for (Chokepoint choke : region.getChokepoints()) {
+				// Region neighbor = choke.getRegions().first != region ?
+				// choke.getRegions().first
+				// : choke.getRegions().second;
+				// DrawEngine.drawLineMap(region.getCenter(),
+				// neighbor.getCenter(), Color.Yellow);
+				// }
+			}
+		}).setActive(true);
 	}
 
 	public static Node findClosestWalkableNode(int wx, int wy, UnitType unitType) throws InvalidStartNodeException {
