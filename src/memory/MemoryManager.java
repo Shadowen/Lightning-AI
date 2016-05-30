@@ -44,18 +44,26 @@ public class MemoryManager {
 				}
 			}
 		}
+		// Check if any flying buildings have landed
+		GameHandler.getAllUnits().stream()
+				.filter(u -> u.getType().isFlyingBuilding() && !u.isFlying() && !buildings.containsKey(u.getID()))
+				.forEach(u -> addBuilding(u));
+	}
+
+	private static void addBuilding(Unit unit) {
+		buildings.put(unit.getID(), new BuildingFootprint(unit));
 	}
 
 	public static void onUnitShow(Unit unit) {
 		if (unit.getType().isBuilding() && !unit.isFlying()) {
-			buildings.put(unit.getID(), new BuildingFootprint(unit));
+			addBuilding(unit);
 		}
 	}
 
 	public static void onUnitMorph(Unit unit) {
 		if (unit.getType().isBuilding()) {
 			// Vespene Geysers and Zerg buildings
-			buildings.put(unit.getID(), new BuildingFootprint(unit));
+			addBuilding(unit);
 		}
 	}
 
