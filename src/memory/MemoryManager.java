@@ -33,9 +33,9 @@ public class MemoryManager {
 						+ bf.getType().tileHeight(); ty++) {
 					if (GameHandler.isVisible(tx, ty)) {
 						// Update the last seen time
-						bf.lastSeen = GameHandler.getFrameCount();
+						bf.setLastSeen(GameHandler.getFrameCount());
 						// If the building is not where it's supposed to be
-						if (!GameHandler.getUnitsOnTile(tx, ty).stream().anyMatch(u -> u.getID() == bf.id)) {
+						if (!GameHandler.getUnitsOnTile(tx, ty).stream().anyMatch(u -> u.getID() == bf.getId())) {
 							itt.remove();
 							PathFinder.removeBuilding(bf);
 							continue buildingLoop;
@@ -90,7 +90,7 @@ public class MemoryManager {
 				Position pos = bf.getTilePosition().toPosition();
 				DrawEngine.drawBoxMap(pos.getX(), pos.getY(), pos.getX() + bf.getType().tileWidth() * 32,
 						pos.getY() + bf.getType().tileHeight() * 32, Color.Yellow, false);
-				DrawEngine.drawTextMap(pos.getX(), pos.getY(), bf.getType().toString() + " @ " + bf.lastSeen);
+				DrawEngine.drawTextMap(pos.getX(), pos.getY(), bf.getType().toString() + " @ " + bf.getLastSeen());
 			}
 		}).setActive(true);
 	}

@@ -6,10 +6,10 @@ import bwapi.UnitType;
 import gamestructure.GameHandler;
 
 public class BuildingFootprint {
-	public final int id;
+	private final int id;
 	private final UnitType type;
 	private final TilePosition tilePosition;
-	public long lastSeen;
+	private long lastSeen;
 
 	public BuildingFootprint(Unit building) {
 		id = building.getID();
@@ -19,11 +19,23 @@ public class BuildingFootprint {
 		lastSeen = GameHandler.getFrameCount();
 	}
 
+	public int getId() {
+		return id;
+	}
+
 	public UnitType getType() {
 		return type;
 	}
 
 	public TilePosition getTilePosition() {
 		return tilePosition;
+	}
+
+	public long getLastSeen() {
+		return lastSeen;
+	}
+
+	public void setLastSeen(long lastSeen) {
+		this.lastSeen = lastSeen;
 	}
 }

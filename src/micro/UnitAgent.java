@@ -73,11 +73,33 @@ public abstract class UnitAgent {
 		return path;
 	}
 
+	protected void beforeTaskChange() {
+		path.clear();
+		pathTarget = null;
+		pathTargetBox = null;
+		pathOriginalSize = Integer.MAX_VALUE;
+		target = null;
+	}
+
+	public void setTaskMove(Position toWhere) {
+		beforeTaskChange();
+
+		task = UnitTask.MOVE;
+		pathTarget = toWhere;
+		if (!pathTarget.isValid()) {
+			System.err.println("UnitAgent tried to move to invalid position!");
+		}
+	}
+
 	public void setTaskScout() {
+		beforeTaskChange();
+
 		task = UnitTask.SCOUTING;
 	}
 
 	public void setTaskScout(Position target) {
+		beforeTaskChange();
+
 		this.task = UnitTask.SCOUTING;
 		pathTarget = target;
 		if (!pathTarget.isValid()) {
@@ -89,9 +111,20 @@ public abstract class UnitAgent {
 		return task;
 	}
 
-	public abstract void act();
+	protected void act() {
+		switch (task) {
+		case SCOUTING:
+			scout();
+			break;
+		case MOVE:
+			unit.move(pathTarget);
+			break;
+		default:
+			break;
+		}
+	}
 
-	public void scout() {
+	protected void scout() {
 		if (pathTarget != null
 				&& GameHandler.isVisible(new Position(pathTarget.getX(), pathTarget.getY()).toTilePosition())
 				&& BaseManager.getClosestBase(pathTarget).get().getPlayer() == GameHandler.getEnemyPlayer()) {
@@ -101,7 +134,7 @@ public abstract class UnitAgent {
 		// Acquire target
 		if (pathTarget == null
 				|| GameHandler.isVisible(new Position(pathTarget.getX(), pathTarget.getY()).toTilePosition())) {
-			// System.out.println("Acquiring new scouting target");
+			System.out.println("Acquiring new scouting target");
 			pathTarget = MicroManager.getScoutingTarget(unit);
 		}
 		// Find a path to there
@@ -110,22 +143,14 @@ public abstract class UnitAgent {
 				findPath(pathTarget, 256);
 				followPath();
 			} catch (NoPathFoundException e) {
-				System.err.println("No path to scout");
+				System.err.println("No path to scout " + unit.getType());
 			}
 		} else {
-			// System.err.println("Attempted to scout with no target");
+			System.err.println("Attempted to scout with no target");
 		}
 	}
 
 	public String toString() {
 		return unit.getType() + " @ (" + unit.getX() + ", " + unit.getY() + ")";
-	}
-
-	public void setTaskMove(Position toWhere) {
-		task = UnitTask.MOVE;
-		pathTarget = toWhere;
-		if (!pathTarget.isValid()) {
-			System.err.println("UnitAgent tried to move to invalid position!");
-		}
 	}
 }

@@ -48,7 +48,7 @@ public abstract class GroundAgent extends UnitAgent {
 		pathTarget = null;
 		// If we already have a decent path
 		if (pathTargetBox != null && pathTargetBox.equals(toWhere)
-				&& (path.size() >= 1.0 / 3 * length || pathOriginalSize <= 1.0 / 3 * length)) {
+				&& (path.size() >= 1.0 / 2 * length || pathOriginalSize <= 1.0 / 3 * length)) {
 			return;
 		}
 		// Every 500 frames make the pathfinder work harder

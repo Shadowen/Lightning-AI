@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import build.BuildManager;
 
@@ -123,7 +124,7 @@ public final class BaseManager {
 				.ifPresent(l -> BuildManager.addBuilding(l.getTilePosition(), UnitType.Terran_Command_Center));
 	}
 
-	public static Set<Base> getMyBases() {
+	public static Collection<Base> getMyBases() {
 		Set<Base> myBases = new HashSet<Base>();
 		bases.forEach((k, v) -> {
 			if (v.getPlayer() == GameHandler.getSelfPlayer()) {
@@ -131,6 +132,11 @@ public final class BaseManager {
 			}
 		});
 		return myBases;
+	}
+
+	public static Collection<Base> getEnemyBases() {
+		return bases.values().stream().filter(b -> b.getPlayer() == GameHandler.getEnemyPlayer())
+				.collect(Collectors.toSet());
 	}
 
 	public static Optional<Base> getClosestBase(Position position) {

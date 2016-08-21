@@ -2,6 +2,7 @@ package micro;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
 
 import bwapi.Position;
 import bwapi.Unit;
@@ -20,7 +21,6 @@ public abstract class UnitGroup {
 	public abstract void act();
 
 	public Position getCenterPosition() {
-		// TODO cache this
 		double cx = 0;
 		double cy = 0;
 		for (UnitAgent ua : unitAgents) {
@@ -30,11 +30,15 @@ public abstract class UnitGroup {
 		return new Position((int) (cx / unitAgents.size()), (int) (cy / unitAgents.size()));
 	}
 
-	public double getMaxDistance() {
-		double distance = Double.MIN_VALUE;
+	public double getPercentileDistance(double percentile) {
+		PriorityQueue<Double> distances = new PriorityQueue<>();
 		Position center = getCenterPosition();
 		for (UnitAgent ua : unitAgents) {
-			distance = Math.max(ua.unit.getPosition().getDistance(center), distance);
+			distances.add(ua.unit.getPosition().getDistance(center));
+		}
+		double distance = Double.MIN_NORMAL;
+		for (int i = 0; i < unitAgents.size() * percentile && !distances.isEmpty(); i++) {
+			distance = distances.remove();
 		}
 		return distance;
 	}

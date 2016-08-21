@@ -266,34 +266,21 @@ public final class MicroManager {
 					DrawEngine.drawLineMap(ua.unit.getX(), ua.unit.getY(), ua.target.getX(), ua.target.getY(),
 							Color.Blue);
 				}
+				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), ua.task.toString());
 				switch (ua.task) {
-				case CONSTRUCTING:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Construction");
-					break;
 				case GAS:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Gas");
 					DrawEngine.drawLineMap(ua.unit.getX(), ua.unit.getY(), ((Worker) ua).getCurrentResource().getX(),
 							((Worker) ua).getCurrentResource().getY(), Color.Green);
 					break;
 				case MINERALS:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Minerals");
 					DrawEngine.drawLineMap(ua.unit.getX(), ua.unit.getY(), ((Worker) ua).getCurrentResource().getX(),
 							((Worker) ua).getCurrentResource().getY(), Color.Blue);
 					break;
-				case SCOUTING:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Scouting");
-					break;
-				case ATTACK_RUN:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Attack run");
-					break;
-				case IDLE:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Idle");
-					break;
-				case MOVE:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Moving");
+				case GAS_FREEZE:
+					DrawEngine.drawLineMap(ua.unit.getX(), ua.unit.getY(), ((Worker) ua).getCurrentResource().getX(),
+							((Worker) ua).getCurrentResource().getY(), Color.Red);
 					break;
 				default:
-					DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY(), "Unknown - " + ua.task.toString());
 					break;
 				}
 			}
@@ -305,7 +292,7 @@ public final class MicroManager {
 				Position c = ug.getCenterPosition();
 				DrawEngine.drawTextMap(c.getX() + 40, c.getY(), "Unit Group " + i);
 				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 10, ug.task.toString());
-				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 20, "Spread: " + ug.getMaxDistance());
+				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 20, "Spread: " + ug.getPercentileDistance(0.2));
 			}
 		});
 	}

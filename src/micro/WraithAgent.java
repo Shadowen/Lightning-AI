@@ -6,7 +6,6 @@ import java.util.Deque;
 import bwapi.Position;
 import bwapi.PositionOrUnit;
 import bwapi.Unit;
-import gamestructure.GameHandler;
 import pathing.NoPathFoundException;
 
 public class WraithAgent extends UnitAgent {
@@ -17,14 +16,11 @@ public class WraithAgent extends UnitAgent {
 
 	@Override
 	public void act() {
+		super.act();
 		timeout--;
 		switch (task) {
 		case IDLE:
 			task = UnitTask.SCOUTING;
-			break;
-		case SCOUTING:
-			// Scout the base...
-			scout();
 			break;
 		case ATTACK_RUN:
 			if (target != null) {
@@ -41,13 +37,6 @@ public class WraithAgent extends UnitAgent {
 					unit.attack(new PositionOrUnit(target));
 					timeout = 3;
 				}
-			}
-			break;
-		case MOVE:
-			if (pathTarget.isValid()) {
-				unit.move(pathTarget);
-			} else {
-				System.err.println("WraithAgent path target invalid.");
 			}
 			break;
 		default:

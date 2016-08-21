@@ -13,7 +13,6 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
-import build.BuildingPlan;
 import bwapi.Color;
 import bwapi.Position;
 import bwapi.TilePosition;
@@ -115,6 +114,7 @@ public final class PathFinder {
 	public static void removeBuilding(BuildingFootprint building) {
 		Deque<Node> toRecalculate = new ArrayDeque<>();
 
+		// TODO this ordering may be inefficient
 		TilePosition tp = building.getTilePosition();
 		for (int wx = tp.getX() * 4; wx < (tp.getX() + building.getType().tileWidth()) * 4; wx++) {
 			for (int wy = tp.getY() * 4; wy < (tp.getY() + building.getType().tileHeight()) * 4; wy++) {
@@ -122,10 +122,11 @@ public final class PathFinder {
 			}
 		}
 
-		recalculateBuilding(toRecalculate, Collections.EMPTY_SET);
+		recalculateBuilding(toRecalculate, Collections.emptySet());
 	}
 
 	private static void recalculateBuilding(Queue<Node> toRecalculate, Set<Node> zeroMe) {
+		// Flag nodes that need to be recalculated
 		for (Node n : toRecalculate) {
 			n.clearance = Integer.MAX_VALUE;
 		}
@@ -137,6 +138,7 @@ public final class PathFinder {
 			if (zeroMe.contains(current)) {
 				current.clearance = 0;
 			} else if (current.clearance == 0) {
+				// Ignore impassable terrain
 			} else {
 				// Otherwise, true clearance is one larger than the minimum of
 				// the three true clearances below, to the right, and
@@ -150,6 +152,8 @@ public final class PathFinder {
 			}
 			// If the clearance value has changed,
 			if (current.clearance != oldClearance) {
+				// TODO Make sure nodes aren't pushed into the queue more than
+				// once. May be duplicating a lot of work here!
 				if (current.wx - 1 > 0) {
 					toRecalculate.add(walkableNodes[current.wx - 1][current.wy]);
 				}
@@ -351,57 +355,6 @@ public final class PathFinder {
 		throw new NoPathFoundException();
 	}
 
-	// public static Queue<Position> findSafeAirPath(int startx, int starty,
-	// double[][] threatMap, int length) {
-	// int startWx = startx / 8;
-	// int startWy = starty / 8;
-	//
-	// Queue<Node> openSet = new PriorityQueue<Node>(1, new Comparator<Node>() {
-	// @Override
-	// public int compare(Node n1, Node n2) {
-	// return (int) Math.round((n1.predictedTotalCost - n2.predictedTotalCost) *
-	// 100);
-	// }
-	// });
-	// Node currentNode = walkableNodes.get(startWx).get(startWy);
-	// currentNode.parent = null;
-	// currentNode.costFromStart = 0;
-	// currentNode.distanceFromStart = 0;
-	// currentNode.predictedTotalCost = threatMap[startWx / 4][startWy / 4];
-	// openSet.add(currentNode);
-	// Set<Node> closedSet = new HashSet<Node>();
-	//
-	// // Iterate
-	// while (currentNode.distanceFromStart < length) {
-	// currentNode = openSet.remove();
-	// // Move the node from the open set to the closed set
-	// closedSet.add(currentNode);
-	// // Add all neigbors to the open set
-	// for (Node neighbor : getNeighbors(currentNode.wx, currentNode.wy)) {
-	// if (closedSet.contains(neighbor)) {
-	// continue;
-	// }
-	//
-	// double tentative_g_score = currentNode.costFromStart
-	// + Point.distance(currentNode.wx, currentNode.wy, neighbor.wx,
-	// neighbor.wy);
-	// if (!openSet.contains(neighbor) || tentative_g_score <
-	// neighbor.costFromStart) {
-	// neighbor.parent = currentNode;
-	// neighbor.costFromStart = tentative_g_score;
-	// neighbor.predictedTotalCost = tentative_g_score + threatMap[neighbor.wx /
-	// 4][neighbor.wy / 4];
-	// neighbor.distanceFromStart = currentNode.distanceFromStart + 1;
-	// openSet.add(neighbor);
-	// }
-	// }
-	// }
-	//
-	// Deque<Position> path = new ArrayDeque<>();
-	// reconstructAirPath(path, currentNode);
-	// return path;
-	// }
-
 	public static List<Node> getNeighbors(int x, int y) {
 		List<Node> neighbors = new ArrayList<Node>();
 
@@ -486,53 +439,45 @@ public final class PathFinder {
 	public static void registerDebugFunctions() {
 		// Clearance values
 		DebugManager.createDebugModule("clearance").setDraw(() -> {
-			try {
-				// Show clearance values
-				for (int wx = 0; wx < mapWalkWidth; wx++) {
-					for (int wy = 0; wy < mapWalkHeight; wy++) {
-						Node n = walkableNodes[wx][wy];
-						if (n.clearance == 0) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
-						} else if (n.clearance == 1) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Orange, true);
-						} else if (n.clearance == 2) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Yellow, true);
-						} else if (n.clearance == 3) {
-							DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Green, true);
-						}
+			// Show clearance values
+			for (int wx = 0; wx < mapWalkWidth; wx++) {
+				for (int wy = 0; wy < mapWalkHeight; wy++) {
+					Node n = walkableNodes[wx][wy];
+					if (n.clearance == 0) {
+						DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Red, true);
+					} else if (n.clearance == 1) {
+						DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Orange, true);
+					} else if (n.clearance == 2) {
+						DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Yellow, true);
+					} else if (n.clearance == 3) {
+						DrawEngine.drawBoxMap(n.wx * 8, n.wy * 8, n.wx * 8 + 8, n.wy * 8 + 8, Color.Green, true);
 					}
 				}
-				Position mousePosition = GameHandler.getMousePositionOnMap();
-				if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() / 8 < mapWalkHeight) {
-					Node thisCell = walkableNodes[mousePosition.getX() / 8][mousePosition.getY() / 8];
-					DrawEngine.drawBoxMap(thisCell.wx * 8, thisCell.wy * 8, (thisCell.wx + thisCell.clearance) * 8,
-							(thisCell.wy + thisCell.clearance) * 8, Color.Yellow, false);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
+			}
+			Position mousePosition = GameHandler.getMousePositionOnMap();
+			if (mousePosition.getX() / 8 < mapWalkWidth && mousePosition.getY() / 8 < mapWalkHeight) {
+				Node thisCell = walkableNodes[mousePosition.getX() / 8][mousePosition.getY() / 8];
+				DrawEngine.drawBoxMap(thisCell.wx * 8, thisCell.wy * 8, (thisCell.wx + thisCell.clearance) * 8,
+						(thisCell.wy + thisCell.clearance) * 8, Color.Yellow, false);
 			}
 		});
-		DebugManager.createDebugModule("pathing").setDraw(() -> {
+		DebugManager.createDebugModule("mousepath").setDraw(() -> {
 			// Projected paths
-			GameHandler.getSelectedUnits().stream().forEach(u -> {
+			for (Unit u : GameHandler.getSelectedUnits()) {
 				try {
-					try {
-						Queue<Position> path = PathFinder.findGroundPath(u.getPosition(),
-								GameHandler.getMousePositionOnMap(), u.getType());
-						for (Position w : path) {
-							DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2, Color.Cyan,
-									false);
-						}
-					} catch (NoPathFoundException e) {
-						System.err.println(e);
-					} catch (InvalidStartNodeException e2) {
-						System.err.println(e2);
+					Queue<Position> path = PathFinder.findGroundPath(u.getPosition(),
+							GameHandler.getMousePositionOnMap(), u.getType());
+					for (Position w : path) {
+						DrawEngine.drawBoxMap(w.getX() - 2, w.getY() - 2, w.getX() + 2, w.getY() + 2, Color.Cyan,
+								false);
 					}
-				} catch (ShapeOverflowException s) {
-					System.out.println("Shape overflow!");
+				} catch (NoPathFoundException e) {
+					e.printStackTrace();
+				} catch (InvalidStartNodeException e2) {
+					e2.printStackTrace();
 				}
-			});
-		}).setActive(true);
+			}
+		});
 
 		// Regions
 		DebugManager.createDebugModule("regions").setDraw(() -> {

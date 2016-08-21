@@ -5,6 +5,7 @@ import java.awt.Point;
 import build.BuildingPlan;
 import bwapi.Position;
 import bwapi.Unit;
+import bwapi.UnitType;
 import gamestructure.GameHandler;
 import micro.GroundAgent;
 import micro.UnitTask;
@@ -13,6 +14,9 @@ import pathing.NoPathFoundException;
 public class Worker extends GroundAgent {
 	private Resource currentResource;
 	private Base base;
+	private boolean hasResetGasBuild;
+	private static final double VELOCITY_SCALE_FACTOR = 5;
+	private static final int GAS_FREEZE_DISTANCE = 10;
 
 	public Worker(Unit u) {
 		super(u);
@@ -27,30 +31,41 @@ public class Worker extends GroundAgent {
 		task = UnitTask.CONSTRUCTING;
 	}
 
-	public void setTaskMiningMinerals(MineralResource newResource) {
-		task = UnitTask.MINERALS;
+	protected void beforeTaskChange() {
+		super.beforeTaskChange();
 
 		if (currentResource != null) {
 			currentResource.removeGatherer(this);
+			currentResource = null;
 		}
-		newResource.addGatherer(this);
+	}
 
+	public void setTaskMiningMinerals(MineralResource newResource) {
+		beforeTaskChange();
+
+		task = UnitTask.MINERALS;
+		newResource.addGatherer(this);
 		currentResource = newResource;
 	}
 
 	public void setTaskMiningMinerals() {
+		beforeTaskChange();
 		task = UnitTask.MINERALS;
 	}
 
 	public void setTaskMiningGas(GasResource newResource) {
+		beforeTaskChange();
+
 		task = UnitTask.GAS;
-
-		if (currentResource != null) {
-			currentResource.removeGatherer(this);
-		}
 		newResource.addGatherer(this);
-
 		currentResource = newResource;
+	}
+
+	public void setTaskGasFreeze(GasResource resource) {
+		beforeTaskChange();
+
+		task = UnitTask.GAS_FREEZE;
+		currentResource = resource;
 	}
 
 	protected void setBase(Base b) {
@@ -67,10 +82,7 @@ public class Worker extends GroundAgent {
 
 	@Override
 	public void act() {
-		if (task == UnitTask.SCOUTING) {
-			scout();
-			return;
-		}
+		super.act();
 		if (task == UnitTask.IDLE) {
 			task = UnitTask.MINERALS;
 		}
@@ -123,6 +135,37 @@ public class Worker extends GroundAgent {
 					unit.gather(currentResource.unit);
 				}
 				return;
+			}
+		}
+		if (task == UnitTask.GAS_FREEZE) {
+			int predictedUnitX = (int) Math
+					.round(unit.getPosition().getX() + unit.getVelocityX() * VELOCITY_SCALE_FACTOR);
+			int predictedUnitY = (int) Math
+					.round(unit.getPosition().getY() + unit.getVelocityY() * VELOCITY_SCALE_FACTOR);
+			Position predictedPosition = new Position(predictedUnitX, predictedUnitY);
+			if (predictedPosition.getDistance(currentResource.unit) > GAS_FREEZE_DISTANCE) {
+				if (currentResource.unit.getType() == UnitType.Resource_Vespene_Geyser) {
+					unit.build(UnitType.Terran_Refinery, currentResource.unit.getTilePosition());
+					hasResetGasBuild = false;
+				} else if (currentResource.unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
+					if (unit.getVelocityX() == 0 && unit.getVelocityY() == 0 && !hasResetGasBuild) {
+						unit.haltConstruction();
+						hasResetGasBuild = true;
+					} else {
+						unit.rightClick(currentResource.unit);
+						System.out.println("Resume");
+						hasResetGasBuild = false;
+					}
+				}
+			} else {
+				if (unit.isConstructing()) {
+					unit.haltConstruction();
+				}
+				unit.stop();
+				if (unit.getVelocityX() == 0 && unit.getVelocityY() == 0
+						&& currentResource.getUnit().getPlayer().equals(GameHandler.getSelfPlayer())
+						&& !currentResource.unit.isCompleted())
+					currentResource.getUnit().cancelConstruction();
 			}
 		}
 	}

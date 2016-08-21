@@ -65,9 +65,12 @@ public class WraithGroup extends UnitGroup {
 			}
 			if (cycleComplete) {
 				// Regather
-				if (getMaxDistance() > Math.sqrt(unitAgents.size()) * 20) {
+				if (getPercentileDistance(0.2) > Math.sqrt(unitAgents.size()) * 20) {
+					Position center = getCenterPosition();
 					for (UnitAgent ua : unitAgents) {
-						ua.setTaskMove(centerPosition);
+						if (ua.unit.getPosition().getDistance(center) > Math.sqrt(unitAgents.size()) * 20) {
+							ua.setTaskMove(centerPosition);
+						}
 					}
 				} else {
 					// Next cycle

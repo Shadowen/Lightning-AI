@@ -2,6 +2,7 @@ package state;
 
 import base.BaseManager;
 import base.GasResource;
+import base.Worker;
 import build.BuildManager;
 import bwapi.Unit;
 import bwapi.UnitType;
@@ -11,7 +12,8 @@ import micro.UnitAgent;
 import micro.UnitTask;
 
 public class StarportRush extends BotState {
-	int previousSupply = 0;
+	private int previousSupply = 0;
+	private Worker gasStealer;
 
 	protected StarportRush(BotState oldState) {
 		super(oldState);
@@ -60,13 +62,23 @@ public class StarportRush extends BotState {
 				BuildManager.setMinimum(UnitType.Terran_Refinery, 1);
 			} else if (previousSupply < 11 && supply >= 11) {
 				BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
-				MicroManager.getUnitsByType(UnitType.Terran_SCV).stream().findFirst()
-						.ifPresent(w -> w.setTaskScout());
+			} else if (previousSupply < 10 && supply >= 10) {
+				gasStealer = BaseManager.getFreeWorker().get();
+				gasStealer.setTaskScout();
 			} else if (previousSupply < 9 && supply >= 9) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
 			}
 		}
 		previousSupply = supply;
+
+		// Gas steal!
+		BaseManager.getEnemyBases().stream().findFirst()
+				.ifPresent(base -> base.gas.stream().findFirst().ifPresent(gas -> {
+					if (gasStealer != null && gasStealer.getTask() == UnitTask.SCOUTING
+							&& gas.getUnit().getType() != UnitType.Unknown) {
+						gasStealer.setTaskGasFreeze(gas);
+					}
+				}));
 
 		return this;
 
