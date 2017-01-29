@@ -46,6 +46,9 @@ public class WraithAgent extends UnitAgent {
 
 	@Override
 	public void findPath(Position toWhere, int length) throws NoPathFoundException {
+		if (!toWhere.isValid()) {
+			throw new NoPathFoundException();
+		}
 		path.clear();
 		path.add(toWhere);
 		pathTarget = toWhere;
@@ -53,6 +56,15 @@ public class WraithAgent extends UnitAgent {
 
 	@Override
 	public void findPath(Rectangle toWhere, int length) throws NoPathFoundException {
+		int left = (int) toWhere.getX();
+		int width = (int) toWhere.getWidth();
+		int bottom = (int) toWhere.getY();
+		int height = (int) toWhere.getHeight();
+		if (!new Position(left, bottom).isValid() || !new Position(left + width, bottom).isValid()
+				|| !new Position(left, bottom + height).isValid()
+				|| !new Position(left + width, bottom + height).isValid()) {
+			throw new NoPathFoundException();
+		}
 		path.clear();
 		pathTarget = new Position(toWhere.x, toWhere.y);
 		path.add(pathTarget);

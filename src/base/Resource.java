@@ -29,12 +29,12 @@ public abstract class Resource {
 	public int getNumGatherers() {
 		return gatherers.size();
 	}
-
+	
 	public int getX() {
-		return unit.getX();
+		return unit.getInitialPosition().getX();
 	}
 
 	public int getY() {
-		return unit.getY();
+		return unit.getInitialPosition().getY();
 	}
 }

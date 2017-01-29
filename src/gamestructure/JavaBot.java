@@ -338,7 +338,7 @@ public class JavaBot implements BWEventListener {
 		});
 		DebugManager.createDebugModule("botstate").setDraw(() -> {
 			DrawEngine.drawTextScreen(5, 5, "Bot state: " + botState.getClass().toString());
-		});
+		}).setActive(true);
 		DebugManager.createDebugModule("construction").setDraw(() -> {
 			String uucString = "";
 			for (Unit u : BuildManager.unitsUnderConstruction) {

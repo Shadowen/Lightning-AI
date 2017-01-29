@@ -172,6 +172,11 @@ public final class BuildManager {
 		}
 	}
 
+	public static boolean buildingPlannedForLocation(TilePosition tilePosition) {
+		return buildingQueue.stream()
+				.anyMatch(b -> b.getBoundingBox().contains(tilePosition.getX() * 32, tilePosition.getY() * 32));
+	}
+
 	public static void registerDebugFunctions() {
 		DebugManager.createDebugModule("buildingqueue").setDraw(() -> {
 			String buildQueueString = "";
@@ -190,14 +195,14 @@ public final class BuildManager {
 				buildQueueString += plan.toString() + ", ";
 			}
 			DrawEngine.drawTextScreen(5, 20, "Building Queue: " + buildQueueString);
-		});
+		}).setActive(true);
 		DebugManager.createDebugModule("trainingqueue").setDraw(() -> {
 			String trainingQueueString = "";
 			for (UnitType type : unitQueue.toArray(new UnitType[0])) {
 				trainingQueueString += type.toString() + ", ";
 			}
 			DrawEngine.drawTextScreen(5, 40, "Training Queue: " + trainingQueueString);
-		});
+		}).setActive(true);
 		DebugManager.createDebugModule("unitminimums").setDraw(() -> {
 			// Unit minimums
 			DrawEngine.drawTextScreen(5, 80, "Unit Minimums: current(queued, training)/required");
@@ -215,11 +220,6 @@ public final class BuildManager {
 					y += 10;
 				}
 			}
-		});
-	}
-
-	public static boolean buildingPlannedForLocation(TilePosition tilePosition) {
-		return buildingQueue.stream()
-				.anyMatch(b -> b.getBoundingBox().contains(tilePosition.getX() * 32, tilePosition.getY() * 32));
+		}).setActive(true);
 	}
 }

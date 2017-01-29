@@ -10,22 +10,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 import base.Base;
 import base.BaseManager;
 import base.Worker;
 import bwapi.Color;
 import bwapi.Position;
-import bwapi.PositionOrUnit;
 import bwapi.Unit;
 import bwapi.UnitType;
 import bwta.BWTA;
 import gamestructure.GameHandler;
 import gamestructure.debug.DebugManager;
 import gamestructure.debug.DrawEngine;
-import pathing.NoPathFoundException;
-import pathing.PathFinder;
 
 public final class MicroManager {
 	/** The width of the map in build tiles */
@@ -131,25 +126,34 @@ public final class MicroManager {
 
 	public static Position getScoutingTarget(Unit requestor) {
 		Base target = null;
+		// Scout enemy main first
+		Optional<Base> enemyBase = BaseManager.getEnemyBases().stream().findFirst();
+		if (enemyBase.isPresent()) {
+			System.out.println("Scout the enemy base!");
+			return enemyBase.get().getLocation().getPosition();
+		}
+
+		// Scout unoccupied start locations
 		for (Base b : BaseManager.getBases()) {
 			if (b.getLocation().isStartLocation() && b.getPlayer() == GameHandler.getNeutralPlayer()
 					&& (target == null || b.getLastScouted() < target.getLastScouted())) {
-				if (requestor.getType().isFlyer()
-						|| BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
+				if (requestor.getType().isFlyer() || BWTA.getGroundDistance(requestor.getTilePosition(),
+						b.getLocation().getTilePosition()) < 100000) {
 					target = b;
 				}
 			}
 		}
-		if (target == null) {
-			for (Base b : BaseManager.getBases()) {
-				if (target == null || b.getLastScouted() < target.getLastScouted()) {
-					if (requestor.getType().isFlyer()
-							|| BWTA.isConnected(requestor.getTilePosition(), b.getLocation().getTilePosition())) {
-						target = b;
-					}
-				}
-			}
-		}
+		// if (target == null) {
+		// for (Base b : BaseManager.getBases()) {
+		// if (target == null || b.getLastScouted() < target.getLastScouted()) {
+		// if (requestor.getType().isFlyer() ||
+		// BWTA.getGroundDistance(requestor.getTilePosition(),
+		// b.getLocation().getTilePosition()) < 10000) {
+		// target = b;
+		// }
+		// }
+		// }
+		// }
 		if (target != null) {
 			return target.getLocation().getPosition();
 		}
@@ -168,14 +172,21 @@ public final class MicroManager {
 			} else if (type == UnitType.Terran_Marine || type == UnitType.Terran_Vulture) {
 				ua = new RangedAgent(unit);
 			} else if (type == UnitType.Terran_Wraith) {
+				System.out.println("Added a wraith unit agent");
 				ua = new WraithAgent(unit);
-				// TODO sort into unit groups properly
-				if (unitGroups.size() == 0) {
-					unitGroups.add(new WraithGroup());
-					unitGroups.get(0).task = UnitTask.SCOUTING;
+				// TODO this sorting nicer
+				boolean success = false;
+				for (UnitGroup ug : unitGroups) {
+					success = ug.tryAddUnitAgent(ua);
+					if (success) {
+						break;
+					}
 				}
-				// TODO
-				unitGroups.get(0).addUnitAgent(ua);
+				if (!success) {
+					WraithGroup wg = new WraithGroup();
+					unitGroups.add(wg);
+					wg.tryAddUnitAgent(ua);
+				}
 			} else {
 				System.err.println("Micromanager was unable to recognize unit " + unit.getType().toString());
 				return;
@@ -258,7 +269,11 @@ public final class MicroManager {
 			for (UnitAgent ua : unitAgents.values()) {
 				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() - 15, ua.getClass().getSimpleName());
 			}
-		});
+			for (Unit u : GameHandler.getEnemyUnits()) {
+				DrawEngine.drawTextMap(u.getX(), u.getY(),
+						u.getType().airWeapon().toString() + u.getType().maxAirHits());
+			}
+		}).setActive(true);
 		// Tasks
 		DebugManager.createDebugModule("tasks").setDraw(() -> {
 			for (UnitAgent ua : unitAgents.values()) {
@@ -284,16 +299,20 @@ public final class MicroManager {
 					break;
 				}
 			}
-		});
+		}).setActive(true);
 		// Unit Groups
-		DebugManager.createDebugModule("Unit Groups").setDraw(() -> {
+		DebugManager.createDebugModule("groups").setDraw(() -> {
 			for (int i = 0; i < unitGroups.size(); i++) {
 				UnitGroup ug = unitGroups.get(i);
 				Position c = ug.getCenterPosition();
 				DrawEngine.drawTextMap(c.getX() + 40, c.getY(), "Unit Group " + i);
+				for (UnitAgent ua : ug.unitAgents) {
+					DrawEngine.drawLineMap(c.getX(), c.getY(), ua.unit.getX(), ua.unit.getY(), Color.Black);
+				}
 				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 10, ug.task.toString());
-				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 20, "Spread: " + ug.getPercentileDistance(0.2));
+				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 20, "Units: " + ug.unitAgents.size());
+				DrawEngine.drawTextMap(c.getX() + 40, c.getY() + 30, "Spread: " + ug.getPercentileDistance(0.2));
 			}
-		});
+		}).setActive(true);
 	}
 }

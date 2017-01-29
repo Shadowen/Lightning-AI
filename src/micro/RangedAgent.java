@@ -19,7 +19,6 @@ public class RangedAgent extends GroundAgent {
 
 		switch (task) {
 		case IDLE:
-			task = UnitTask.SCOUTING;
 			break;
 		case SCOUTING:
 			// Scout the base...

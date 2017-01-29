@@ -43,8 +43,8 @@ public abstract class UnitGroup {
 		return distance;
 	}
 
-	public void addUnitAgent(UnitAgent ua) {
-		unitAgents.add(ua);
+	public boolean tryAddUnitAgent(UnitAgent ua) {
+		return false;
 	}
 
 	public void removeUnit(UnitAgent ua) {

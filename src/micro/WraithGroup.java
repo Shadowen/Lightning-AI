@@ -1,6 +1,8 @@
 package micro;
 
 import bwapi.Position;
+import bwapi.UnitType;
+import bwapi.WeaponType;
 import gamestructure.GameHandler;
 
 public class WraithGroup extends UnitGroup {
@@ -22,15 +24,25 @@ public class WraithGroup extends UnitGroup {
 			}
 			break;
 		case ATTACK_RUN:
-			// Prioritize units that can attack
+			// Prioritize units that can attack air
 			target = null;
-			GameHandler.getEnemyUnits().stream().filter(e -> e.getType().canAttack() && e.isVisible())
+			GameHandler.getEnemyUnits().stream().filter(e -> e.getType().airWeapon() != null && e.isVisible())
 					.sorted((u1,
 							u2) -> (int) ((u1.getPosition().getDistance(centerPosition)
 									- u2.getPosition().getDistance(centerPosition)) * 1000))
 					.findFirst().ifPresent(e -> {
 						target = e;
 					});
+			// Then workers
+			if (target == null) {
+				GameHandler.getEnemyUnits().stream().filter(e -> e.getType().isWorker())
+						.sorted((u1,
+								u2) -> (int) ((u1.getPosition().getDistance(centerPosition)
+										- u2.getPosition().getDistance(centerPosition)) * 1000))
+						.findFirst().ifPresent(e -> {
+							target = e;
+						});
+			}
 			// Otherwise target anything
 			if (target == null) {
 				GameHandler.getEnemyUnits().stream().filter(e -> e.isVisible())
@@ -48,6 +60,7 @@ public class WraithGroup extends UnitGroup {
 				return;
 			}
 			boolean cycleComplete = true;
+			boolean canBeAttacked = false;
 			for (UnitAgent ua : unitAgents) {
 				ua.target = target;
 				if (ua.getTask() == UnitTask.MOVE || ua.timeout > 0) {
@@ -61,29 +74,41 @@ public class WraithGroup extends UnitGroup {
 				if (ua.timeout > 0
 						|| Math.max(ua.unit.getGroundWeaponCooldown(), ua.unit.getAirWeaponCooldown()) > 10) {
 					cycleComplete = false;
+					canBeAttacked |= GameHandler.getUnitsInRadius(ua.unit.getPosition(), 300).stream()
+							.filter(u -> u.getPlayer() != GameHandler.getSelfPlayer())
+							.anyMatch(eu -> eu.getType().airWeapon() != WeaponType.None);
 				}
 			}
-			if (cycleComplete) {
+
+			if (cycleComplete && getPercentileDistance(0.2) > Math.sqrt(unitAgents.size()) * 20) {
 				// Regather
-				if (getPercentileDistance(0.2) > Math.sqrt(unitAgents.size()) * 20) {
-					Position center = getCenterPosition();
-					for (UnitAgent ua : unitAgents) {
-						if (ua.unit.getPosition().getDistance(center) > Math.sqrt(unitAgents.size()) * 20) {
-							ua.setTaskMove(centerPosition);
-						}
-					}
-				} else {
-					// Next cycle
-					for (UnitAgent ua : unitAgents) {
-						ua.task = UnitTask.ATTACK_RUN;
+				Position center = getCenterPosition();
+				for (UnitAgent ua : unitAgents) {
+					if (ua.unit.getPosition().getDistance(center) > Math.sqrt(unitAgents.size()) * 20) {
+						ua.setTaskMove(centerPosition);
 					}
 				}
+			} else if (cycleComplete || !canBeAttacked) {
+				// Next cycle
+				for (UnitAgent ua : unitAgents) {
+					ua.task = UnitTask.ATTACK_RUN;
+				}
 			}
+
 			break;
 		default:
 			System.err.println("Invalid WraithAgent state");
 			break;
 
 		}
+
+	}
+
+	public boolean tryAddUnitAgent(UnitAgent ua) {
+		if (ua.unit.getType() == UnitType.Terran_Wraith && unitAgents.size() < 7) {
+			unitAgents.add(ua);
+			return true;
+		}
+		return false;
 	}
 }

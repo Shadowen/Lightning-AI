@@ -64,7 +64,13 @@ public class StarportRush extends BotState {
 				BuildManager.setMinimum(UnitType.Terran_Barracks, 1);
 			} else if (previousSupply < 10 && supply >= 10) {
 				gasStealer = BaseManager.getFreeWorker().get();
-				gasStealer.setTaskScout();
+				try {
+					gasStealer.setTaskScout(BaseManager.getEnemyBases().stream().findFirst().get().gas.stream()
+							.findFirst().get().getUnit().getInitialPosition());
+				} catch (Exception e) {
+					System.err.println("Failed to steal gas.");
+					gasStealer.setTaskScout();
+				}
 			} else if (previousSupply < 9 && supply >= 9) {
 				BuildManager.setMinimum(UnitType.Terran_Supply_Depot, 1);
 			}
@@ -72,10 +78,9 @@ public class StarportRush extends BotState {
 		previousSupply = supply;
 
 		// Gas steal!
-		BaseManager.getEnemyBases().stream().findFirst()
-				.ifPresent(base -> base.gas.stream().findFirst().ifPresent(gas -> {
-					if (gasStealer != null && gasStealer.getTask() == UnitTask.SCOUTING
-							&& gas.getUnit().getType() != UnitType.Unknown) {
+		BaseManager.getEnemyBases().stream().findFirst().ifPresent(
+				base -> base.gas.stream().filter(gas -> gas.getUnit().isVisible()).findFirst().ifPresent(gas -> {
+					if (gasStealer != null && gasStealer.getTask() == UnitTask.SCOUTING) {
 						gasStealer.setTaskGasFreeze(gas);
 					}
 				}));

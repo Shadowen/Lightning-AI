@@ -49,16 +49,31 @@ public final class BaseManager {
 			UnitType type = u.getType();
 			Optional<Base> closestBase = getClosestBase(u.getPosition(), baseRadius);
 			if (closestBase.isPresent()) {
-				if (type.isMineralField()) {
-					closestBase.get().minerals.add(new MineralResource(u));
-				} else if (type.equals(UnitType.Resource_Vespene_Geyser)) {
-					closestBase.get().gas.add(new GasResource(u));
-				} else if (type.isResourceDepot()) {
+				// if (type.isMineralField()) {
+				// closestBase.get().minerals.add(new MineralResource(u));
+				// } else if (type.equals(UnitType.Resource_Vespene_Geyser)) {
+				// closestBase.get().gas.add(new GasResource(u));
+				// } else
+				if (type.isResourceDepot()) {
 					closestBase.get().commandCenter = Optional.of(u);
 					closestBase.get().setPlayer(u.getPlayer());
 				}
 			}
 		}
+		System.out.println("Allocating resources on map");
+		for (BaseLocation b : BWTA.getBaseLocations()) {
+			System.out.println("Base:");
+			Base closestBase = getClosestBase(b.getPosition(), baseRadius).get();
+			for (Unit mineral : b.getMinerals()) {
+				System.out.println("Minerals");
+				closestBase.minerals.add(new MineralResource(mineral));
+			}
+			for (Unit gas : b.getGeysers()) {
+				System.out.println("Gas");
+				closestBase.gas.add(new GasResource(gas));
+			}
+		}
+
 		System.out.print("Searching for main... ");
 		// First base is main
 		try {
@@ -277,7 +292,7 @@ public final class BaseManager {
 					DrawEngine.drawTextMap(b.getX() + 5, b.getY() - 5, "Starting Location");
 				}
 			}
-		});
+		}).setActive(true);
 		bases.addSubmodule("commandcenter").setDraw(() -> {
 			for (Base b : BaseManager.bases.values()) {
 				// Command center
@@ -304,7 +319,7 @@ public final class BaseManager {
 					}
 				}
 			}
-		});
+		}).setActive(true);
 		bases.addSubmodule("miners").setDraw(() -> {
 			for (Base b : BaseManager.bases.values()) {
 				// Miner counts

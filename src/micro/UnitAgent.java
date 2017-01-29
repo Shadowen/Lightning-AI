@@ -81,6 +81,11 @@ public abstract class UnitAgent {
 		target = null;
 	}
 
+	public void setTaskIdle() {
+		beforeTaskChange();
+		task = UnitTask.IDLE;
+	}
+
 	public void setTaskMove(Position toWhere) {
 		beforeTaskChange();
 
@@ -125,12 +130,6 @@ public abstract class UnitAgent {
 	}
 
 	protected void scout() {
-		if (pathTarget != null
-				&& GameHandler.isVisible(new Position(pathTarget.getX(), pathTarget.getY()).toTilePosition())
-				&& BaseManager.getClosestBase(pathTarget).get().getPlayer() == GameHandler.getEnemyPlayer()) {
-			System.out.println("Unit Agent " + toString() + " arrived at enemy base");
-		}
-
 		// Acquire target
 		if (pathTarget == null
 				|| GameHandler.isVisible(new Position(pathTarget.getX(), pathTarget.getY()).toTilePosition())) {
@@ -144,9 +143,14 @@ public abstract class UnitAgent {
 				followPath();
 			} catch (NoPathFoundException e) {
 				System.err.println("No path to scout " + unit.getType());
+				setTaskIdle();
 			}
-		} else {
-			System.err.println("Attempted to scout with no target");
+		}
+
+		// Give up on scouting because there's nothing left to see
+		if (pathTarget == null) {
+			System.out.println("Gave up on scouting.");
+			setTaskIdle();
 		}
 	}
 

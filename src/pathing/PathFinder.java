@@ -506,7 +506,7 @@ public final class PathFinder {
 					DrawEngine.drawLineMap(region.getCenter(), choke.getCenter(), Color.Yellow);
 				}
 			}
-		}).setActive(true);
+		});
 	}
 
 }

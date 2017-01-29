@@ -16,7 +16,8 @@ public class Worker extends GroundAgent {
 	private Base base;
 	private boolean hasResetGasBuild;
 	private static final double VELOCITY_SCALE_FACTOR = 5;
-	private static final int GAS_FREEZE_DISTANCE = 10;
+	private static final int GAS_FREEZE_STOP_DISTANCE = 13;
+	private static final int FOG_OF_WAR_DISTANCE = 100;
 
 	public Worker(Unit u) {
 		super(u);
@@ -143,17 +144,20 @@ public class Worker extends GroundAgent {
 			int predictedUnitY = (int) Math
 					.round(unit.getPosition().getY() + unit.getVelocityY() * VELOCITY_SCALE_FACTOR);
 			Position predictedPosition = new Position(predictedUnitX, predictedUnitY);
-			if (predictedPosition.getDistance(currentResource.unit) > GAS_FREEZE_DISTANCE) {
+			if (predictedPosition.getDistance(currentResource.unit) > GAS_FREEZE_STOP_DISTANCE) {
 				if (currentResource.unit.getType() == UnitType.Resource_Vespene_Geyser) {
-					unit.build(UnitType.Terran_Refinery, currentResource.unit.getTilePosition());
-					hasResetGasBuild = false;
+					if (predictedPosition.getDistance(currentResource.unit) > FOG_OF_WAR_DISTANCE) {
+						unit.move(currentResource.unit.getInitialPosition());
+					} else {
+						unit.build(UnitType.Terran_Refinery, currentResource.unit.getTilePosition());
+						hasResetGasBuild = false;
+					}
 				} else if (currentResource.unit.getPlayer().equals(GameHandler.getSelfPlayer())) {
 					if (unit.getVelocityX() == 0 && unit.getVelocityY() == 0 && !hasResetGasBuild) {
 						unit.haltConstruction();
 						hasResetGasBuild = true;
 					} else {
 						unit.rightClick(currentResource.unit);
-						System.out.println("Resume");
 						hasResetGasBuild = false;
 					}
 				}
