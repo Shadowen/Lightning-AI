@@ -26,7 +26,9 @@ public class WraithGroup extends UnitGroup {
 		case ATTACK_RUN:
 			// Prioritize units that can attack air
 			target = null;
-			GameHandler.getEnemyUnits().stream().filter(e -> e.getType().airWeapon() != null && e.isVisible())
+			GameHandler.getUnitsInRadius(centerPosition, 500).stream()
+					.filter(e -> e.getPlayer().isEnemy(GameHandler.getSelfPlayer())
+							&& e.getType().airWeapon() != WeaponType.None && e.isVisible())
 					.sorted((u1,
 							u2) -> (int) ((u1.getPosition().getDistance(centerPosition)
 									- u2.getPosition().getDistance(centerPosition)) * 1000))

@@ -112,6 +112,17 @@ public abstract class UnitAgent {
 		}
 	}
 
+	public void setTaskAttackRun() {
+		beforeTaskChange();
+		task = UnitTask.ATTACK_RUN;
+	}
+
+	public void setTaskAttackRun(Unit u) {
+		beforeTaskChange();
+		task = UnitTask.ATTACK_RUN;
+		target = u;
+	}
+
 	public UnitTask getTask() {
 		return task;
 	}

@@ -1,28 +1,24 @@
 package build;
 
-import gamestructure.GameHandler;
-import gamestructure.debug.DebugManager;
-import gamestructure.debug.DrawEngine;
-import micro.UnitTask;
-
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.Set;
 
 import base.Base;
 import base.BaseManager;
 import base.GasResource;
-
-import java.util.Queue;
-
 import bwapi.Color;
 import bwapi.TilePosition;
 import bwapi.Unit;
 import bwapi.UnitType;
+import gamestructure.GameHandler;
+import gamestructure.debug.DebugManager;
+import gamestructure.debug.DrawEngine;
 
 public final class BuildManager {
 	private static Hashtable<UnitType, Integer> unitMinimums;
@@ -47,7 +43,7 @@ public final class BuildManager {
 	}
 
 	/**
-	 * Add a building or unit to the queue to be built. No contorl over the
+	 * Add a building or unit to the queue to be built. No control over the
 	 * location.
 	 * 
 	 * @param unitType
@@ -166,7 +162,8 @@ public final class BuildManager {
 			long inTrainingCount = getTrainingCount(unitType);
 			int requiredCount = entry.getValue();
 			if (currentCount + inQueueCount + inTrainingCount < requiredCount) {
-				GameHandler.sendText("Queuing up another " + unitType.toString());
+				// GameHandler.sendText("Queuing up another " +
+				// unitType.toString());
 				addToQueue(unitType);
 			}
 		}

@@ -3,7 +3,6 @@ package micro;
 import bwapi.Position;
 import bwapi.Unit;
 import gamestructure.GameHandler;
-import pathing.InvalidStartNodeException;
 import pathing.NoPathFoundException;
 
 public class RangedAgent extends GroundAgent {
@@ -19,6 +18,10 @@ public class RangedAgent extends GroundAgent {
 
 		switch (task) {
 		case IDLE:
+			if (GameHandler.getUnitsInRadius(unit.getPosition(), 1000).stream()
+					.anyMatch(u -> u.getPlayer().isEnemy(GameHandler.getSelfPlayer()))) {
+				setTaskAttackRun();
+			}
 			break;
 		case SCOUTING:
 			// Scout the base...
@@ -68,28 +71,17 @@ public class RangedAgent extends GroundAgent {
 			}
 			break;
 		case MOVE:
-			target = GameHandler.getEnemyUnits().stream()
+			target = GameHandler.getUnitsInRadius(unit.getPosition(), 300).stream()
+					.filter(u -> u.getPlayer().isEnemy(GameHandler.getSelfPlayer()))
 					.sorted((u1,
 							u2) -> (int) (u1.getPosition().getDistance(unit.getPosition())
 									- u2.getPosition().getDistance(unit.getPosition())) * 1000)
 					.findFirst().orElse(null);
-			// System.out.println(
-			// GameHandler.getFrameCount() + ": Retreating (" +
-			// unit.getGroundWeaponCooldown() + ")");
-			// final int dx = (unit.getX() - target.getX());
-			// final int dy = (unit.getY() - target.getY());
-			// final Position destination = new Position(unit.getX() + dx,
-			// unit.getY() + dy);
-			// unit.move(destination);
-			try {
-				path = findPathAwayFrom(target.getPosition(), 10);
-				followPath();
-			} catch (NoPathFoundException e1) {
-				System.err.println("No path found for RangedAgent!");
-				e1.printStackTrace();
-			} catch (InvalidStartNodeException e) {
-				System.err.println("Invalid start node for RangedAgent.");
-				e.printStackTrace();
+			if (target != null) {
+				final int dx = unit.getX() - target.getX();
+				final int dy = unit.getY() - target.getY();
+				final Vector delta = new Vector(dx, dy).normalize().scalarMultiply(50);
+				unit.move(new Position(unit.getX() + delta.getXInt(), unit.getY() + delta.getYInt()).makeValid());
 			}
 			timeout--;
 			// Go safe when threshold is reached

@@ -269,10 +269,6 @@ public final class MicroManager {
 			for (UnitAgent ua : unitAgents.values()) {
 				DrawEngine.drawTextMap(ua.unit.getX(), ua.unit.getY() - 15, ua.getClass().getSimpleName());
 			}
-			for (Unit u : GameHandler.getEnemyUnits()) {
-				DrawEngine.drawTextMap(u.getX(), u.getY(),
-						u.getType().airWeapon().toString() + u.getType().maxAirHits());
-			}
 		}).setActive(true);
 		// Tasks
 		DebugManager.createDebugModule("tasks").setDraw(() -> {

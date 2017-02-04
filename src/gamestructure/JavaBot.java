@@ -276,7 +276,7 @@ public class JavaBot implements BWEventListener {
 	@Deprecated
 	@Override
 	public void onUnitComplete(Unit unit) {
-		GameHandler.sendText(unit.getType().toString() + " complete");
+		// GameHandler.sendText(unit.getType().toString() + " complete");
 	}
 
 	/**
